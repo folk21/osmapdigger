@@ -1,0 +1,28 @@
+[builder]
+source_root = "../../data/source/osm"
+output_root = "../../data/generated/packages"
+format_schema = "../../geo-format/schema.sql"
+format_version_file = "../../geo-format/VERSION"
+context_km = 25.0
+
+[datasets.andorra]
+display_name = "Andorra"
+country_code = "AD"
+source_pbf = "andorra-260821.osm.pbf"
+initial_center_latitude = 42.5063
+initial_center_longitude = 1.5218
+initial_zoom = 10.0
+property_search_terms = "house property"
+
+[datasets.belarus]
+display_name = "Belarus"
+country_code = "BY"
+source_pbf = "belarus-latest.osm.pbf"
+initial_center_latitude = 53.7
+initial_center_longitude = 27.9
+initial_zoom = 6.0
+property_search_site = "kufar.by"
+property_search_terms = "дом недвижимость"
+
+# Large countries should normally use a regional PBF as a separate dataset.
+# Optional boundary_geojson can further constrain an input PBF when needed.

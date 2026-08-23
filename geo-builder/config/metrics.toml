@@ -1,0 +1,645 @@
+[settings]
+settlement_places = ["city", "town", "village", "hamlet", "isolated_dwelling"]
+
+[[categories]]
+id = "forest"
+title = "Forest"
+group = "Nature"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+coverage_radii_km = [1.0, 3.0]
+selectors = [[{ tag = "natural", values = ["wood"] }], [{ tag = "landuse", values = ["forest"] }]]
+
+[[categories]]
+id = "water"
+title = "Water"
+group = "Nature"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+coverage_radii_km = [1.0, 3.0]
+selectors = [[{ tag = "natural", values = ["water"] }], [{ tag = "landuse", values = ["reservoir", "basin"] }], [{ tag = "waterway", values = ["riverbank"] }]]
+
+[[categories]]
+id = "river_stream"
+title = "River or stream"
+group = "Nature"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "waterway", values = ["river", "stream", "canal"] }]]
+
+[[categories]]
+id = "wetland"
+title = "Wetland"
+group = "Nature"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+coverage_radii_km = [1.0, 3.0]
+selectors = [[{ tag = "natural", values = ["wetland"] }]]
+
+[[categories]]
+id = "spring"
+title = "Spring"
+group = "Nature"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+count_radii_km = [5.0]
+selectors = [[{ tag = "natural", values = ["spring"] }]]
+
+[[categories]]
+id = "beach"
+title = "Beach"
+group = "Nature"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "natural", values = ["beach"] }]]
+
+[[categories]]
+id = "farmland"
+title = "Farmland"
+group = "Agriculture"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+coverage_radii_km = [1.0, 3.0]
+selectors = [[{ tag = "landuse", values = ["farmland"] }]]
+
+[[categories]]
+id = "meadow"
+title = "Meadow"
+group = "Agriculture"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+coverage_radii_km = [1.0, 3.0]
+selectors = [[{ tag = "landuse", values = ["meadow"] }]]
+
+[[categories]]
+id = "orchard"
+title = "Orchard"
+group = "Agriculture"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+coverage_radii_km = [3.0]
+selectors = [[{ tag = "landuse", values = ["orchard", "vineyard"] }]]
+
+[[categories]]
+id = "farmyard"
+title = "Farm"
+group = "Agriculture"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+count_radii_km = [3.0, 5.0]
+selectors = [[{ tag = "landuse", values = ["farmyard"] }]]
+
+[[categories]]
+id = "industrial"
+title = "Industrial area"
+group = "Risks"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+count_radii_km = [5.0]
+selectors = [[{ tag = "landuse", values = ["industrial"] }]]
+
+[[categories]]
+id = "landfill"
+title = "Landfill"
+group = "Risks"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "landuse", values = ["landfill"] }]]
+
+[[categories]]
+id = "quarry"
+title = "Quarry"
+group = "Risks"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "landuse", values = ["quarry"] }]]
+
+[[categories]]
+id = "brownfield"
+title = "Brownfield"
+group = "Risks"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "landuse", values = ["brownfield"] }]]
+
+[[categories]]
+id = "wastewater"
+title = "Wastewater plant"
+group = "Risks"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "man_made", values = ["wastewater_plant"] }]]
+
+[[categories]]
+id = "cemetery"
+title = "Cemetery"
+group = "Risks"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "landuse", values = ["cemetery"] }], [{ tag = "amenity", values = ["grave_yard"] }]]
+
+[[categories]]
+id = "military"
+title = "Military area"
+group = "Risks"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "military", values = ["*"] }]]
+
+[[categories]]
+id = "power_plant"
+title = "Power plant"
+group = "Utilities"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "power", values = ["plant", "generator"] }]]
+
+[[categories]]
+id = "power_substation"
+title = "Power substation"
+group = "Utilities"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "power", values = ["substation"] }]]
+
+[[categories]]
+id = "power_line"
+title = "Power line"
+group = "Utilities"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "power", values = ["line", "minor_line"] }]]
+
+[[categories]]
+id = "railway_station"
+title = "Railway station"
+group = "Transport"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+count_radii_km = [10.0]
+selectors = [[{ tag = "railway", values = ["station", "halt"] }]]
+
+[[categories]]
+id = "railway_line"
+title = "Railway line"
+group = "Transport"
+default_filter = true
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "railway", values = ["rail", "narrow_gauge", "light_rail"] }]]
+
+[[categories]]
+id = "bus_stop"
+title = "Bus stop"
+group = "Transport"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+count_radii_km = [5.0]
+selectors = [[{ tag = "highway", values = ["bus_stop"] }], [{ tag = "public_transport", values = ["platform", "stop_position"] }]]
+
+[[categories]]
+id = "bus_station"
+title = "Bus station"
+group = "Transport"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["bus_station"] }], [{ tag = "public_transport", values = ["station"] }]]
+
+[[categories]]
+id = "major_road"
+title = "Major road"
+group = "Transport"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+road_batch = true
+selectors = [[{ tag = "highway", values = ["motorway", "trunk", "primary", "secondary"] }]]
+
+[[categories]]
+id = "regional_road"
+title = "Regional road"
+group = "Transport"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+road_batch = true
+selectors = [[{ tag = "highway", values = ["tertiary", "unclassified"] }]]
+
+[[categories]]
+id = "local_road"
+title = "Local road"
+group = "Transport"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+road_batch = true
+selectors = [[{ tag = "highway", values = ["residential", "living_street", "service"] }]]
+
+[[categories]]
+id = "track_road"
+title = "Track"
+group = "Transport"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+road_batch = true
+selectors = [[{ tag = "highway", values = ["track"] }]]
+
+[[categories]]
+id = "school"
+title = "School"
+group = "Infrastructure"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+count_radii_km = [5.0, 10.0]
+selectors = [[{ tag = "amenity", values = ["school"] }]]
+
+[[categories]]
+id = "kindergarten"
+title = "Kindergarten"
+group = "Infrastructure"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["kindergarten"] }]]
+
+[[categories]]
+id = "medical"
+title = "Medical facility"
+group = "Infrastructure"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+count_radii_km = [10.0]
+selectors = [[{ tag = "amenity", values = ["hospital", "clinic", "doctors", "dentist"] }], [{ tag = "healthcare", values = ["*"] }]]
+
+[[categories]]
+id = "pharmacy"
+title = "Pharmacy"
+group = "Infrastructure"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["pharmacy"] }]]
+
+[[categories]]
+id = "supermarket"
+title = "Supermarket"
+group = "Infrastructure"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "shop", values = ["supermarket", "mall"] }]]
+
+[[categories]]
+id = "convenience_shop"
+title = "Convenience shop"
+group = "Infrastructure"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "shop", values = ["convenience", "general"] }]]
+
+[[categories]]
+id = "fuel"
+title = "Fuel station"
+group = "Infrastructure"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["fuel"] }]]
+
+[[categories]]
+id = "fire_station"
+title = "Fire station"
+group = "Public services"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["fire_station"] }]]
+
+[[categories]]
+id = "police"
+title = "Police"
+group = "Public services"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["police"] }]]
+
+[[categories]]
+id = "post_office"
+title = "Post office"
+group = "Public services"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["post_office"] }]]
+
+[[categories]]
+id = "protected_area"
+title = "Protected area"
+group = "Recreation"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+coverage_radii_km = [3.0]
+selectors = [[{ tag = "boundary", values = ["protected_area"] }], [{ tag = "leisure", values = ["nature_reserve"] }]]
+
+[[categories]]
+id = "park"
+title = "Park"
+group = "Recreation"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "leisure", values = ["park", "garden", "recreation_ground"] }]]
+
+[[categories]]
+id = "tourism"
+title = "Tourism object"
+group = "Recreation"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+count_radii_km = [5.0, 10.0]
+selectors = [[{ tag = "tourism", values = ["attraction", "museum", "viewpoint", "information"] }]]
+
+[[categories]]
+id = "accommodation"
+title = "Accommodation"
+group = "Recreation"
+default_filter = true
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "tourism", values = ["hotel", "motel", "guest_house", "hostel", "camp_site", "caravan_site"] }]]
+
+
+[[categories]]
+id = "scrub_heath"
+title = "Scrub or heath"
+group = "Nature"
+default_filter = false
+distance = true
+coverage_radii_km = [1.0, 3.0]
+preferred_direction = "neutral"
+selectors = [[{ tag = "natural", values = ["scrub", "heath", "grassland"] }]]
+
+[[categories]]
+id = "allotments"
+title = "Allotments"
+group = "Agriculture"
+default_filter = false
+distance = true
+coverage_radii_km = [3.0]
+preferred_direction = "neutral"
+selectors = [[{ tag = "landuse", values = ["allotments"] }]]
+
+[[categories]]
+id = "industrial_works"
+title = "Industrial works"
+group = "Risks"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "man_made", values = ["works"] }]]
+
+[[categories]]
+id = "storage_tank"
+title = "Storage tank"
+group = "Risks"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "man_made", values = ["storage_tank"] }]]
+
+[[categories]]
+id = "chimney"
+title = "Chimney"
+group = "Risks"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "man_made", values = ["chimney"] }]]
+
+[[categories]]
+id = "waste_facility"
+title = "Waste facility"
+group = "Risks"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "amenity", values = ["waste_transfer_station", "recycling"] }]]
+
+[[categories]]
+id = "aerodrome"
+title = "Aerodrome"
+group = "Risks"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "aeroway", values = ["aerodrome", "runway", "helipad"] }]]
+
+[[categories]]
+id = "power_support"
+title = "Power tower or pole"
+group = "Utilities"
+default_filter = false
+distance = true
+preferred_direction = "higher"
+selectors = [[{ tag = "power", values = ["tower", "pole"] }]]
+
+[[categories]]
+id = "water_tower"
+title = "Water tower"
+group = "Utilities"
+default_filter = false
+distance = true
+preferred_direction = "neutral"
+selectors = [[{ tag = "man_made", values = ["water_tower"] }]]
+
+[[categories]]
+id = "telecom_tower"
+title = "Telecom tower"
+group = "Utilities"
+default_filter = false
+distance = true
+preferred_direction = "neutral"
+selectors = [[{ tag = "man_made", values = ["mast"] }], [{ tag = "man_made", values = ["tower"] }, { tag = "tower:type", values = ["communication"] }]]
+
+[[categories]]
+id = "higher_education"
+title = "Higher education"
+group = "Infrastructure"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["college", "university"] }]]
+
+[[categories]]
+id = "veterinary"
+title = "Veterinary service"
+group = "Infrastructure"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["veterinary"] }]]
+
+[[categories]]
+id = "social_facility"
+title = "Social facility"
+group = "Infrastructure"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["social_facility"] }]]
+
+[[categories]]
+id = "townhall"
+title = "Town hall"
+group = "Public services"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["townhall"] }]]
+
+[[categories]]
+id = "library"
+title = "Library"
+group = "Public services"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["library"] }]]
+
+[[categories]]
+id = "community_centre"
+title = "Community centre"
+group = "Public services"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["community_centre"] }]]
+
+[[categories]]
+id = "food_shop"
+title = "Food shop"
+group = "Commerce"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "shop", values = ["bakery", "butcher", "greengrocer"] }]]
+
+[[categories]]
+id = "hardware_shop"
+title = "Hardware shop"
+group = "Commerce"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "shop", values = ["hardware", "doityourself"] }]]
+
+[[categories]]
+id = "marketplace"
+title = "Marketplace"
+group = "Commerce"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["marketplace"] }]]
+
+[[categories]]
+id = "bank_atm"
+title = "Bank or ATM"
+group = "Commerce"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["bank", "atm"] }]]
+
+[[categories]]
+id = "charging_station"
+title = "Charging station"
+group = "Commerce"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["charging_station"] }]]
+
+[[categories]]
+id = "food"
+title = "Food and drink"
+group = "Commerce"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["restaurant", "cafe", "fast_food", "pub", "bar"] }]]
+
+[[categories]]
+id = "sports"
+title = "Sports facility"
+group = "Recreation"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "leisure", values = ["sports_centre", "sports_hall", "swimming_pool", "pitch"] }]]
+
+[[categories]]
+id = "playground"
+title = "Playground"
+group = "Recreation"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "leisure", values = ["playground"] }]]
+
+[[categories]]
+id = "religion"
+title = "Place of worship"
+group = "Community"
+default_filter = false
+distance = true
+preferred_direction = "neutral"
+selectors = [[{ tag = "amenity", values = ["place_of_worship"] }]]
+
+[[categories]]
+id = "drinking_water"
+title = "Drinking water"
+group = "Recreation"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["drinking_water"] }]]
+
+[[categories]]
+id = "internet_cafe"
+title = "Internet cafe"
+group = "Infrastructure"
+default_filter = false
+distance = true
+preferred_direction = "lower"
+selectors = [[{ tag = "amenity", values = ["internet_cafe"] }]]

@@ -1,0 +1,30 @@
+{
+  "layers": {
+    "place": { "minzoom": 0, "maxzoom": 14 },
+    "boundary": { "minzoom": 0, "maxzoom": 14, "simplify_below": 12, "simplify_level": 0.0003 },
+    "park": { "minzoom": 8, "maxzoom": 14, "simplify_below": 13, "simplify_level": 0.0003 },
+    "landuse": { "minzoom": 5, "maxzoom": 14, "simplify_below": 13, "simplify_level": 0.0003 },
+    "landcover": { "minzoom": 5, "maxzoom": 14, "simplify_below": 13, "simplify_level": 0.0003 },
+    "water": { "minzoom": 5, "maxzoom": 14, "simplify_below": 12, "simplify_level": 0.0003 },
+    "waterway": { "minzoom": 8, "maxzoom": 14, "simplify_below": 12, "simplify_level": 0.0003 },
+    "transportation": { "minzoom": 5, "maxzoom": 14, "simplify_below": 13, "simplify_level": 0.0003 },
+    "building": { "minzoom": 13, "maxzoom": 14 }
+  },
+  "settings": {
+    "minzoom": 0,
+    "maxzoom": 14,
+    "basezoom": 14,
+    "include_ids": false,
+    "combine_below": 14,
+    "name": "OsmapDigger basemap",
+    "version": "1.0",
+    "description": "Minimal offline basemap schema used by OsmapDigger",
+    "compress": "gzip",
+    "filemetadata": {
+      "tilejson": "2.0.0",
+      "scheme": "xyz",
+      "type": "baselayer",
+      "format": "pbf"
+    }
+  }
+}

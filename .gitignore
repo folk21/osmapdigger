@@ -1,0 +1,32 @@
+.idea/
+.vscode/
+.gradle/
+**/build/
+mobile/.gradle-dist/
+local.properties
+*.iml
+.venv/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+*.pyc
+
+# Raw and generated geographic data are local-only.
+data/source/osm/
+data/generated/
+*.osm.pbf
+*.pmtiles
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+*.omd.zip
+
+# Keep the documentation marker in the ignored data tree.
+!data/README.md
+
+.DS_Store
+tmp/
+logs/
+
+# Local source snapshots generated for LLM review.
+osmapdigger_files.txt

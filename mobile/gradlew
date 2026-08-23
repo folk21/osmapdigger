@@ -1,0 +1,25 @@
+#!/bin/sh
+set -eu
+
+GRADLE_VERSION="9.3.1"
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+DIST_DIR="$SCRIPT_DIR/.gradle-dist/gradle-$GRADLE_VERSION"
+ZIP_FILE="$SCRIPT_DIR/.gradle-dist/gradle-$GRADLE_VERSION-bin.zip"
+URL="https://services.gradle.org/distributions/gradle-$GRADLE_VERSION-bin.zip"
+
+if [ ! -x "$DIST_DIR/bin/gradle" ]; then
+    mkdir -p "$SCRIPT_DIR/.gradle-dist"
+    if [ ! -f "$ZIP_FILE" ]; then
+        if command -v curl >/dev/null 2>&1; then
+            curl -fL "$URL" -o "$ZIP_FILE"
+        elif command -v wget >/dev/null 2>&1; then
+            wget -O "$ZIP_FILE" "$URL"
+        else
+            echo "curl or wget is required to bootstrap Gradle." >&2
+            exit 1
+        fi
+    fi
+    unzip -q -o "$ZIP_FILE" -d "$SCRIPT_DIR/.gradle-dist"
+fi
+
+exec "$DIST_DIR/bin/gradle" "$@"

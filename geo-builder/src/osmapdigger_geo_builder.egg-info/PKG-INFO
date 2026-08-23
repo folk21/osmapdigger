@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: osmapdigger-geo-builder
+Version: 1.0.0
+Requires-Python: >=3.11
+Requires-Dist: pyrosm==0.13.1
+Requires-Dist: geopandas>=1.0
+Requires-Dist: shapely>=2.0
+Requires-Dist: pyarrow>=16
+Provides-Extra: dev
+Requires-Dist: pytest>=8; extra == "dev"
+Requires-Dist: ruff>=0.9; extra == "dev"

@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": [
+    "formatVersion",
+    "datasetId",
+    "displayName",
+    "generatedAt",
+    "source",
+    "artifacts",
+    "bounds",
+    "center",
+    "statistics"
+  ],
+  "properties": {
+    "formatVersion": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "datasetId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "countryCode": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "generatedAt": {
+      "type": "string"
+    },
+    "source": {
+      "type": "object"
+    },
+    "artifacts": {
+      "type": "object"
+    },
+    "bounds": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": {
+        "type": "number"
+      }
+    },
+    "center": {
+      "type": "object",
+      "required": [
+        "latitude",
+        "longitude",
+        "zoom"
+      ]
+    },
+    "statistics": {
+      "type": "object"
+    },
+    "propertySearch": {
+      "type": "object",
+      "required": [
+        "site",
+        "terms"
+      ],
+      "properties": {
+        "site": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "terms": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
