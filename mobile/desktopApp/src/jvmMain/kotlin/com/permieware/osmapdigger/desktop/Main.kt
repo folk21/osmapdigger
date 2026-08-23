@@ -1,6 +1,8 @@
 package com.permieware.osmapdigger.desktop
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -18,13 +20,13 @@ fun main() {
             ?.let { runCatching { DesktopDataset.open(Paths.get(it)) }.getOrNull() }
 
     application {
-        var dataset by remember { mutableStateOf(configured) }
+        val datasetState = remember { mutableStateOf(configured) }
 
-        DisposableEffect(dataset) {
+        // The effect belongs to the application lifetime, not to a particular dataset.
+        // When the application is disposed, close whichever dataset is active at that time.
+        DisposableEffect(Unit) {
             onDispose {
-                if (dataset !== configured) {
-                    dataset?.close()
-                }
+                datasetState.value?.close()
             }
         }
 
@@ -34,11 +36,18 @@ fun main() {
             title = "OsmapDigger",
         ) {
             OsmapDiggerApp(
-                runtime = dataset?.runtime,
+                runtime = datasetState.value?.runtime,
                 onImportDataset = {
                     DesktopDatasetChooser.chooseAndOpen()?.let { opened ->
-                        dataset?.takeIf { it !== configured }?.close()
-                        dataset = opened
+                        val previous = datasetState.value
+                        datasetState.value = opened
+
+                        // Close only the dataset that has actually been replaced.
+                        // Closing through DisposableEffect(dataset) is incorrect because
+                        // its onDispose callback can observe the newly assigned state value.
+                        if (previous !== opened) {
+                            previous?.close()
+                        }
                     }
                 },
             )

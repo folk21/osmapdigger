@@ -293,3 +293,15 @@ Map rendering is a platform implementation rather than a hard runtime requiremen
 
 This split is deliberate. MapLibre Compose 0.13.x does not publish a `macos-amd64` JNI capability. An unsupported map renderer must not prevent the local SQLite search and filter workflows from starting. `MapPanel` is therefore declared in `commonMain` as an `expect` composable and supplied by either `desktopMapLibreMain`, `desktopFallbackMain`, or Android.
 
+## Desktop map implementation boundary
+
+The initial Desktop JVM target intentionally does not depend on MapLibre Compose native
+bindings. `shared/src/desktopMain/.../MapPanel.desktop.kt` is the Desktop `actual`
+implementation and provides a non-fatal analytical fallback.
+
+Android keeps the real MapLibre implementation in `androidMain`.
+
+Do not reintroduce conditional `desktopMapLibreMain` / `desktopFallbackMain` source directories
+through `kotlin.srcDir(...)`. If Desktop map rendering is added later, introduce it as a deliberate
+platform module/source-set design with tested native runtime support rather than host-detection
+logic duplicated across Gradle scripts.
