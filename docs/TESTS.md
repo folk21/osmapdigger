@@ -89,6 +89,11 @@ make run-desktop
 
 Verify with network access disabled that the local basemap renders, search-result markers appear, selecting a result highlights it and focuses the camera, and OpenStreetMap attribution remains visible. On Intel macOS, also verify that the JCEF renderer starts without external CDN/tile requests. On another unsupported host, verify that application startup and analytical search remain usable with the fallback panel.
 
+Manual Intel macOS x86-64 validation recorded during the Desktop map increment: `make run-desktop`
+built and started successfully, the JCEF map rendered, and settlement selection continued to display
+details. Network-disabled rendering, the complete result-marker/selected-marker/camera sequence, and
+`make test-desktop` were not part of that report and remain explicit acceptance checks.
+
 ## Android compile validation
 
 ```bash

@@ -20,7 +20,7 @@ After acceptance, move stable behavior into owning implementation/architecture d
 
 Current implementation sub-spec:
 
-- [`subspecs/desktop-map.md`](subspecs/desktop-map.md) — render the installed offline map and search overlays on supported Desktop hosts.
+- [`subspecs/desktop-map.md`](subspecs/desktop-map.md) — Desktop map implementation complete; remaining acceptance verification is tracked in the sub-spec.
 
 This document remains the active umbrella specification. The linked sub-spec refines one bounded
 implementation increment and does not replace or supersede the umbrella requirements.

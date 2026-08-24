@@ -1,22 +1,23 @@
 ---
 type: Specification
 title: Desktop offline map support
-description: Active sub-spec for rendering the installed offline PMTiles basemap and search overlays across supported Desktop hosts, including an Intel macOS web renderer experiment.
+description: Desktop offline map sub-spec with implementation complete and acceptance verification pending.
 document_role: subspec
-spec_status: active
+spec_status: verification-pending
 parent: ../spec-initial-functional-product.md
 ---
 # Desktop offline map support
 
 ## Status
 
-Active implementation sub-spec.
+Implementation complete; acceptance verification pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-This sub-spec is the current implementation focus under the active initial-product umbrella. It
-implements the Desktop part of the existing offline-map requirements without changing analytical
-search semantics or the generated dataset format.
+This sub-spec remains the current implementation focus under the active initial-product umbrella
+until the remaining acceptance checks are recorded. The implementation covers the Desktop part of
+the existing offline-map requirements without changing analytical search semantics or the generated
+dataset format.
 
 ## Goal
 
@@ -45,10 +46,11 @@ The repository already contains:
 - a Desktop `MapPanel` contract;
 - Desktop package loading that resolves the installed PMTiles file into the style JSON.
 
-The first part of this increment enabled MapLibre Compose on hosts with a published native runtime and
-kept the fallback on Intel macOS. Because the current development workstation is Intel macOS, this
-sub-spec now includes a bounded alternative-renderer experiment for that host without changing shared
-search semantics or the dataset package contract.
+MapLibre Compose is enabled on hosts with a published native runtime. Intel macOS uses a bounded
+platform-owned JCEF + MapLibre GL JS renderer because MapLibre Compose 0.13.x has no compatible
+`macos-amd64` JNI runtime. The Intel renderer was manually exercised on an x86-64 macOS development
+workstation and successfully displayed the map while preserving settlement-selection/details behavior.
+Shared search semantics and the dataset package contract remain unchanged.
 
 ## Requirements
 
@@ -182,6 +184,16 @@ hosts keep using the same application and shared code without resolving an incom
 
 ## Validation
 
+Recorded manual validation on Intel macOS x86-64:
+
+- `make run-desktop` builds and starts the application after the Desktop/JCEF integration fixes;
+- the JCEF-rendered map is visible;
+- selecting a settlement continues to show its details.
+
+The report above does **not** yet establish the network-disabled/offline check, the full marker/camera
+acceptance sequence, or the complete Desktop automated test suite. Those checks remain required before
+this sub-spec is archived.
+
 Acceptance requires:
 
 1. `make test-desktop` passes on a configured Gradle environment.
@@ -204,4 +216,4 @@ Acceptance requires:
 - add the Intel macOS JCEF/MapLibre GL JS renderer behind a platform UI contract;
 - serve packaged web assets and local PMTiles-derived vector tiles through a loopback-only adapter;
 - update implementation, installation, test, usage, and roadmap documentation;
-- run supported-host offline-map acceptance before archiving this sub-spec.
+- complete the remaining supported-host/offline acceptance checks before archiving this sub-spec.

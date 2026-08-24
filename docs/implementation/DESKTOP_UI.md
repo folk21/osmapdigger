@@ -66,4 +66,4 @@ The settlement details view should show:
 
 ## Current limitations
 
-Apple Silicon macOS, Linux x86-64, and Windows x86-64 render the installed offline PMTiles basemap through MapLibre Compose. Intel macOS uses the experimental JCEF + packaged MapLibre GL JS renderer with a loopback-only local PMTiles adapter. Other unsupported hosts use the non-fatal fallback. Search and analytical features remain independent from map rendering.
+Apple Silicon macOS, Linux x86-64, and Windows x86-64 render the installed offline PMTiles basemap through MapLibre Compose. Intel macOS uses the JCEF + packaged MapLibre GL JS renderer with a loopback-only local PMTiles adapter. Other unsupported hosts use the non-fatal fallback. Search and analytical features remain independent from map rendering.

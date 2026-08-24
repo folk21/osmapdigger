@@ -95,4 +95,4 @@ Umbrella:
 
 Current implementation focus:
 
-- [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — offline MapLibre rendering and search overlays on supported Desktop hosts.
+- [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — Desktop offline map implementation complete; acceptance verification pending.
