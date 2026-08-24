@@ -17,12 +17,17 @@ Small bug fixes, local refactors, narrow documentation improvements, and routine
 
 ## Lifecycle
 
-1. Create `docs/specs/active/<change>.md` before or at the start of significant implementation.
-2. Define status, goal, current state, stable requirements, scenarios, non-goals, design constraints, compatibility/migration concerns, validation, and implementation tasks.
-3. Give important requirements stable IDs such as `R1` so tests/reviews can refer to them.
-4. Implement while preserving root/local `AGENTS.md` invariants.
-5. After acceptance, update owning current-state documentation with the stable result.
-6. Move the completed spec to `docs/specs/archive/`.
+Only one implementation specification should be active at a time. A significant follow-up that is
+already architecturally useful but not yet being implemented may live under `docs/specs/planned/`.
+Planned documents define direction and constraints but do not override the current active spec.
+
+1. Draft future significant work under `docs/specs/planned/` when useful for sequencing or architecture.
+2. Move the selected change to `docs/specs/active/<change>.md` before or at the start of implementation.
+3. Define status, goal, current state, stable requirements, scenarios, non-goals, design constraints, compatibility/migration concerns, validation, and implementation tasks.
+4. Give important requirements stable IDs such as `R1` so tests/reviews can refer to them.
+5. Implement while preserving root/local `AGENTS.md` invariants.
+6. After acceptance, update owning current-state documentation with the stable result.
+7. Move the completed spec to `docs/specs/archive/`.
 
 Archived specs preserve historical design intent but are not current source of truth. `concat_osmapdigger.sh` excludes archived specs so routine LLM context contains current code/docs plus active intended work.
 
@@ -46,3 +51,7 @@ Archived specs preserve historical design intent but are not current source of t
 ## Active specs
 
 - [`active/initial-functional-product.md`](active/initial-functional-product.md) — initial country-agnostic offline dataset builder + KMP Desktop/Android search/map vertical slice; implementation exists but requires full real-toolchain acceptance before the spec can be archived.
+
+## Planned specs
+
+- [`planned/user-preferences.md`](planned/user-preferences.md) — local persistence of dataset-scoped search context across Desktop and Android; planned follow-up, not yet active.

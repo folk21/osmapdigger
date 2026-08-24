@@ -34,11 +34,15 @@ Acceptance requires a configured workstation to demonstrate:
 
 ## P1 — user workflow
 
+- persist the current dataset, center settlement, radius, and dynamic filters across restart;
 - favorites;
 - notes;
-- saved filters/searches;
+- named saved filters/searches;
 - comparison of multiple settlements;
 - share/export search parameters and settlement summaries.
+
+Planned architecture for the first item is captured in
+[`specs/planned/user-preferences.md`](specs/planned/user-preferences.md).
 
 ## P2 — additional data sources
 
