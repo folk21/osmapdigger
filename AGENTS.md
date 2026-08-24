@@ -107,3 +107,8 @@ make build-andorra-data
 ```
 
 See [`docs/TESTS.md`](docs/TESTS.md).
+
+
+## Project history
+
+`CHANGELOG.md` is a source of truth for important project changes.
