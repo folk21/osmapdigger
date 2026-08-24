@@ -1,0 +1,11 @@
+application:
+  defaultDataset: andorra
+
+datasets:
+  andorra:
+    package: andorra.omd.zip
+    autoInstall: true
+
+  belarus:
+    package: belarus.omd.zip
+    autoInstall: true
