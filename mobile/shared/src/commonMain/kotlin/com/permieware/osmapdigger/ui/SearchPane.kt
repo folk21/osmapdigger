@@ -61,6 +61,14 @@ internal fun SearchPane(
         }
 
         item {
+            DynamicFilters(
+                definitions = definitions,
+                conditions = conditions,
+                onConditionsChanged = onConditionsChanged,
+            )
+        }
+
+        item {
             CenterSelector(
                 repository = repository,
                 center = center,
@@ -71,17 +79,9 @@ internal fun SearchPane(
         }
 
         item {
-            DynamicFilters(
-                definitions = definitions,
-                conditions = conditions,
-                onConditionsChanged = onConditionsChanged,
-            )
-        }
-
-        item {
             Card {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Filter description", style = MaterialTheme.typography.titleSmall)
+                    Text("Generated search query", style = MaterialTheme.typography.titleSmall)
                     Text(summary, style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -101,7 +101,7 @@ internal fun SearchPane(
             item { Text(message, color = MaterialTheme.colorScheme.error) }
         }
 
-        item { Text("Results (${results.size})", style = MaterialTheme.typography.titleMedium) }
+        item { Text("Found settlements (${results.size})", style = MaterialTheme.typography.titleMedium) }
 
         items(results, key = { it.id }) { settlement ->
             OutlinedCard(
@@ -142,7 +142,7 @@ private fun CenterSelector(
 
     Card {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Search area", style = MaterialTheme.typography.titleSmall)
+            Text("Search area (optional)", style = MaterialTheme.typography.titleSmall)
 
             if (center != null) {
                 AssistChip(
@@ -154,7 +154,7 @@ private fun CenterSelector(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                label = { Text("Find center settlement") },
+                label = { Text("Center settlement (optional)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -185,7 +185,7 @@ private fun CenterSelector(
             OutlinedTextField(
                 value = radiusText,
                 onValueChange = onRadiusChanged,
-                label = { Text("Radius from center, km") },
+                label = { Text("Radius from center, km (optional)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -315,6 +315,7 @@ private fun SettlementDetailsCard(
 ) {
     Card {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Settlement details", style = MaterialTheme.typography.labelLarge)
             Text(details.settlement.name, style = MaterialTheme.typography.titleMedium)
             Text(
                 "${details.settlement.location.latitude}, ${details.settlement.location.longitude}",
@@ -333,7 +334,7 @@ private fun SettlementDetailsCard(
                     }
                 }
 
-            Text("Search property", style = MaterialTheme.typography.labelLarge)
+            Text("External property search", style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 ExternalSearchProvider.entries.forEach { provider ->
                     OutlinedButton(
