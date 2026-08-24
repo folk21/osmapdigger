@@ -6,6 +6,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.*
+import com.permieware.osmapdigger.preferences.UserPreferences
+import com.permieware.osmapdigger.preferences.UserPreferencesRepository
+import com.permieware.osmapdigger.preferences.UserPreferencesRestorer
 import com.permieware.osmapdigger.runtime.OsmapDiggerRuntime
 import com.permieware.osmapdigger.search.FilterSummaryBuilder
 import com.permieware.osmapdigger.search.SearchService
@@ -15,6 +18,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun OsmapDiggerApp(
     runtime: OsmapDiggerRuntime?,
+    userPreferences: UserPreferencesRepository,
     onImportDataset: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -22,7 +26,12 @@ fun OsmapDiggerApp(
         if (runtime == null) {
             MissingDatasetScreen(onImportDataset = onImportDataset, modifier = modifier)
         } else {
-            LoadedDatasetApp(runtime = runtime, onImportDataset = onImportDataset, modifier = modifier)
+            LoadedDatasetApp(
+                runtime = runtime,
+                userPreferences = userPreferences,
+                onImportDataset = onImportDataset,
+                modifier = modifier,
+            )
         }
     }
 }
@@ -57,6 +66,7 @@ private fun MissingDatasetScreen(
 @Composable
 private fun LoadedDatasetApp(
     runtime: OsmapDiggerRuntime,
+    userPreferences: UserPreferencesRepository,
     onImportDataset: () -> Unit,
     modifier: Modifier,
 ) {
@@ -70,42 +80,110 @@ private fun LoadedDatasetApp(
     var radiusText by remember { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
     var running by remember { mutableStateOf(false) }
+    var preferencesReady by remember { mutableStateOf(false) }
 
     LaunchedEffect(runtime) {
+        preferencesReady = false
+        datasetInfo = null
+        definitions = emptyList()
+        conditions = emptyList()
+        results = emptyList()
+        selected = null
+        center = null
+        radiusText = ""
+        error = null
+
         runCatching {
             val info = runtime.repository.datasetInfo()
             val metricDefinitions = runtime.repository.metricDefinitions()
-            datasetInfo = info
-            definitions = metricDefinitions
-            conditions =
+            val defaults =
                 metricDefinitions
                     .filter { it.defaultEnabled }
                     .map { SearchCondition(metricId = it.id) }
+            val savedPreferences = runCatching { userPreferences.load() }.getOrNull()
+            val restored =
+                UserPreferencesRestorer.restore(
+                    preferences = savedPreferences,
+                    datasetId = info.id,
+                    definitions = metricDefinitions,
+                    resolveSettlement = { settlementId ->
+                        runCatching { runtime.repository.details(settlementId).settlement }.getOrNull()
+                    },
+                )
+
+            datasetInfo = info
+            definitions = metricDefinitions
+            conditions = restored?.conditions ?: defaults
+            center = restored?.center
+            radiusText = restored?.radiusKm?.toString() ?: ""
+            preferencesReady = true
         }.onFailure {
             error = it.message ?: it.toString()
         }
     }
 
+    LaunchedEffect(
+        runtime,
+        userPreferences,
+        preferencesReady,
+        datasetInfo?.id,
+        center?.id,
+        center?.name,
+        radiusText,
+        conditions,
+    ) {
+        val info = datasetInfo
+        if (!preferencesReady || info == null) {
+            return@LaunchedEffect
+        }
+
+        runCatching {
+            userPreferences.save(
+                UserPreferences(
+                    datasetId = info.id,
+                    centerSettlementId = center?.id,
+                    centerSettlementName = center?.name,
+                    radiusKm = center?.let { parsePositiveRadiusKm(radiusText) },
+                    conditions = conditions,
+                ),
+            )
+        }.onFailure {
+            error = "Could not save user preferences: ${it.message ?: it}"
+        }
+    }
+
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
+    val parsedRadius = parsePositiveRadiusKm(radiusText)
+    val radiusError =
+        when {
+            radiusText.isBlank() -> null
+            center == null -> "Select a center settlement before setting a radius."
+            parsedRadius == null -> "Radius must be a positive number."
+            else -> null
+        }
     val request =
         SearchRequest(
             center = center,
-            radiusKm = radiusText.toDoubleOrNull(),
+            radiusKm = if (radiusError == null) parsedRadius else null,
             conditions = conditions,
         )
     val summary = FilterSummaryBuilder.build(request, definitionMap)
 
     val performSearch: () -> Unit = {
-        scope.launch {
-            running = true
-            error = null
-            runCatching { SearchService(runtime.repository).search(request) }
-                .onSuccess {
-                    results = it
-                    selected = null
-                }
-                .onFailure { error = it.message ?: it.toString() }
-            running = false
+        if (radiusError != null) {
+            error = radiusError
+        } else {
+            scope.launch {
+                running = true
+                error = null
+                runCatching { SearchService(runtime.repository).search(request) }
+                    .onSuccess {
+                        results = it
+                        selected = null
+                    }
+                    .onFailure { error = it.message ?: it.toString() }
+                running = false
+            }
         }
     }
 
@@ -129,9 +207,15 @@ private fun LoadedDatasetApp(
                     conditions = conditions,
                     onConditionsChanged = { conditions = it },
                     center = center,
-                    onCenterChanged = { center = it },
+                    onCenterChanged = {
+                        center = it
+                        if (it == null) {
+                            radiusText = ""
+                        }
+                    },
                     radiusText = radiusText,
                     onRadiusChanged = { radiusText = it },
+                    radiusError = radiusError,
                     results = results,
                     selected = selected,
                     summary = summary,
@@ -166,9 +250,15 @@ private fun LoadedDatasetApp(
                         conditions = conditions,
                         onConditionsChanged = { conditions = it },
                         center = center,
-                        onCenterChanged = { center = it },
+                        onCenterChanged = {
+                            center = it
+                            if (it == null) {
+                                radiusText = ""
+                            }
+                        },
                         radiusText = radiusText,
                         onRadiusChanged = { radiusText = it },
+                        radiusError = radiusError,
                         results = results,
                         selected = selected,
                         summary = summary,
@@ -193,3 +283,6 @@ private fun LoadedDatasetApp(
         }
     }
 }
+
+private fun parsePositiveRadiusKm(value: String): Double? =
+    value.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0.0 }

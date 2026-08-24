@@ -32,6 +32,7 @@ internal fun SearchPane(
     onCenterChanged: (Settlement?) -> Unit,
     radiusText: String,
     onRadiusChanged: (String) -> Unit,
+    radiusError: String?,
     results: List<Settlement>,
     selected: SettlementDetails?,
     summary: String,
@@ -75,6 +76,7 @@ internal fun SearchPane(
                 onCenterChanged = onCenterChanged,
                 radiusText = radiusText,
                 onRadiusChanged = onRadiusChanged,
+                radiusError = radiusError,
             )
         }
 
@@ -90,7 +92,7 @@ internal fun SearchPane(
         item {
             Button(
                 onClick = onSearch,
-                enabled = !running,
+                enabled = !running && radiusError == null,
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 Text(if (running) "Searching…" else "Search settlements")
@@ -135,10 +137,17 @@ private fun CenterSelector(
     onCenterChanged: (Settlement?) -> Unit,
     radiusText: String,
     onRadiusChanged: (String) -> Unit,
+    radiusError: String?,
 ) {
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     var suggestions by remember { mutableStateOf<List<Settlement>>(emptyList()) }
+
+    LaunchedEffect(center?.id, center?.name) {
+        if (center != null) {
+            query = center.name
+        }
+    }
 
     Card {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -146,14 +155,22 @@ private fun CenterSelector(
 
             if (center != null) {
                 AssistChip(
-                    onClick = { onCenterChanged(null) },
+                    onClick = {
+                        query = ""
+                        onCenterChanged(null)
+                    },
                     label = { Text("Center: ${center.name} ×") },
                 )
             }
 
             OutlinedTextField(
                 value = query,
-                onValueChange = { query = it },
+                onValueChange = { value ->
+                    query = value
+                    if (center != null && value != center.name) {
+                        onCenterChanged(null)
+                    }
+                },
                 label = { Text("Center settlement (optional)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -162,7 +179,16 @@ private fun CenterSelector(
             Button(
                 onClick = {
                     scope.launch {
-                        suggestions = if (query.isBlank()) emptyList() else repository.findSettlements(query)
+                        val found = if (query.isBlank()) emptyList() else repository.findSettlements(query)
+                        val exactMatches = found.filter { it.name.equals(query, ignoreCase = true) }
+                        if (exactMatches.size == 1) {
+                            val exact = exactMatches.single()
+                            onCenterChanged(exact)
+                            query = exact.name
+                            suggestions = emptyList()
+                        } else {
+                            suggestions = found
+                        }
                     }
                 },
                 enabled = query.isNotBlank(),
@@ -178,7 +204,7 @@ private fun CenterSelector(
                         query = settlement.name
                     },
                 ) {
-                    Text(settlement.name)
+                    Text("Use ${settlement.name} as center")
                 }
             }
 
@@ -188,6 +214,18 @@ private fun CenterSelector(
                 label = { Text("Radius from center, km (optional)") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
+                enabled = center != null,
+                isError = radiusError != null,
+                supportingText = {
+                    val message = radiusError ?: if (center == null) {
+                        "Select a center settlement first."
+                    } else {
+                        null
+                    }
+                    if (message != null) {
+                        Text(message)
+                    }
+                },
             )
         }
     }

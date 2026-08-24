@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.permieware.osmapdigger.desktop.preferences.SqliteUserPreferencesRepository
 import com.permieware.osmapdigger.desktop.runtime.DesktopDataset
 import com.permieware.osmapdigger.desktop.runtime.DesktopDatasetChooser
 import com.permieware.osmapdigger.desktop.runtime.DesktopConfigLoader
@@ -60,6 +61,7 @@ fun main() {
 
     application {
         val datasetState = remember { mutableStateOf(configured) }
+        val userPreferences = remember { SqliteUserPreferencesRepository.createDefault() }
 
         // The effect belongs to the application lifetime, not to a particular dataset.
         // When the application is disposed, close whichever dataset is active at that time.
@@ -76,6 +78,7 @@ fun main() {
         ) {
             OsmapDiggerApp(
                 runtime = datasetState.value?.runtime,
+                userPreferences = userPreferences,
                 onImportDataset = {
                     DesktopDatasetChooser.chooseAndOpen()?.let { opened ->
                         val previous = datasetState.value

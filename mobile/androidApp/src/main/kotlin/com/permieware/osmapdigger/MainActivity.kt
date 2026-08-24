@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.*
 import com.permieware.osmapdigger.runtime.AndroidDataset
+import com.permieware.osmapdigger.preferences.AndroidUserPreferencesRepository
 import com.permieware.osmapdigger.runtime.AndroidDatasetInstaller
 import com.permieware.osmapdigger.ui.OsmapDiggerApp
 
@@ -34,12 +35,15 @@ class MainActivity : ComponentActivity() {
                 .takeIf { it.isDirectory }
                 ?.let { runCatching { AndroidDataset.open(this, it) }.getOrNull() }
 
+        val userPreferences = AndroidUserPreferencesRepository(this)
+
         setContent {
             val state = remember { mutableStateOf(initial) }
             datasetState = state
 
             OsmapDiggerApp(
                 runtime = state.value?.runtime,
+                userPreferences = userPreferences,
                 onImportDataset = {
                     datasetPicker.launch(arrayOf("application/zip", "application/octet-stream"))
                 },

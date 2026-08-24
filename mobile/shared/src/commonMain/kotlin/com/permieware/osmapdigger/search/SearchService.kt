@@ -16,8 +16,16 @@ class SearchService(
     suspend fun search(request: SearchRequest): List<Settlement> {
         val center = request.center
         val radius = request.radiusKm
+
+        require(radius == null || center != null) {
+            "Radius requires a selected center settlement"
+        }
+        require(radius == null || (radius.isFinite() && radius > 0.0)) {
+            "Radius must be a finite positive number"
+        }
+
         val bounds =
-            if (center != null && radius != null && radius > 0) {
+            if (center != null && radius != null) {
                 GeoMath.boundingBox(center.location, radius)
             } else {
                 null
@@ -32,7 +40,7 @@ class SearchService(
             )
 
         val filtered =
-            if (center != null && radius != null && radius > 0) {
+            if (center != null && radius != null) {
                 candidates.filter { GeoMath.distanceKm(center.location, it.location) <= radius }
             } else {
                 candidates

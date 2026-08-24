@@ -20,6 +20,7 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.sqlite.jdbc)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.kotlinx.coroutines.core)
         }
 
         jvmTest.dependencies {

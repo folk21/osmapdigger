@@ -13,9 +13,9 @@ This document describes the current Kotlin Multiplatform implementation under `m
 
 | Module | Current responsibility |
 |---|---|
-| `shared` | Domain models, repository/runtime contracts, exact-radius search, filter summary, property-link generation, GeoJSON overlay, shared Compose/MapLibre UI |
-| `desktopApp` | JVM app host, JDBC SQLite, filesystem/ZIP loading, Desktop browser integration, native MapLibre binding selection |
-| `androidApp` | Android app host, Android SQLite, SAF ZIP import, app-private installation, browser intents |
+| `shared` | Domain models, search/preferences contracts, exact-radius search, filter summary, property-link generation, GeoJSON overlay, shared Compose/MapLibre UI |
+| `desktopApp` | JVM app host, dataset JDBC SQLite, settings SQLite, filesystem/ZIP loading, Desktop browser integration |
+| `androidApp` | Android app host, dataset/settings SQLite, SAF ZIP import, app-private installation, browser intents |
 
 `shared/commonMain` contains no Android/JDBC/filesystem implementation APIs.
 
@@ -47,7 +47,15 @@ Platform implementations provide:
 - SQL-reduced search candidates;
 - detailed settlement hydration.
 
-`OsmapDiggerRuntime` bundles repository, resolved map style, and external-browser opener for shared UI injection.
+`OsmapDiggerRuntime` bundles dataset-scoped repository/map/browser dependencies. The platform host separately creates one application-scoped `UserPreferencesRepository` and injects it into `OsmapDiggerApp`.
+
+## User preferences
+
+`preferences/UserPreferences.kt` defines the immutable current search-context model, the small persistence interface, a versioned JSON codec for dynamic metric conditions, and restore validation.
+
+Restore is dataset-scoped. Metric conditions are retained only when their stable IDs still exist in the opened metric catalog. The saved center is resolved only by stable settlement ID; no display-name fallback is used.
+
+`OsmapDiggerApp` loads preferences after dataset metadata and metric definitions, then enables persistence only after restore completes so default filters cannot overwrite saved state during startup. Changes to center, radius, or filter state are saved through the repository rather than directly by individual controls.
 
 ## Search orchestration
 
@@ -140,9 +148,13 @@ Uses Xerial SQLite JDBC.
 
 Using `EXISTS` means a missing metric row fails a condition rather than being treated as zero.
 
+### `SqliteUserPreferencesRepository`
+
+Stores the current search context at `~/.osmapdigger/settings/preferences.sqlite` using a single-row application-owned schema with `PRAGMA user_version = 1`. Connections are short-lived and preference I/O runs on `Dispatchers.IO`.
+
 ### `DesktopDataset`
 
-`open(directory)` parses metadata, opens SQLite, resolves optional PMTiles into the style template, and creates a shared `OsmapDiggerRuntime`.
+`open(directory)` parses metadata, opens dataset SQLite, resolves optional PMTiles into the style template, and creates the dataset-scoped `OsmapDiggerRuntime`. The Desktop host owns one separate preferences repository for the application lifetime.
 
 `DesktopDatasetChooser` can open a package directory or securely extract a ZIP into `~/.osmapdigger/datasets/`. Normalized entries must stay under the destination root.
 
@@ -160,9 +172,13 @@ Implements the same repository semantics through `SQLiteDatabase.rawQuery()` and
 
 Reads a user-selected ZIP through Storage Access Framework, resolves each entry to its canonical destination, and rejects entries escaping app-private dataset storage.
 
+### `AndroidUserPreferencesRepository`
+
+Stores the same current search-context contract in app-private `filesDir/settings/preferences.sqlite` through Android `SQLiteDatabase`. Its schema version is independent from generated dataset format versioning.
+
 ### `AndroidDataset`
 
-Parses metadata, opens generated SQLite with `OPEN_READONLY`, resolves a local `pmtiles://file://` URI, and injects Android browser behavior.
+Parses metadata, opens generated SQLite with `OPEN_READONLY`, resolves a local `pmtiles://file://` URI, and injects Android browser behavior. `MainActivity` owns the separate application-scoped preferences adapter.
 
 ### `MainActivity`
 
@@ -184,8 +200,8 @@ Current dependency families:
 
 ## Tests
 
-- `shared/commonTest` covers geographic distance, filter summaries, and external-link encoding;
-- `desktopApp/jvmTest` covers dynamic metric SQL through JDBC;
+- `shared/commonTest` covers geography, filter summaries, external links, preference payloads, and restore semantics;
+- `desktopApp/jvmTest` covers dynamic metric SQL and preferences SQLite round trips;
 - Android compilation/host tests are separate Gradle tasks.
 
 See [`../docs/TESTS.md`](../docs/TESTS.md) for current commands and real-package acceptance checks.
@@ -196,4 +212,4 @@ See [`../docs/TESTS.md`](../docs/TESTS.md) for current commands and real-package
 - Desktop dataset chooser is functional but not yet a full dataset-manager UI;
 - numeric filters use text fields rather than metric-specific widgets;
 - map style is basic and lacks polished fully offline label/font/sprite packaging;
-- favorites/saved searches/comparison state are not persisted yet.
+- favorites, named saved searches, notes, and comparison state are not persisted yet.

@@ -108,6 +108,8 @@ flowchart TB
     MAPUI --> STYLE[Platform-resolved local style]
     UI --> LINKS[ExternalLinkOpener]
     LINKS --> BROWSER[Platform browser]
+    UI --> PREFS[UserPreferencesRepository]
+    PREFS --> PSTORE[Platform settings SQLite]
 ```
 
 `mobile/shared` owns:
@@ -117,6 +119,7 @@ flowchart TB
 - exact radius post-filtering;
 - deterministic filter descriptions;
 - result-to-GeoJSON conversion;
+- immutable user-preference/search-context contracts and restore validation;
 - shared responsive UI and map overlays.
 
 Platform hosts own:
@@ -126,7 +129,14 @@ Platform hosts own:
 - dataset ZIP installation/opening;
 - local PMTiles URI resolution;
 - browser intents/desktop browsing;
+- application-owned settings SQLite and storage paths;
 - platform lifecycle.
+
+## User-owned state boundary
+
+Generated dataset SQLite remains read-only analytical data. Mutable user search context is stored in a separate application-owned settings database through the shared `UserPreferencesRepository` contract.
+
+Persisted search state is dataset-scoped and references stable settlement/metric IDs. Restore occurs only after the matching dataset and metric catalog are available; removed metrics are ignored and an unavailable saved center clears the radius constraint. The settings schema has its own lifecycle and is not part of `geo-format`.
 
 ## Search semantics
 

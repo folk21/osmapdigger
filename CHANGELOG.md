@@ -11,5 +11,6 @@ All notable changes are documented here.
 
 ### Added
 
+- Local persistence and restart restoration for the current dataset-scoped center, radius, and dynamic filters on Desktop and Android.
 - Dataset management architecture documentation.
 - Desktop and Android platform documentation rules.

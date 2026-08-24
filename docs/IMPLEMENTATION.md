@@ -145,23 +145,29 @@ sequenceDiagram
     participant UI as OsmapDiggerApp
     participant S as SearchService
     participant R as GeoRepository
-    participant DB as Platform SQLite
+    participant DB as Dataset SQLite
+    participant P as UserPreferencesRepository
     participant M as MapPanel
 
     UI->>R: metricDefinitions()
     R->>DB: SELECT metric_definition
     DB-->>R: definitions
     R-->>UI: dynamic filters
+    UI->>P: load() after dataset/catalog availability
+    P-->>UI: dataset-scoped saved context
     UI->>S: SearchRequest
     S->>R: searchCandidates(...)
     R->>DB: metric EXISTS filters + bounds
     DB-->>R: candidate rows
     R-->>S: candidates
     S-->>UI: radius-filtered results
+    UI->>P: save(center, radius, metric conditions)
     UI->>M: results + selected settlement
 ```
 
 Desktop implements `GeoRepository` through Xerial SQLite JDBC. Android uses `android.database.sqlite.SQLiteDatabase`. Shared code therefore does not depend on a specific SQLite library.
+
+Mutable user state is separate from generated dataset SQLite. Shared `UserPreferencesRepository` and restore logic persist the current dataset ID, stable center ID, optional radius, and dynamic metric ranges. Desktop stores this in `~/.osmapdigger/settings/preferences.sqlite`; Android uses app-private `filesDir/settings/preferences.sqlite`. The settings schema and version lifecycle are independent from `geo-format`.
 
 ## Dynamic filter UI
 
@@ -222,6 +228,7 @@ Current security/privacy rules implemented by code or repository policy:
 - Android opens the generated database read-only;
 - Desktop requests read-only JDBC use after opening the connection;
 - raw PBF/generated artifacts are ignored by Git and shareable archive helpers;
+- user search-context preferences are stored locally in application-owned SQLite only;
 - no telemetry, cloud query history, remote inference, or account system exists;
 - external Google/Yandex searches occur only after an explicit button click and then leave the application.
 
@@ -263,7 +270,7 @@ These checks must be rerun on a configured development workstation before treati
 - Desktop can import/open generated packages but does not yet provide an integrated “select PBF and run Python builder” wizard.
 - Android imports prebuilt packages; it does not run Pyrosm/tilemaker locally.
 - Search result ranking is currently deterministic name/order + filters, not a scoring model.
-- User favorites, notes, saved searches, and comparisons are not persisted yet.
+- Favorites, notes, named saved searches, and comparisons are not persisted yet; only the current search context is restored.
 - Non-OSM environmental sources are not implemented yet.
 
 ## Main technology choices

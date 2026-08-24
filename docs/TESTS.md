@@ -77,7 +77,7 @@ make test-desktop
 make test-mobile
 ```
 
-Shared tests currently cover Haversine distance and deterministic filter-summary/property-link helpers. Desktop tests cover dynamic SQL filtering through the JDBC repository.
+Shared tests cover Haversine distance, deterministic filter-summary/property-link helpers, user-preference payload round trips, dataset scoping, removed metrics, and unavailable saved centers. Desktop tests cover dynamic SQL filtering plus settings SQLite missing-state, persistence round-trip, and malformed-filter behavior.
 
 ## Android compile validation
 
@@ -85,7 +85,7 @@ Shared tests currently cover Haversine distance and deterministic filter-summary
 make build-android
 ```
 
-This is currently the primary automated Android host check. Package import/map behavior should also be exercised on a device/emulator with a real generated package.
+This is currently the primary automated Android host check and compiles the app-private preferences adapter. Package import/map behavior and preference restoration should also be exercised on a device/emulator with a real generated package.
 
 ## Full configured check
 

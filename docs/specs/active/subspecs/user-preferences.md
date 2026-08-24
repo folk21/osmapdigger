@@ -10,7 +10,7 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Active implementation sub-spec.
+Active implementation sub-spec — implementation added; configured Gradle/device validation remains pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
@@ -40,12 +40,9 @@ criteria of the original initial vertical slice.
 
 ## Current state
 
-Search state currently lives in Compose UI state and is lost when the application process exits.
-Generated dataset SQLite databases are read-only analytical artifacts and must not be used for
-user-owned mutable state.
+The implementation now provides a shared immutable preferences contract, versioned dynamic-filter payload, dataset-aware restore validation, Desktop settings SQLite, Android app-private settings SQLite, and shared Compose startup/save wiring. Generated dataset SQLite remains read-only and separate.
 
-Desktop already has an application storage root under `~/.osmapdigger/`. Android uses app-private
-storage for installed runtime data. No shared user-preferences persistence contract currently exists.
+The sub-spec remains active until configured Gradle tests/builds and Android runtime restoration are validated on the normal development toolchain.
 
 ## Requirements
 
@@ -182,6 +179,8 @@ Acceptance requires:
 
 ## Implementation tasks
 
+Implemented in this increment:
+
 1. Add immutable shared preference/search-context models.
 2. Add a small shared `UserPreferencesRepository` contract.
 3. Define the versioned dynamic-filter persistence representation.
@@ -189,5 +188,6 @@ Acceptance requires:
 5. Restore state after the matching dataset and metric definitions are available.
 6. Persist relevant search-context changes through application state rather than directly from UI controls.
 7. Implement the Android app-private adapter using the same shared contract.
-8. Add focused shared/Desktop/Android tests.
-9. Update owning implementation documentation after acceptance and archive this sub-spec.
+8. Add focused shared and Desktop tests; Android adapter compilation/device validation remains part of acceptance.
+
+After configured validation succeeds, update any final validation notes, archive this sub-spec, and select the next implementation focus under the umbrella specification.

@@ -139,6 +139,8 @@ Imported ZIPs are installed under `~/.osmapdigger/datasets/`.
 
 An empty visible filter row has no effect until at least one bound is supplied.
 
+The current dataset-scoped center, radius, and dynamic filter rows/ranges are saved locally and restored on the next launch when the same dataset is opened. State from a different dataset is not applied.
+
 ## Android package workflow
 
 1. Build a full `.omd.zip` on a workstation.
