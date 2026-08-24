@@ -310,7 +310,7 @@ logic duplicated across Gradle scripts.
 
 ## Desktop UI and external services
 
-Desktop search UX details are maintained in [`IMPLEMENTATION/DESKTOP_UI.md`](IMPLEMENTATION/DESKTOP_UI.md).
+Desktop search UX details are maintained in [`IMPLEMENTATION/DESKTOP_UI.md`](implementation/DESKTOP_UI.md).
 
 External integrations such as property search providers are described in
-[`IMPLEMENTATION/EXTERNAL_SERVICES.md`](IMPLEMENTATION/EXTERNAL_SERVICES.md).
+[`IMPLEMENTATION/EXTERNAL_SERVICES.md`](implementation/EXTERNAL_SERVICES.md).

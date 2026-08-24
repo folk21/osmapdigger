@@ -109,6 +109,6 @@ make build-andorra-data
 See [`docs/TESTS.md`](docs/TESTS.md).
 
 
-## Project history
+## Documentation update policy
 
-`CHANGELOG.md` is a source of truth for important project changes.
+Do not add small fixes or local refactorings that do not change behavior or architecture to CHANGELOG or other documentation. Documentation updates are intended for meaningful feature changes, architectural decisions, user-visible behavior changes, or important implementation changes.

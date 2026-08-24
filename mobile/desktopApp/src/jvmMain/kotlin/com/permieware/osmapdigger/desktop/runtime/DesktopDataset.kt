@@ -92,6 +92,27 @@ class DesktopDataset private constructor(
                 connection = connection,
             )
         }
+
+        /**
+         * Install an .omd.zip package and open it.
+         *
+         * Generated packages are immutable input artifacts. Installed datasets are stored
+         * separately under the user's OsmapDigger directory.
+         */
+        fun installAndOpen(packageFile: Path): DesktopDataset {
+            require(Files.exists(packageFile)) { "Dataset package not found: $packageFile" }
+
+            val installRoot =
+                Paths.get(System.getProperty("user.home"), ".osmapdigger", "datasets")
+            Files.createDirectories(installRoot)
+
+            val name = packageFile.fileName.toString().removeSuffix(".omd.zip")
+            val target = installRoot.resolve(name)
+
+            DesktopDatasetChooser.installZip(packageFile, target)
+
+            return open(target)
+        }
     }
 }
 
@@ -132,7 +153,7 @@ object DesktopDatasetChooser {
      * The normalized path check is a security boundary and must not be removed when
      * changing package import behavior.
      */
-    private fun installZip(source: Path, target: Path) {
+    internal fun installZip(source: Path, target: Path) {
         if (Files.exists(target)) {
             target.toFile().deleteRecursively()
         }

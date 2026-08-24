@@ -9,15 +9,54 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.permieware.osmapdigger.desktop.runtime.DesktopDataset
 import com.permieware.osmapdigger.desktop.runtime.DesktopDatasetChooser
+import com.permieware.osmapdigger.desktop.runtime.DesktopConfigLoader
 import com.permieware.osmapdigger.ui.OsmapDiggerApp
 import java.nio.file.Paths
+
+
+/**
+ * Loads the default Desktop dataset from configuration.
+ *
+ * Startup order:
+ * 1. explicit OSMAPDIGGER_DATASET_DIR for development;
+ * 2. config/desktop-config.json portable package;
+ * 3. no dataset.
+ */
+private fun loadConfiguredDataset(): DesktopDataset? {
+    System.getenv("OSMAPDIGGER_DATASET_DIR")
+        ?.takeIf { it.isNotBlank() }
+        ?.let { path ->
+            return runCatching { DesktopDataset.open(Paths.get(path)) }.getOrNull()
+        }
+
+    val config =
+        DesktopConfigLoader.load()
+            ?: return null
+
+    val packagePath = DesktopConfigLoader.resolvePackage(config)
+
+    println("Dataset package resolved: $packagePath")
+    println("Dataset package absolute: ${packagePath.toAbsolutePath()}")
+    println("Dataset package exists: ${java.nio.file.Files.exists(packagePath)}")
+
+    return runCatching {
+        println("Starting dataset installation")
+
+        val dataset = DesktopDataset.installAndOpen(packagePath)
+
+        println("Dataset installation completed")
+
+        dataset
+    }.onFailure {
+        println("Dataset installation failed: ${it.message}")
+        it.printStackTrace()
+    }.getOrNull()
+}
 
 /** Desktop development/product host. */
 fun main() {
     val configured =
-        System.getenv("OSMAPDIGGER_DATASET_DIR")
-            ?.takeIf { it.isNotBlank() }
-            ?.let { runCatching { DesktopDataset.open(Paths.get(it)) }.getOrNull() }
+        loadConfiguredDataset()
 
     application {
         val datasetState = remember { mutableStateOf(configured) }
