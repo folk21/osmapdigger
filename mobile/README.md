@@ -1,3 +1,8 @@
+---
+type: Module Overview
+title: OsmapDigger mobile/runtime
+description: Entry point for shared KMP domain/UI code and Android/Desktop runtime hosts.
+---
 # OsmapDigger mobile/runtime
 
 `mobile/` contains the Kotlin Multiplatform runtime: shared domain/search/UI plus Android and JVM Desktop hosts.

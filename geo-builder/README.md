@@ -1,3 +1,8 @@
+---
+type: Module Overview
+title: OsmapDigger Geo Builder
+description: Entry point for the build-time Python geospatial processing subsystem.
+---
 # OsmapDigger Geo Builder
 
 `geo-builder/` is the build-time Python application that turns a local OSM PBF into runtime artifacts consumed by OsmapDigger. It is never part of normal Android/Desktop search execution.

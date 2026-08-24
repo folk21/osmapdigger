@@ -1,10 +1,17 @@
+---
+type: Roadmap
+title: Roadmap
+description: Compact product roadmap and current implementation focus.
+---
 # Roadmap
 
 This roadmap stays intentionally compact. Detailed requirements for significant active work belong in [`specs/`](specs/README.md).
 
 ## P0 — accept the initial functional vertical slice
 
-Active spec: [`specs/active/initial-functional-product.md`](specs/active/initial-functional-product.md).
+Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
+
+Current implementation focus: [`specs/active/subspecs/user-preferences.md`](specs/active/subspecs/user-preferences.md).
 
 Acceptance requires a configured workstation to demonstrate:
 
@@ -34,15 +41,11 @@ Acceptance requires a configured workstation to demonstrate:
 
 ## P1 — user workflow
 
-- persist the current dataset, center settlement, radius, and dynamic filters across restart;
 - favorites;
 - notes;
-- named saved filters/searches;
+- saved filters/searches;
 - comparison of multiple settlements;
 - share/export search parameters and settlement summaries.
-
-Planned architecture for the first item is captured in
-[`specs/planned/user-preferences.md`](specs/planned/user-preferences.md).
 
 ## P2 — additional data sources
 

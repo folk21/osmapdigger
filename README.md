@@ -1,3 +1,8 @@
+---
+type: Project Overview
+title: OsmapDigger
+description: Entry point for the offline-first geospatial analysis project, its structure, workflows, and documentation.
+---
 # OsmapDigger
 
 OsmapDigger is an offline-first geographic analysis application for discovering, comparing, and inspecting settlements and locations with transparent numeric filters.
@@ -36,7 +41,7 @@ Commands below run from the repository root unless noted otherwise.
 
 | Goal | Read / run |
 |---|---|
-| Understand product requirements and the active initial scope | [`docs/specs/README.md`](docs/specs/README.md), [`docs/specs/active/initial-functional-product.md`](docs/specs/active/initial-functional-product.md) |
+| Understand product requirements and the active initial scope | [`docs/specs/README.md`](docs/specs/README.md), [`docs/specs/active/spec-initial-functional-product.md`](docs/specs/active/spec-initial-functional-product.md) |
 | Understand stable system boundaries | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | Understand current classes, files, data contracts, security boundaries, and known limitations | [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) |
 | Set up Python, JDK, Android, and map tooling | [`docs/INSTALLATION.md`](docs/INSTALLATION.md) |

@@ -1,3 +1,8 @@
+---
+type: Implementation
+title: External services integration
+description: Offline-first boundary and configuration model for optional external helper services.
+---
 # External services integration
 
 ## Purpose

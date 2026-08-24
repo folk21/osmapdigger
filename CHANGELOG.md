@@ -1,3 +1,8 @@
+---
+type: Changelog
+title: OsmapDigger changelog
+description: Notable project changes organized by release state.
+---
 # Changelog
 
 All notable changes are documented here.

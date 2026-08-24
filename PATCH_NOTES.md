@@ -1,3 +1,8 @@
+---
+type: Patch Notes
+title: Desktop config and search persistence patch notes
+description: Historical notes for the Desktop configuration and persistence-related patch.
+---
 # Desktop config and search persistence patch
 
 Implemented direction:

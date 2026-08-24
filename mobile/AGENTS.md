@@ -1,3 +1,8 @@
+---
+type: Development Guide
+title: Mobile/runtime development rules
+description: Kotlin Multiplatform runtime boundaries, search invariants, platform ownership, testing, and documentation rules.
+---
 # Mobile/runtime development rules
 
 Root [`../AGENTS.md`](../AGENTS.md) applies. Read [`README.md`](README.md), [`IMPLEMENTATION.md`](IMPLEMENTATION.md), and the active spec before changing runtime contracts.

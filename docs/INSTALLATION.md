@@ -1,3 +1,8 @@
+---
+type: Installation Guide
+title: Installation
+description: Developer-machine setup for builder, Desktop, Android, and map tooling.
+---
 # Installation
 
 ## Scope

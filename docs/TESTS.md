@@ -1,3 +1,8 @@
+---
+type: Test Guide
+title: Tests and validation
+description: Deterministic test strategy, integration checks, and acceptance validation commands.
+---
 # Tests and validation
 
 ## Testing principles
@@ -102,7 +107,7 @@ An incompatible format change must not be accepted solely because the Python wri
 
 ## Active-spec acceptance
 
-Requirements and scenarios in [`specs/active/initial-functional-product.md`](specs/active/initial-functional-product.md) are the acceptance source for the current initial product slice. Once accepted, stable validation knowledge belongs here and the spec moves to archive.
+Requirements and scenarios in [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md) are the acceptance source for the current initial product slice. Once accepted, stable validation knowledge belongs here and the spec moves to archive.
 
 ## Current environment limitations inherited from generation
 

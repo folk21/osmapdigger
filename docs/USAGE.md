@@ -1,3 +1,8 @@
+---
+type: Usage Guide
+title: Usage
+description: Operational commands and runtime workflows for building, validating, and using datasets.
+---
 # Usage
 
 ## Command ownership

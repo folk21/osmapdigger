@@ -1,3 +1,8 @@
+---
+type: Module Overview
+title: OsmapDigger geo format
+description: Entry point for the versioned persisted contract shared by builders and runtime readers.
+---
 # OsmapDigger geo format
 
 `geo-format/` defines the versioned persisted compatibility contract between the Python Geo Builder and Android/Desktop runtime readers.

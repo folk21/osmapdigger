@@ -1,3 +1,8 @@
+---
+type: Implementation
+title: Geo format implementation
+description: Current persisted SQLite and metadata compatibility contract and its readers and writers.
+---
 # Geo format implementation
 
 ## Scope

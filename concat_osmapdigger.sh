@@ -54,7 +54,7 @@ if ! grep -Fq "$required_source" "$output_path"; then
   exit 2
 fi
 
-required_spec="docs/specs/active/initial-functional-product.md"
+required_spec="docs/specs/active/spec-initial-functional-product.md"
 if ! grep -Fq "$required_spec" "$output_path"; then
   rm -f "$output_path"
   echo "Snapshot validation failed: active spec is missing: $required_spec" >&2

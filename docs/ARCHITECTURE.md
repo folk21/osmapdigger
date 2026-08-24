@@ -1,10 +1,15 @@
+---
+type: Architecture
+title: OsmapDigger architecture
+description: Stable system boundaries, responsibilities, data flows, and dependency directions.
+---
 # OsmapDigger architecture
 
 ## Purpose
 
 This document owns the stable system boundaries: what each subsystem is responsible for, which data crosses boundaries, and which concerns must remain independent. Concrete filenames, class names, current library versions, validation status, and known implementation limitations belong in [`IMPLEMENTATION.md`](IMPLEMENTATION.md) or local subproject implementation guides.
 
-The active initial product requirements are in [`specs/active/initial-functional-product.md`](specs/active/initial-functional-product.md).
+The active initial product requirements are in [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
 ## Core architectural decision
 

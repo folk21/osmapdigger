@@ -1,3 +1,8 @@
+---
+type: Implementation
+title: Dataset management
+description: Current dataset lifecycle ownership and Desktop/Android platform differences.
+---
 # Dataset management
 
 This document describes dataset lifecycle and Desktop/Android differences.

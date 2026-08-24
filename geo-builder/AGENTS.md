@@ -1,3 +1,8 @@
+---
+type: Development Guide
+title: Geo Builder development rules
+description: Geo Builder-specific architecture, configuration, publication, testing, and documentation rules.
+---
 # Geo Builder development rules
 
 Root [`../AGENTS.md`](../AGENTS.md) applies. Read [`README.md`](README.md), [`IMPLEMENTATION.md`](IMPLEMENTATION.md), and the active spec before changing cross-stage behavior.

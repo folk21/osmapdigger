@@ -1,3 +1,11 @@
+---
+type: Specification
+title: OsmapDigger initial functional product specification
+description: Active umbrella specification for the initial country-agnostic offline product and dataset pipeline.
+document_role: umbrella
+spec_status: active
+current_focus: subspecs/user-preferences.md
+---
 # OsmapDigger initial functional product specification
 
 ## Status
@@ -7,6 +15,15 @@ Active specification — implementation in progress / acceptance pending.
 This spec captures the initial product slice discussed before code generation. Much of the implementation now exists, but the spec remains active until real PBF, PMTiles, Desktop, and Android end-to-end validation is completed on a configured workstation.
 
 After acceptance, move stable behavior into owning implementation/architecture docs as needed and archive this spec.
+
+## Active implementation focus
+
+Current implementation sub-spec:
+
+- [`subspecs/user-preferences.md`](subspecs/user-preferences.md) — persist and restore the current dataset-scoped search context.
+
+This document remains the active umbrella specification. The linked sub-spec refines one bounded
+implementation increment and does not replace or supersede the umbrella requirements.
 
 ## Goal
 

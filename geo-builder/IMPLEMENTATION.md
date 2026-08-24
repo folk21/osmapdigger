@@ -1,3 +1,8 @@
+---
+type: Implementation
+title: Geo Builder implementation
+description: Current Python geospatial builder modules, contracts, processing stages, and extension points.
+---
 # Geo Builder implementation
 
 ## Scope

@@ -1,3 +1,8 @@
+---
+type: Implementation
+title: OsmapDigger implementation guide
+description: Current cross-project implementation map, persisted semantics, security boundaries, and limitations.
+---
 # OsmapDigger implementation guide
 
 ## Purpose and ownership
@@ -5,7 +10,7 @@
 This document maps the stable architecture in [`ARCHITECTURE.md`](ARCHITECTURE.md) to the **current repository implementation**. It also owns cross-project persisted-format semantics, package-security/privacy behavior, current validation status, and known implementation limitations that would otherwise be scattered across small standalone documents.
 
 - [`ARCHITECTURE.md`](ARCHITECTURE.md) owns stable boundaries.
-- [`specs/active/initial-functional-product.md`](specs/active/initial-functional-product.md) owns the currently active initial-product acceptance requirements.
+- [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md) owns the currently active initial-product acceptance requirements.
 - This document owns current cross-project realization.
 - [`../geo-builder/IMPLEMENTATION.md`](../geo-builder/IMPLEMENTATION.md), [`../mobile/IMPLEMENTATION.md`](../mobile/IMPLEMENTATION.md), and [`../geo-format/IMPLEMENTATION.md`](../geo-format/IMPLEMENTATION.md) own subproject-level details.
 

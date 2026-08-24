@@ -1,3 +1,8 @@
+---
+type: Implementation
+title: Desktop UI implementation
+description: Current Desktop search workflow, filter UI, settlement details presentation, and limitations.
+---
 # Desktop UI implementation
 
 ## Goal

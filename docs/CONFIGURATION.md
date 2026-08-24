@@ -1,3 +1,8 @@
+---
+type: Configuration Guide
+title: Configuration
+description: Ownership and semantics of dataset and metric configuration.
+---
 # Configuration
 
 ## Ownership

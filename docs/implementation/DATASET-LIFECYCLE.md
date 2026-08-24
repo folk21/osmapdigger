@@ -1,3 +1,8 @@
+---
+type: Implementation
+title: Dataset loading diagnostics
+description: Current Desktop dataset loading lifecycle and diagnostic expectations.
+---
 # Dataset loading diagnostics
 
 Desktop startup logs the complete dataset loading lifecycle:

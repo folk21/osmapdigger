@@ -1,3 +1,8 @@
+---
+type: Development Guide
+title: OsmapDigger repository development rules
+description: Repository-wide rules for architecture, implementation, documentation, testing, and artifact hygiene.
+---
 # OsmapDigger repository development rules
 
 OsmapDigger is an offline-first KMP + Python GIS project. Read this file first, then read the nearest subproject `AGENTS.md` before changing `mobile/`, `geo-builder/`, or `geo-format/`.
@@ -85,6 +90,20 @@ All generated software code, comments, KDoc/docstrings, tests, configuration com
 Use Mermaid for architectural/process/sequence diagrams. Do not add ASCII-art flow diagrams.
 
 Documentation should be concise but sufficient for a future contributor or LLM to reconstruct ownership, call paths, invariants, and validation expectations without relying on chat history.
+
+### OKF document metadata
+
+Project Markdown documentation uses an Open Knowledge Format (OKF)-compatible YAML frontmatter profile so document purpose and specification relationships are machine-readable without loading the whole document.
+
+Keep the profile minimal:
+
+- every managed Markdown document uses `type`, `title`, and `description`;
+- specification workflow/relationship fields are defined in `docs/specs/README.md`;
+- do not add timestamps, provenance, tags, dependency lists, or other metadata unless they have a concrete current use;
+- frontmatter must summarize document identity/relationships, not duplicate substantive documentation;
+- preserve valid YAML frontmatter when editing or moving documentation.
+
+`docs/specs/README.md` owns the project-specific specification metadata convention.
 
 ## Testing
 

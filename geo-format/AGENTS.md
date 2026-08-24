@@ -1,3 +1,8 @@
+---
+type: Development Guide
+title: Geo format development rules
+description: Compatibility, schema-versioning, validation, and documentation rules for persisted dataset formats.
+---
 # Geo format development rules
 
 Root [`../AGENTS.md`](../AGENTS.md) applies. Read [`README.md`](README.md) and [`IMPLEMENTATION.md`](IMPLEMENTATION.md) before changing persisted semantics.

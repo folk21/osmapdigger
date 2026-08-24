@@ -1,43 +1,82 @@
+---
+type: Specification Guide
+title: Change specifications
+description: Specification hierarchy, lifecycle, and OKF-compatible metadata conventions.
+---
 # Change specifications
 
-`docs/specs/` contains specifications for significant planned or in-progress changes to OsmapDigger. A spec defines the intended delta/acceptance target before that work is considered complete; it is **not** canonical documentation of what the repository already does.
+`docs/specs/` contains specifications for significant planned or in-progress changes to OsmapDigger. A specification defines the intended delta/acceptance target before that work is considered complete; it is **not** canonical documentation of what the repository already does.
 
 Current product and implementation truth remains in owning documents such as [`../ARCHITECTURE.md`](../ARCHITECTURE.md), [`../IMPLEMENTATION.md`](../IMPLEMENTATION.md), [`../CONFIGURATION.md`](../CONFIGURATION.md), [`../USAGE.md`](../USAGE.md), plus subproject `IMPLEMENTATION.md` files.
 
-## When to create a spec
+## Specification hierarchy
 
-Create an active spec when a change:
+The active specification tree uses a deliberately small two-level structure:
 
-- is cross-cutting across Python/format/runtime;
-- changes a persisted/public compatibility contract;
+```text
+active/
+    spec-<umbrella>.md
+    subspecs/
+        <current-focus>.md
+```
+
+- `spec-*.md` is an active umbrella specification that owns the broader product or architectural target.
+- `subspecs/*.md` refines one bounded implementation increment under the umbrella.
+- At most one sub-spec is the current implementation focus at a time.
+- The umbrella links to the current sub-spec, and the sub-spec links back to its parent.
+- Completing a sub-spec does not imply that its umbrella specification is complete.
+
+This hierarchy is intentionally shallow. Do not create deeper specification trees unless a real product need makes the two-level model insufficient.
+
+## When to create a sub-spec
+
+Create a sub-spec when an implementation increment:
+
 - introduces a substantial product capability;
-- is large enough that requirements and validation must survive across multiple coding sessions.
+- changes an application-owned persisted contract or important runtime boundary;
+- spans multiple implementation sessions;
+- benefits from stable requirements and acceptance scenarios without expanding the umbrella specification with implementation detail.
 
-Small bug fixes, local refactors, narrow documentation improvements, and routine dependency maintenance do not require a separate spec.
+Small bug fixes, local refactors, narrow documentation improvements, and routine dependency maintenance do not require a sub-spec.
 
 ## Lifecycle
 
-Only one implementation specification should be active at a time. A significant follow-up that is
-already architecturally useful but not yet being implemented may live under `docs/specs/planned/`.
-Planned documents define direction and constraints but do not override the current active spec.
-
-1. Draft future significant work under `docs/specs/planned/` when useful for sequencing or architecture.
-2. Move the selected change to `docs/specs/active/<change>.md` before or at the start of implementation.
-3. Define status, goal, current state, stable requirements, scenarios, non-goals, design constraints, compatibility/migration concerns, validation, and implementation tasks.
-4. Give important requirements stable IDs such as `R1` so tests/reviews can refer to them.
+1. Keep the active umbrella specification under `docs/specs/active/spec-*.md`.
+2. Put the current bounded implementation focus under `docs/specs/active/subspecs/`.
+3. Record the parent/current-focus relationship in both YAML frontmatter and Markdown links.
+4. Give important sub-spec requirements stable IDs so tests and reviews can refer to them.
 5. Implement while preserving root/local `AGENTS.md` invariants.
-6. After acceptance, update owning current-state documentation with the stable result.
-7. Move the completed spec to `docs/specs/archive/`.
+6. After sub-spec acceptance, move stable knowledge into the owning current-state documentation.
+7. Move the completed sub-spec to `docs/specs/archive/subspecs/`.
+8. Keep the umbrella active until its own acceptance target is complete; then archive it separately.
 
-Archived specs preserve historical design intent but are not current source of truth. `concat_osmapdigger.sh` excludes archived specs so routine LLM context contains current code/docs plus active intended work.
+Archived specifications preserve historical design intent but are not current source of truth. `concat_osmapdigger.sh` excludes archived specs so routine LLM context contains current code/docs plus active intended work.
 
-## Suggested spec structure
+## Document metadata
+
+OsmapDigger documentation uses an Open Knowledge Format (OKF)-compatible YAML frontmatter profile. The project intentionally starts with a minimal subset:
+
+- `type` — document kind;
+- `title` — concise human-readable title;
+- `description` — one sentence that helps humans and LLMs decide whether the document is relevant.
+
+Specification files additionally use only the relationship/workflow fields that are currently needed:
+
+- `document_role` — `umbrella` or `subspec`;
+- `spec_status` — project workflow state such as `active`;
+- `parent` — parent umbrella path for a sub-spec;
+- `current_focus` — current sub-spec path for an umbrella.
+
+These additional fields are OsmapDigger extensions. Do not add metadata that merely duplicates the Markdown body or Git history. Extend the profile only when a field has a concrete navigation, validation, or maintenance use.
+
+## Suggested sub-spec structure
 
 ```text
 # <Change name>
 
 ## Status
 ## Goal
+## Relationship to the umbrella specification
 ## Current state
 ## Requirements
 ## Scenarios
@@ -48,10 +87,12 @@ Archived specs preserve historical design intent but are not current source of t
 ## Implementation tasks
 ```
 
-## Active specs
+## Active specifications
 
-- [`active/initial-functional-product.md`](active/initial-functional-product.md) — initial country-agnostic offline dataset builder + KMP Desktop/Android search/map vertical slice; implementation exists but requires full real-toolchain acceptance before the spec can be archived.
+Umbrella:
 
-## Planned specs
+- [`active/spec-initial-functional-product.md`](active/spec-initial-functional-product.md) — initial country-agnostic offline dataset builder + KMP Desktop/Android product umbrella.
 
-- [`planned/user-preferences.md`](planned/user-preferences.md) — local persistence of dataset-scoped search context across Desktop and Android; planned follow-up, not yet active.
+Current implementation focus:
+
+- [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — local persistence and restoration of the dataset-scoped search context.
