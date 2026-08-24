@@ -11,6 +11,8 @@ All notable changes are documented here.
 
 ### Added
 
+- Native offline PMTiles map rendering on supported Desktop hosts with a non-fatal fallback elsewhere.
+- Experimental offline Intel macOS map rendering through JCEF, packaged MapLibre GL JS, and a loopback-only local PMTiles adapter.
 - Local persistence and restart restoration for the current dataset-scoped center, radius, and dynamic filters on Desktop and Android.
 - Dataset management architecture documentation.
 - Desktop and Android platform documentation rules.

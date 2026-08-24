@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.permieware.osmapdigger.desktop.map.IntelMacWebMapSurface
 import com.permieware.osmapdigger.desktop.preferences.SqliteUserPreferencesRepository
 import com.permieware.osmapdigger.desktop.runtime.DesktopDataset
 import com.permieware.osmapdigger.desktop.runtime.DesktopDatasetChooser
@@ -62,11 +63,13 @@ fun main() {
     application {
         val datasetState = remember { mutableStateOf(configured) }
         val userPreferences = remember { SqliteUserPreferencesRepository.createDefault() }
+        val platformMapSurface = remember { IntelMacWebMapSurface.createIfSupported() }
 
         // The effect belongs to the application lifetime, not to a particular dataset.
         // When the application is disposed, close whichever dataset is active at that time.
         DisposableEffect(Unit) {
             onDispose {
+                platformMapSurface?.close()
                 datasetState.value?.close()
             }
         }
@@ -79,6 +82,7 @@ fun main() {
             OsmapDiggerApp(
                 runtime = datasetState.value?.runtime,
                 userPreferences = userPreferences,
+                platformMapSurface = platformMapSurface,
                 onImportDataset = {
                     DesktopDatasetChooser.chooseAndOpen()?.let { opened ->
                         val previous = datasetState.value

@@ -158,6 +158,12 @@ Stores the current search context at `~/.osmapdigger/settings/preferences.sqlite
 
 `DesktopDatasetChooser` can open a package directory or securely extract a ZIP into `~/.osmapdigger/datasets/`. Normalized entries must stay under the destination root.
 
+### Desktop MapLibre runtime
+
+`shared/src/desktopMain/.../MapPanel.desktop.kt` is the default Desktop `actual` map surface. It renders the local package style, result/selection GeoJSON overlays, camera focus, and attribution on MapLibre Compose native hosts, and otherwise provides the non-fatal fallback. Shared UI can accept a small `PlatformMapSurface` override from the Desktop application host.
+
+`desktopApp/build.gradle.kts` owns the platform-native runtime selection for macOS Apple Silicon Metal, Linux x86-64 OpenGL, and Windows x86-64 OpenGL. Intel macOS receives no incompatible MapLibre JNI runtime; instead `desktopApp/.../map/IntelMacWebMapSurface.kt` owns an experimental JCEF + MapLibre GL JS renderer. `LocalWebMapServer` binds to loopback only, serves packaged browser assets, converts local PMTiles reads into XYZ vector-tile responses, and keeps browser/native lifecycle outside shared code.
+
 ### `Main.kt`
 
 Uses `OSMAPDIGGER_DATASET_DIR` when set; otherwise starts with no dataset. It owns closing/replacing Desktop dataset resources.
@@ -201,6 +207,7 @@ Current dependency families:
 ## Tests
 
 - `shared/commonTest` covers geography, filter summaries, external links, preference payloads, and restore semantics;
+- `shared/desktopTest` covers Desktop MapLibre host capability resolution;
 - `desktopApp/jvmTest` covers dynamic metric SQL and preferences SQLite round trips;
 - Android compilation/host tests are separate Gradle tasks.
 

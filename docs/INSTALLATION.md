@@ -139,7 +139,7 @@ export OSMAPDIGGER_CONCAT_TOOL=/path/to/concat_files_to_txt.py
 
 ## Desktop map compatibility
 
-The Desktop application can run on Intel macOS, but MapLibre Compose 0.13.x has no native `macos-amd64` JNI runtime. On Intel macOS the application therefore starts with the map panel disabled while SQLite search, filters, result lists, settlement details, and external links remain functional. Android and supported Desktop hosts use the native MapLibre map.
+The Desktop application renders MapLibre natively on the host capabilities currently supported by OsmapDigger: macOS Apple Silicon (Metal), Linux x86-64 (OpenGL), and Windows x86-64 (OpenGL). The Gradle host selects exactly one matching native runtime.
 
-No local installation can add the missing Intel macOS MapLibre artifact; this is an upstream platform-support limitation rather than a JDK or Gradle configuration issue.
+MapLibre Compose 0.13.x does not publish a `macos-amd64` JNI runtime. Intel macOS therefore uses the experimental Desktop web renderer packaged with the application: JCEF renders MapLibre GL JS, while PMTiles stays local and is served through a loopback-only JVM adapter. The first Gradle build must resolve these packaged dependencies; normal map use does not require a remote tile service or CDN. If the renderer cannot initialize, search, filters, details, preferences, and external links remain available through the analytical fallback.
 

@@ -11,7 +11,7 @@ This roadmap stays intentionally compact. Detailed requirements for significant 
 
 Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
-Current implementation focus: [`specs/active/subspecs/user-preferences.md`](specs/active/subspecs/user-preferences.md).
+Current implementation focus: [`specs/active/subspecs/desktop-map.md`](specs/active/subspecs/desktop-map.md).
 
 Acceptance requires a configured workstation to demonstrate:
 

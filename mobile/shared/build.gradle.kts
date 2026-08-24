@@ -36,6 +36,7 @@ kotlin {
     sourceSets {
         val commonMain = getByName("commonMain")
         val androidMain = getByName("androidMain")
+        val desktopMain = getByName("desktopMain")
         val commonTest = getByName("commonTest")
 
         commonMain.dependencies {
@@ -48,9 +49,13 @@ kotlin {
             implementation(libs.kotlinx.serialization.json)
         }
 
-        // MapLibre is currently part of the Android runtime only.
-        // Desktop deliberately uses the fallback MapPanel implementation from desktopMain.
         androidMain.dependencies {
+            implementation(libs.maplibre.compose)
+        }
+
+        // Desktop compiles against the common MapLibre Compose API. The application host owns
+        // selection of the platform-specific native runtime capability.
+        desktopMain.dependencies {
             implementation(libs.maplibre.compose)
         }
 

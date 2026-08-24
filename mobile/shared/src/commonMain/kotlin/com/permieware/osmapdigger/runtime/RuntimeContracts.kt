@@ -23,6 +23,7 @@ interface GeoRepository {
 /** Platform-resolved local map assets. */
 data class MapPackage(
     val styleJson: String?,
+    val localMapUri: String? = null,
 )
 
 /** Runtime dependencies injected by the platform host. */

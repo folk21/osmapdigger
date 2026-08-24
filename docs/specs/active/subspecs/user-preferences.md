@@ -1,21 +1,22 @@
 ---
 type: Specification
 title: User preferences persistence
-description: Active sub-spec for local persistence and restoration of the dataset-scoped search context.
+description: Sub-spec for local persistence and restoration of the dataset-scoped search context.
 document_role: subspec
-spec_status: active
+spec_status: verification-pending
 parent: ../spec-initial-functional-product.md
 ---
 # User preferences persistence
 
 ## Status
 
-Active implementation sub-spec — implementation added; configured Gradle/device validation remains pending.
+Implementation complete; remaining cross-platform validation is tracked as verification pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-This sub-spec is the current implementation focus under the active initial-product umbrella. It
-refines persistence of the current search context and does not supersede the parent specification.
+The implementation is no longer the current coding focus. Desktop persistence and restore behavior
+have been exercised successfully; Android runtime validation remains pending before archival. This
+sub-spec continues to document that bounded change until its remaining validation is complete.
 
 ## Goal
 

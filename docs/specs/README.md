@@ -95,4 +95,4 @@ Umbrella:
 
 Current implementation focus:
 
-- [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — local persistence and restoration of the dataset-scoped search context.
+- [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — offline MapLibre rendering and search overlays on supported Desktop hosts.

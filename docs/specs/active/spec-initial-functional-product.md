@@ -4,7 +4,7 @@ title: OsmapDigger initial functional product specification
 description: Active umbrella specification for the initial country-agnostic offline product and dataset pipeline.
 document_role: umbrella
 spec_status: active
-current_focus: subspecs/user-preferences.md
+current_focus: subspecs/desktop-map.md
 ---
 # OsmapDigger initial functional product specification
 
@@ -20,7 +20,7 @@ After acceptance, move stable behavior into owning implementation/architecture d
 
 Current implementation sub-spec:
 
-- [`subspecs/user-preferences.md`](subspecs/user-preferences.md) — persist and restore the current dataset-scoped search context.
+- [`subspecs/desktop-map.md`](subspecs/desktop-map.md) — render the installed offline map and search overlays on supported Desktop hosts.
 
 This document remains the active umbrella specification. The linked sub-spec refines one bounded
 implementation increment and does not replace or supersede the umbrella requirements.

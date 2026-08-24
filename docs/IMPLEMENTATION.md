@@ -296,28 +296,25 @@ Versions are centralized in the owning configuration files rather than repeated 
 
 ## Desktop map runtime compatibility
 
-Map rendering is a platform implementation rather than a hard runtime requirement of the shared search UI. Android always uses the MapLibre implementation. Desktop selects its map implementation at Gradle configuration time:
+Map rendering is a platform implementation rather than a hard runtime requirement of the shared search UI. Android uses its MapLibre implementation. Desktop compiles the MapLibre `desktopMain` surface and the `desktopApp` host selects one native JNI capability when the current OS/architecture is supported:
 
-- macOS Apple Silicon (`aarch64`) -> MapLibre Metal JNI;
+- macOS Apple Silicon (`aarch64`/`arm64`) -> MapLibre Metal JNI;
 - Linux x86-64 -> MapLibre OpenGL JNI;
 - Windows x86-64 -> MapLibre OpenGL JNI;
-- unsupported hosts, including Intel macOS -> non-fatal map fallback.
+- Intel macOS (`x86_64`/`amd64`) -> JCEF + packaged MapLibre GL JS with a loopback-only PMTiles tile adapter;
+- other unsupported hosts -> non-fatal map fallback.
 
-This split is deliberate. MapLibre Compose 0.13.x does not publish a `macos-amd64` JNI capability. An unsupported map renderer must not prevent the local SQLite search and filter workflows from starting. `MapPanel` is therefore declared in `commonMain` as an `expect` composable and supplied by either `desktopMapLibreMain`, `desktopFallbackMain`, or Android.
+MapLibre Compose 0.13.x does not publish a `macos-amd64` capability. Intel macOS therefore uses a separate Desktop-host renderer instead of resolving an incompatible JNI library. If that renderer cannot initialize, analytical workflows continue through the non-fatal fallback.
 
 ## Desktop map implementation boundary
 
-The initial Desktop JVM target intentionally does not depend on MapLibre Compose native
-bindings. `shared/src/desktopMain/.../MapPanel.desktop.kt` is the Desktop `actual`
-implementation and provides a non-fatal analytical fallback.
+`shared/src/desktopMain/.../MapPanel.desktop.kt` remains the default Desktop map implementation for MapLibre Compose native hosts and the analytical fallback. The shared UI also accepts an optional `PlatformMapSurface` injected by the Desktop host for a host-specific renderer.
 
-Android keeps the real MapLibre implementation in `androidMain`.
+On Intel macOS, `desktopApp` owns a JCEF renderer that loads packaged MapLibre GL JS assets. A loopback-only local HTTP adapter reads the installed PMTiles archive on the JVM and exposes ordinary vector-tile requests to the embedded browser. JCEF, PMTiles reader APIs, and HTTP lifecycle remain outside shared domain/search code.
 
-Do not reintroduce conditional `desktopMapLibreMain` / `desktopFallbackMain` source directories
-through `kotlin.srcDir(...)`. If Desktop map rendering is added later, introduce it as a deliberate
-platform module/source-set design with tested native runtime support rather than host-detection
-logic duplicated across Gradle scripts.
+`desktopApp/build.gradle.kts` owns native/runtime dependency selection. This avoids conditional source-directory wiring. Historical `desktopMapLibreMain` / `desktopFallbackMain` implementations are no longer part of the source tree.
 
+Do not reintroduce host-specific `kotlin.srcDir(...)` branches. If supported target capabilities change with a future MapLibre Compose version, update the Desktop runtime capability mapping and its deterministic tests together.
 
 
 ## Desktop UI and external services

@@ -77,7 +77,17 @@ make test-desktop
 make test-mobile
 ```
 
-Shared tests cover Haversine distance, deterministic filter-summary/property-link helpers, user-preference payload round trips, dataset scoping, removed metrics, and unavailable saved centers. Desktop tests cover dynamic SQL filtering plus settings SQLite missing-state, persistence round-trip, and malformed-filter behavior.
+Shared tests cover Haversine distance, deterministic filter-summary/property-link helpers, user-preference payload round trips, dataset scoping, removed metrics, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover dynamic SQL filtering plus settings SQLite missing-state, persistence round-trip, and malformed-filter behavior.
+
+## Desktop offline map acceptance
+
+On a supported host with a full generated package:
+
+```bash
+make run-desktop
+```
+
+Verify with network access disabled that the local basemap renders, search-result markers appear, selecting a result highlights it and focuses the camera, and OpenStreetMap attribution remains visible. On Intel macOS, also verify that the JCEF renderer starts without external CDN/tile requests. On another unsupported host, verify that application startup and analytical search remain usable with the fallback panel.
 
 ## Android compile validation
 

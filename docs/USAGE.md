@@ -135,7 +135,7 @@ Imported ZIPs are installed under `~/.osmapdigger/datasets/`.
 7. Run **Search settlements**.
 8. Select a result to inspect all available metrics.
 9. Use the Google/Yandex property-search actions when relevant.
-10. Switch to or inspect the map to see the result overlay.
+10. Inspect the map to see the result overlay. Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback.
 
 An empty visible filter row has no effect until at least one bound is supplied.
 

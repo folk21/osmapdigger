@@ -70,11 +70,16 @@ class DesktopDataset private constructor(
                     runCatching { it.isReadOnly = true }
                 }
 
-            val styleJson =
+            val localMapUri =
                 if (info.hasMap) {
+                    directory.resolve(mapName!!).toAbsolutePath().toUri().toString()
+                } else {
+                    null
+                }
+            val styleJson =
+                if (localMapUri != null) {
                     val template = Files.readString(directory.resolve("style.template.json"))
-                    val uri = directory.resolve(mapName!!).toAbsolutePath().toUri().toString()
-                    template.replace("{{PMTILES_URI}}", "pmtiles://$uri")
+                    template.replace("{{PMTILES_URI}}", "pmtiles://$localMapUri")
                 } else {
                     null
                 }
@@ -88,7 +93,7 @@ class DesktopDataset private constructor(
                 }
 
             return DesktopDataset(
-                runtime = OsmapDiggerRuntime(repository, MapPackage(styleJson), opener),
+                runtime = OsmapDiggerRuntime(repository, MapPackage(styleJson, localMapUri), opener),
                 connection = connection,
             )
         }

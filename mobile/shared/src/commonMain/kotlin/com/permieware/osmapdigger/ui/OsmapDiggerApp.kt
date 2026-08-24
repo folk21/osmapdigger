@@ -20,6 +20,7 @@ fun OsmapDiggerApp(
     runtime: OsmapDiggerRuntime?,
     userPreferences: UserPreferencesRepository,
     onImportDataset: () -> Unit,
+    platformMapSurface: PlatformMapSurface? = null,
     modifier: Modifier = Modifier,
 ) {
     MaterialTheme {
@@ -30,6 +31,7 @@ fun OsmapDiggerApp(
                 runtime = runtime,
                 userPreferences = userPreferences,
                 onImportDataset = onImportDataset,
+                platformMapSurface = platformMapSurface,
                 modifier = modifier,
             )
         }
@@ -68,6 +70,7 @@ private fun LoadedDatasetApp(
     runtime: OsmapDiggerRuntime,
     userPreferences: UserPreferencesRepository,
     onImportDataset: () -> Unit,
+    platformMapSurface: PlatformMapSurface?,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -227,12 +230,13 @@ private fun LoadedDatasetApp(
                     onImportDataset = onImportDataset,
                     externalLinks = runtime.externalLinks,
                 )
-                MapPanel(
+                RuntimeMapPanel(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     datasetInfo = datasetInfo,
-                    styleJson = runtime.mapPackage.styleJson,
+                    mapPackage = runtime.mapPackage,
                     results = results,
                     selected = selected?.settlement,
+                    platformMapSurface = platformMapSurface,
                 )
             }
         } else {
@@ -271,16 +275,46 @@ private fun LoadedDatasetApp(
                         externalLinks = runtime.externalLinks,
                     )
                 } else {
-                    MapPanel(
+                    RuntimeMapPanel(
                         modifier = Modifier.fillMaxSize(),
                         datasetInfo = datasetInfo,
-                        styleJson = runtime.mapPackage.styleJson,
+                        mapPackage = runtime.mapPackage,
                         results = results,
                         selected = selected?.settlement,
+                        platformMapSurface = platformMapSurface,
                     )
                 }
             }
         }
+    }
+}
+
+
+@Composable
+private fun RuntimeMapPanel(
+    modifier: Modifier,
+    datasetInfo: DatasetInfo?,
+    mapPackage: com.permieware.osmapdigger.runtime.MapPackage,
+    results: List<Settlement>,
+    selected: Settlement?,
+    platformMapSurface: PlatformMapSurface?,
+) {
+    if (platformMapSurface != null) {
+        platformMapSurface.Render(
+            modifier = modifier,
+            datasetInfo = datasetInfo,
+            mapPackage = mapPackage,
+            results = results,
+            selected = selected,
+        )
+    } else {
+        MapPanel(
+            modifier = modifier,
+            datasetInfo = datasetInfo,
+            styleJson = mapPackage.styleJson,
+            results = results,
+            selected = selected,
+        )
     }
 }
 

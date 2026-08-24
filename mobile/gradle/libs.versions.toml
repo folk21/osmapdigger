@@ -10,6 +10,10 @@ kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 kotlin = "2.4.10"
 maplibreCompose = "0.13.1"
+maplibreGlJs = "5.13.0"
+jcef = "146.0.10"
+jcefNativesMacAmd64 = "jcef-d3de827+cef-146.0.10+g8219561+chromium-146.0.7680.179"
+pmtilesReader = "0.3.7"
 sqliteJdbc = "3.53.2.1"
 
 [libraries]
@@ -26,6 +30,10 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 maplibre-compose = { module = "org.maplibre.compose:maplibre-compose", version.ref = "maplibreCompose" }
 maplibre-native-bindings-jni = { module = "org.maplibre.compose:maplibre-native-bindings-jni", version.ref = "maplibreCompose" }
+maplibre-gl-webjar = { module = "org.webjars.npm:maplibre-gl", version.ref = "maplibreGlJs" }
+jcef = { module = "me.friwi:jcefmaven", version.ref = "jcef" }
+jcef-natives-macosx-amd64 = { module = "me.friwi:jcef-natives-macosx-amd64", version.ref = "jcefNativesMacAmd64" }
+pmtiles-reader = { module = "ch.poole.geo.pmtiles-reader:Reader", version.ref = "pmtilesReader" }
 sqlite-jdbc = { module = "org.xerial:sqlite-jdbc", version.ref = "sqliteJdbc" }
 
 [plugins]
