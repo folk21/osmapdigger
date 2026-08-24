@@ -1,0 +1,12 @@
+# Desktop runtime configuration.
+# This file is local configuration and should not contain generated GIS data.
+
+dataset:
+  # Optional automatic dataset package to import on startup.
+  # Path is resolved relative to the application working directory.
+  autoImportPackage: "data/generated/andorra.omd.zip"
+
+storage:
+  # Desktop application state directory.
+  # The actual path is OS-specific and defaults to ~/.osmapdigger.
+  appDirectory: ".osmapdigger"
