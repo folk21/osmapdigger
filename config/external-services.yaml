@@ -1,0 +1,27 @@
+# External helper services.
+# Selected by dataset country metadata.
+
+countries:
+  BY:
+    propertySearch:
+      providers:
+        - id: kufar
+          name: Kufar
+          enabled: true
+          urlTemplate: "https://www.google.com/search?q=site:kufar.by+%22{settlement}%22"
+
+  AD:
+    propertySearch:
+      providers:
+        - id: idealista
+          name: Idealista
+          enabled: true
+          urlTemplate: "https://www.google.com/search?q=site:idealista.com+%22{settlement}%22"
+
+  DEFAULT:
+    propertySearch:
+      providers:
+        - id: google
+          name: Google
+          enabled: true
+          urlTemplate: "https://www.google.com/search?q=%22{settlement}%22+real+estate"

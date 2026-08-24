@@ -305,3 +305,12 @@ Do not reintroduce conditional `desktopMapLibreMain` / `desktopFallbackMain` sou
 through `kotlin.srcDir(...)`. If Desktop map rendering is added later, introduce it as a deliberate
 platform module/source-set design with tested native runtime support rather than host-detection
 logic duplicated across Gradle scripts.
+
+
+
+## Desktop UI and external services
+
+Desktop search UX details are maintained in [`IMPLEMENTATION/DESKTOP_UI.md`](IMPLEMENTATION/DESKTOP_UI.md).
+
+External integrations such as property search providers are described in
+[`IMPLEMENTATION/EXTERNAL_SERVICES.md`](IMPLEMENTATION/EXTERNAL_SERVICES.md).
