@@ -20,6 +20,7 @@ src/osmapdigger_geo_builder.egg-info/requires.txt
 src/osmapdigger_geo_builder.egg-info/top_level.txt
 tests/test_config.py
 tests/test_database.py
+tests/test_map_builder.py
 tests/test_metrics.py
 tests/test_package.py
 tests/test_pipeline.py

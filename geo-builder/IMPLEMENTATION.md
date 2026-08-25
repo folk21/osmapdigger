@@ -38,7 +38,7 @@ This document describes the current Python implementation under `geo-builder/`. 
 
 `PbfReader` is lazy: construction stores path/geometry configuration, while `_get_osm()` imports/creates Pyrosm only when a read is requested. Importing the package therefore performs no PBF parsing.
 
-For large source files, the adapter may choose Pyrosm `out_of_core`; smaller files use in-memory mode.
+For large source files, the adapter may choose Pyrosm `out_of_core`; smaller files use in-memory mode. Out-of-core custom reads request only selector/filter keys plus OsmapDigger's explicit extra tag columns and disable Pyrosm's catch-all `tags` column. This keeps country-scale GeoParquet caches bounded and avoids heterogeneous Arrow schemas for arbitrary leftover OSM tags.
 
 Two current read batches are intentional:
 
@@ -151,6 +151,7 @@ It is structural/integrity validation, not cryptographic trust validation.
 ## Test structure
 
 - `test_config.py` — dataset/category parsing and generated metric catalog;
+- `test_osm_reader.py` — Pyrosm adapter behavior, including bounded out-of-core tag reads;
 - `test_metrics.py` — geometry-driven settlement extraction, selector logic, synthetic spatial metrics;
 - `test_database.py` — schema/writer round trip;
 - `test_package.py` — package validation/ZIP creation;

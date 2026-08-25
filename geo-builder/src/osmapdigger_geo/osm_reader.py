@@ -93,6 +93,7 @@ class PbfReader:
         self.pbf_path = pbf_path
         self.bounding_geometry = bounding_geometry
         self.engine = engine
+        self._selected_engine: str | None = None
         self._osm = None
 
     def _get_osm(self):
@@ -120,6 +121,7 @@ class PbfReader:
         if "keep_metadata" in parameters:
             kwargs["keep_metadata"] = False
 
+        selected = "in_memory"
         if "engine" in parameters:
             selected = self.engine
             if selected == "auto":
@@ -131,9 +133,11 @@ class PbfReader:
             kwargs["engine"] = selected
             if selected == "out_of_core" and "workers" in parameters:
                 kwargs["workers"] = "auto"
+        self._selected_engine = selected
 
         print(
-            f"Pyrosm {getattr(pyrosm, '__version__', 'unknown')} reading {self.pbf_path}",
+            f"Pyrosm {getattr(pyrosm, '__version__', 'unknown')} reading {self.pbf_path} "
+            f"with engine={selected}",
             flush=True,
         )
         self._osm = OSM(str(self.pbf_path), **kwargs)
@@ -159,22 +163,32 @@ class PbfReader:
             return _empty_gdf()
         return self._read(self._get_osm(), custom_filter, "roads")
 
-    @staticmethod
     def _read(
+        self,
         osm,
         custom_filter: dict[str, Any],
         title: str,
     ) -> gpd.GeoDataFrame:
-        """Execute one Pyrosm custom-filter read and normalize geometry to WGS84."""
+        """Execute one Pyrosm custom-filter read and normalize geometry to WGS84.
+
+        Large inputs use Pyrosm's out-of-core engine. In that mode OsmapDigger only
+        needs selector/filter keys plus ``COMMON_EXTRA_TAGS``; retaining every other
+        OSM tag would create an unnecessary heterogeneous ``tags`` cache column and
+        can make GeoParquet shard schemas incompatible on country-scale extracts.
+        """
         print(f"Reading OSM batch: {title}", flush=True)
-        data = osm.get_data_by_custom_criteria(
-            custom_filter=custom_filter,
-            filter_type="keep",
-            keep_nodes=True,
-            keep_ways=True,
-            keep_relations=True,
-            extra_attributes=COMMON_EXTRA_TAGS,
-        )
+        read_kwargs: dict[str, Any] = {
+            "custom_filter": custom_filter,
+            "filter_type": "keep",
+            "keep_nodes": True,
+            "keep_ways": True,
+            "keep_relations": True,
+            "extra_attributes": COMMON_EXTRA_TAGS,
+        }
+        if self._selected_engine == "out_of_core":
+            read_kwargs["keep_other_tags"] = False
+
+        data = osm.get_data_by_custom_criteria(**read_kwargs)
 
         if data is None or len(data) == 0:
             print(f"{title}: 0 features", flush=True)
