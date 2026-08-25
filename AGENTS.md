@@ -91,6 +91,17 @@ Use Mermaid for architectural/process/sequence diagrams. Do not add ASCII-art fl
 
 Documentation should be concise but sufficient for a future contributor or LLM to reconstruct ownership, call paths, invariants, and validation expectations without relying on chat history.
 
+### Documentation ownership
+
+Keep current-state implementation knowledge in the smallest authoritative set:
+
+- `docs/IMPLEMENTATION.md` owns cross-project current implementation and links to subsystem guides;
+- each code subproject's `IMPLEMENTATION.md` owns concrete module/platform classes, libraries, lifecycle, and call paths;
+- `docs/USAGE.md` owns operational/user workflows and commands;
+- `docs/CONFIGURATION.md` owns configuration fields and their runtime/build implications.
+
+Do not create a parallel `docs/implementation/` topic-document layer by default. Split out a dedicated implementation document only when it has substantial independent ownership that does not fit the cross-project or owning-subproject guide; otherwise extend the authoritative owner and link to it.
+
 ### OKF document metadata
 
 Project Markdown documentation uses an Open Knowledge Format (OKF)-compatible YAML frontmatter profile so document purpose and specification relationships are machine-readable without loading the whole document.

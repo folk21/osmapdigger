@@ -37,6 +37,12 @@ Important fields:
 
 A dataset does **not** need to be a country. For a large country, add a regional PBF as its own dataset entry.
 
+### External property-search configuration
+
+Current runtime property-search behavior is intentionally small: generated dataset metadata carries the optional `property_search_site` restriction and `property_search_terms`, while shared Kotlin exposes explicit Google and Yandex actions. The application does not load a separate provider registry at runtime and does not scrape property portals.
+
+`config/external-services.yaml` is not part of the current runtime configuration path. Treat it as non-authoritative planning material unless a future change specification explicitly introduces a provider-registry contract and wires it through the builder/runtime boundary.
+
 ## Metric configuration model
 
 `metrics.toml` begins with shared settings such as `settlement_places`. Each `[[categories]]` block defines one conceptual OSM feature category.

@@ -317,9 +317,8 @@ On Intel macOS, `desktopApp` owns a JCEF renderer that loads packaged MapLibre G
 Do not reintroduce host-specific `kotlin.srcDir(...)` branches. If supported target capabilities change with a future MapLibre Compose version, update the Desktop runtime capability mapping and its deterministic tests together.
 
 
-## Desktop UI and external services
+## Implementation documentation ownership
 
-Desktop search UX details are maintained in [`IMPLEMENTATION/DESKTOP_UI.md`](implementation/DESKTOP_UI.md).
+This file remains the cross-project current-state implementation map. Concrete KMP/Desktop/Android classes, storage, diagnostics, map-renderer lifecycle, and platform differences belong in [`../mobile/IMPLEMENTATION.md`](../mobile/IMPLEMENTATION.md). Operational Desktop/Android workflows belong in [`USAGE.md`](USAGE.md), and dataset/metric/external-search configuration fields belong in [`CONFIGURATION.md`](CONFIGURATION.md).
 
-External integrations such as property search providers are described in
-[`IMPLEMENTATION/EXTERNAL_SERVICES.md`](implementation/EXTERNAL_SERVICES.md).
+There is intentionally no parallel `docs/implementation/` topic-document layer; keeping one cross-project guide plus owning subproject guides avoids duplicate or conflicting current-state descriptions.

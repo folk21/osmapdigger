@@ -164,7 +164,7 @@ Raw PBF files, generated SQLite databases, PMTiles archives, `.omd.zip` packages
 
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) owns stable responsibilities and boundaries.
 - [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) owns the current cross-project implementation, persisted-format semantics, security/privacy details, and current validation status.
-- Local `IMPLEMENTATION.md` files own subproject internals.
+- Local `IMPLEMENTATION.md` files own subproject internals; current implementation details are not split into a parallel `docs/implementation/` topic layer.
 - [`docs/specs/`](docs/specs/) contains intended deltas for significant work. The active initial product spec remains there until the current vertical slice is accepted.
 
 This distinction is important for both human and LLM contributors: active specs say what a change must become; implementation docs say what the repository currently does.

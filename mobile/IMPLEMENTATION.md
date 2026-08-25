@@ -152,11 +152,28 @@ Using `EXISTS` means a missing metric row fails a condition rather than being tr
 
 Stores the current search context at `~/.osmapdigger/settings/preferences.sqlite` using a single-row application-owned schema with `PRAGMA user_version = 1`. Connections are short-lived and preference I/O runs on `Dispatchers.IO`.
 
+The preferences database is application-owned and independent from `geo-format`. It stores dataset identity, the stable center settlement ID plus optional display name, optional radius, and a versioned JSON payload of dynamic metric ID/min/max conditions. Missing or unsupported saved state degrades to normal dataset defaults; unknown metric IDs are ignored and an unavailable saved center clears the center/radius constraint. Search history, favorites, notes, and multiple named saved searches are not part of the current store.
+
+### Desktop storage and dataset lifecycle
+
+Desktop keeps generated/installed dataset artifacts separate from mutable application state:
+
+```text
+~/.osmapdigger/
+    datasets/
+    settings/
+        preferences.sqlite
+    logs/
+    runtime/
+```
+
+Generated packages under repository `data/generated/` are installation sources, not mutable runtime state. `DesktopDatasetChooser` can open a package directory or securely extract a ZIP into `~/.osmapdigger/datasets/`; normalized entries must stay under the destination root.
+
+Startup dataset resolution is host-owned. `OSMAPDIGGER_DATASET_DIR` has development precedence; otherwise `DesktopConfigLoader` discovers `desktop-config.json` and resolves its configured package. Manual import/change remains available when automatic loading is unavailable.
+
 ### `DesktopDataset`
 
-`open(directory)` parses metadata, opens dataset SQLite, resolves optional PMTiles into the style template, and creates the dataset-scoped `OsmapDiggerRuntime`. The Desktop host owns one separate preferences repository for the application lifetime.
-
-`DesktopDatasetChooser` can open a package directory or securely extract a ZIP into `~/.osmapdigger/datasets/`. Normalized entries must stay under the destination root.
+`open(directory)` parses metadata, opens dataset SQLite, resolves optional PMTiles into the style template, and creates the dataset-scoped `OsmapDiggerRuntime`. The Desktop host owns one separate preferences repository for the application lifetime and deliberately closes/replaces dataset resources when the active package changes.
 
 ### Desktop MapLibre runtime
 
