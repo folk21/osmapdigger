@@ -34,6 +34,8 @@ This document describes the current Python implementation under `geo-builder/`. 
 
 `load_categories()` converts raw selector TOML into immutable `CategoryDefinition`/`Selector` records.
 
+`metric-profiles.toml` defines named build profiles over stable category IDs. `DatasetDefinition.metric_profile` selects one profile per dataset. The pipeline validates and applies the profile before broad Pyrosm filters or metric definitions are built, so excluded categories do not consume country-scale PBF read or spatial-calculation work. `full` selects the complete catalog; Belarus currently uses the bounded `core10` profile while Andorra retains `full` for broad integration coverage.
+
 ## PBF reader
 
 `PbfReader` is lazy: construction stores path/geometry configuration, while `_get_osm()` imports/creates Pyrosm only when a read is requested. Importing the package therefore performs no PBF parsing.
@@ -79,6 +81,8 @@ The function uses geometry coordinates rather than expecting `lat`/`lon` columns
 ## Metric calculation
 
 `calculate_metrics()` iterates configured categories and selects the correct source batch. It transforms data to one local metric CRS before spatial distance/buffer operations.
+
+Progress output includes the selected profile and category position (`Category N/Total`) so long country-scale builds show deterministic progress through the bounded catalog.
 
 ### Nearest distance
 

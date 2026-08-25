@@ -45,6 +45,10 @@ def load_dataset_definition(config_path: Path, dataset_id: str) -> DatasetDefini
         context_km=float(raw.get("context_km", builder.get("context_km", 25.0))),
         format_schema=_resolve(base, builder["format_schema"]),
         format_version_file=_resolve(base, builder["format_version_file"]),
+        metric_profiles_file=(
+            _resolve(base, builder["metric_profiles"]) if builder.get("metric_profiles") else None
+        ),
+        metric_profile=str(raw.get("metric_profile", "full")),
         property_search_site=raw.get("property_search_site"),
         property_search_terms=raw.get("property_search_terms", "property"),
     )
@@ -93,3 +97,60 @@ def load_categories(config_path: Path) -> tuple[list[str], list[CategoryDefiniti
         )
 
     return places, categories
+
+
+def load_metric_profile(
+    config_path: Path | None,
+    profile_name: str,
+) -> tuple[str, ...] | None:
+    """Load one named metric profile.
+
+    ``None`` means the profile selects the complete configured category catalog.
+    Explicit profiles contain stable category IDs and are validated before expensive
+    PBF processing starts.
+    """
+    if config_path is None:
+        if profile_name != "full":
+            raise ValueError(
+                f"Metric profile '{profile_name}' requires builder.metric_profiles configuration"
+            )
+        return None
+
+    payload = tomllib.loads(config_path.read_text(encoding="utf-8"))
+    raw = payload.get("profiles", {}).get(profile_name)
+    if raw is None:
+        raise KeyError(f"Unknown metric profile '{profile_name}'")
+
+    category_ids = tuple(str(value) for value in raw.get("categories", []))
+    if category_ids == ("*",):
+        return None
+    if not category_ids:
+        raise ValueError(f"Metric profile '{profile_name}' has no categories")
+    if "*" in category_ids:
+        raise ValueError(
+            f"Metric profile '{profile_name}' must use '*' alone or explicit category IDs"
+        )
+    if len(set(category_ids)) != len(category_ids):
+        raise ValueError(f"Metric profile '{profile_name}' contains duplicate category IDs")
+    return category_ids
+
+
+def select_categories(
+    categories: list[CategoryDefinition],
+    category_ids: tuple[str, ...] | None,
+    profile_name: str,
+) -> list[CategoryDefinition]:
+    """Select configured categories for one dataset while preserving catalog order."""
+    if category_ids is None:
+        return categories
+
+    requested = set(category_ids)
+    known = {category.id for category in categories}
+    unknown = sorted(requested - known)
+    if unknown:
+        raise ValueError(
+            f"Metric profile '{profile_name}' references unknown categories: "
+            + ", ".join(unknown)
+        )
+
+    return [category for category in categories if category.id in requested]

@@ -30,7 +30,7 @@ The package can be built without PMTiles using `--skip-map`, which keeps analyti
 | Module | Responsibility |
 |---|---|
 | `cli.py` | Thin command-line composition root: list/build/validate |
-| `config.py` | Resolve dataset paths and parse dynamic category definitions |
+| `config.py` | Resolve dataset paths, metric profiles, and dynamic category definitions |
 | `models.py` | Immutable builder contracts used across stages |
 | `osm_reader.py` | Lazy Pyrosm adapter, batch reads, optional regional PBF crop |
 | `geometry.py` | Boundary loading, metric CRS selection, context buffering |
@@ -42,6 +42,8 @@ The package can be built without PMTiles using `--skip-map`, which keeps analyti
 | `pipeline.py` | Staging build orchestration and atomic publication |
 
 See [`IMPLEMENTATION.md`](IMPLEMENTATION.md) for contracts/call paths and [`../docs/CONFIGURATION.md`](../docs/CONFIGURATION.md) for TOML semantics.
+
+Dataset entries select a named profile from `config/metric-profiles.toml`; profiles bound which metric categories are physically processed without changing UI `default_filter` semantics.
 
 ## Setup
 

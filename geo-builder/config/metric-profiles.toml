@@ -1,0 +1,19 @@
+# Dataset build profiles select which configured OSM categories are physically processed.
+# This is intentionally independent from `default_filter`, which only controls initial UI visibility.
+
+[profiles.full]
+categories = ["*"]
+
+[profiles.core10]
+categories = [
+    "forest",
+    "water",
+    "industrial",
+    "landfill",
+    "major_road",
+    "railway_station",
+    "bus_stop",
+    "school",
+    "medical",
+    "supermarket",
+]

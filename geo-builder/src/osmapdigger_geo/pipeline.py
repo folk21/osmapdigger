@@ -12,7 +12,12 @@ import shutil
 import tempfile
 from pathlib import Path
 
-from .config import load_categories, load_dataset_definition
+from .config import (
+    load_categories,
+    load_dataset_definition,
+    load_metric_profile,
+    select_categories,
+)
 from .database import DatasetDatabaseWriter, validate_database
 from .geometry import buffer_wgs84, estimate_metric_crs, load_boundary
 from .map_builder import build_pmtiles, write_style_template
@@ -36,7 +41,21 @@ def build_dataset(
     an interrupted/failed build cannot advertise incomplete output as current.
     """
     dataset = load_dataset_definition(datasets_path, dataset_id)
-    places, categories = load_categories(metrics_path)
+    places, all_categories = load_categories(metrics_path)
+    profile_category_ids = load_metric_profile(
+        dataset.metric_profiles_file,
+        dataset.metric_profile,
+    )
+    categories = select_categories(
+        all_categories,
+        profile_category_ids,
+        dataset.metric_profile,
+    )
+    print(
+        f"Metric profile {dataset.metric_profile}: "
+        f"{len(categories)}/{len(all_categories)} categories selected",
+        flush=True,
+    )
 
     if not dataset.source_pbf.exists():
         raise FileNotFoundError(f"OSM PBF not found: {dataset.source_pbf}")
@@ -147,6 +166,9 @@ def build_dataset(
             "build": {
                 "mapBackend": map_backend_used,
                 "contextKm": dataset.context_km,
+                "metricProfile": dataset.metric_profile,
+                "metricCategoryCount": len(categories),
+                "metricDefinitionCount": len(metric_definitions),
             },
             "statistics": db_stats,
         }

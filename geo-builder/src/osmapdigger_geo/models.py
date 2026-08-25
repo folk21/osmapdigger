@@ -82,6 +82,8 @@ class DatasetDefinition:
     context_km: float
     format_schema: Path
     format_version_file: Path
+    metric_profiles_file: Path | None
+    metric_profile: str
     property_search_site: str | None
     property_search_terms: str
 

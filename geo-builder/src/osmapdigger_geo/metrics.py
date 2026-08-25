@@ -203,10 +203,13 @@ def calculate_metrics(
     result = {int(sid): {} for sid in settlements["_sid"]}
     settlement_metric = settlements[["_sid", "geometry"]].to_crs(metric_crs)
 
-    for category in categories:
+    for index, category in enumerate(categories, start=1):
         source = road_features if category.road_batch else general_features
         selected = filter_category(source, category)
-        print(f"Category {category.id}: {len(selected)} features", flush=True)
+        print(
+            f"Category {index}/{len(categories)} {category.id}: {len(selected)} features",
+            flush=True,
+        )
         if selected.empty:
             continue
 

@@ -34,8 +34,20 @@ Important fields:
 - `initial_center_latitude`, `initial_center_longitude`, `initial_zoom` — initial map camera;
 - `property_search_site` — optional domain restriction for external web search;
 - `property_search_terms` — default property query terms.
+- `metric_profile` — named build profile selecting which metric categories are physically processed for this dataset.
 
 A dataset does **not** need to be a country. For a large country, add a regional PBF as its own dataset entry.
+
+## Metric build profiles
+
+`geo-builder/config/metric-profiles.toml` owns named build profiles. Profiles select category IDs from `metrics.toml` before PBF filtering and metric calculation begin. This is intentionally separate from `default_filter`: a build profile controls which metrics exist in the generated dataset, while `default_filter` only controls which generated metrics are initially visible in the UI.
+
+The current profiles are:
+
+- `full` — all configured categories, used by the small Andorra integration dataset;
+- `core10` — ten high-value nature/risk/transport/infrastructure categories, used by Belarus to keep country-scale generation practical.
+
+`core10` currently includes forest, water, industrial areas, landfill, major roads, railway stations, bus stops, schools, medical facilities, and supermarkets. Profile category IDs are validated against `metrics.toml` before expensive PBF processing starts.
 
 ### External property-search configuration
 
