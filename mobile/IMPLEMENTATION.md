@@ -164,9 +164,23 @@ Stores the current search context at `~/.osmapdigger/settings/preferences.sqlite
 
 `desktopApp/build.gradle.kts` owns the platform-native runtime selection for macOS Apple Silicon Metal, Linux x86-64 OpenGL, and Windows x86-64 OpenGL. Intel macOS receives no incompatible MapLibre JNI runtime; instead `desktopApp/.../map/IntelMacWebMapSurface.kt` owns the JCEF + MapLibre GL JS renderer. `LocalWebMapServer` binds to loopback only, serves packaged browser assets, converts local PMTiles reads into XYZ vector-tile responses, and keeps browser/native lifecycle outside shared code.
 
+### Desktop diagnostics
+
+`desktopApp/.../diagnostics/DesktopDiagnostics.kt` owns process-local Desktop diagnostics. It mirrors
+JUL output to `~/.osmapdigger/logs/desktop.log`, records a runtime fingerprint and timed startup
+phases, redirects JVM fatal-error reports into the same log directory, and maintains an
+unclean-shutdown marker under `~/.osmapdigger/runtime/`. The diagnostics API is not exposed to
+`shared`.
+
+The Intel macOS renderer attaches JCEF console/load handlers and uses an explicit
+`~/.osmapdigger/runtime/jcef-cache` CEF root-cache path. `LocalWebMapServer` logs lifecycle, PMTiles
+metadata, failures, and aggregate request counters rather than one line per successful tile.
+
 ### `Main.kt`
 
-Uses `OSMAPDIGGER_DATASET_DIR` when set; otherwise starts with no dataset. It owns closing/replacing Desktop dataset resources.
+Uses `OSMAPDIGGER_DATASET_DIR` when set; otherwise follows Desktop configuration/package loading. It
+owns closing/replacing Desktop dataset resources and initializes Desktop diagnostics before dataset
+loading or native map initialization.
 
 ## Android adapter
 

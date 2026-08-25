@@ -1,6 +1,7 @@
 package com.permieware.osmapdigger.desktop.map
 
 import ch.poole.geo.pmtiles.Reader
+import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.map.ResultGeoJson
@@ -18,8 +19,11 @@ import java.io.Closeable
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -36,6 +40,11 @@ internal class LocalWebMapServer(
 ) : Closeable {
     private val reader = Reader(pmtilesPath.toFile())
     private val stateJson = AtomicReference(emptyStateJson())
+    private val closed = AtomicBoolean(false)
+    private val requestCount = AtomicLong(0)
+    private val tileRequestCount = AtomicLong(0)
+    private val notFoundCount = AtomicLong(0)
+    private val errorCount = AtomicLong(0)
     private val executor =
         Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "osmapdigger-web-map").apply { isDaemon = true }
@@ -62,6 +71,10 @@ internal class LocalWebMapServer(
         rewrittenStyle = rewriteStyle(styleJson)
         server.createContext("/", ::handle)
         server.start()
+        DesktopDiagnostics.info(
+            "map.server",
+            "started dataset=${datasetInfo.id} address=$baseUrl pmtiles=${pmtilesPath.toAbsolutePath()} sizeBytes=${Files.size(pmtilesPath)} minZoom=${reader.minZoom.toInt() and 0xff} maxZoom=${reader.maxZoom.toInt() and 0xff} compression=${reader.tileCompression.toInt()}",
+        )
     }
 
     fun updateState(
@@ -78,12 +91,19 @@ internal class LocalWebMapServer(
     }
 
     override fun close() {
+        if (!closed.compareAndSet(false, true)) return
         server.stop(0)
         executor.shutdownNow()
         runCatching { reader.close() }
+            .onFailure { failure -> DesktopDiagnostics.warn("map.server", "PMTiles reader close failed", failure) }
+        DesktopDiagnostics.info(
+            "map.server",
+            "stopped dataset=${datasetInfo.id} requests=${requestCount.get()} tiles=${tileRequestCount.get()} notFound=${notFoundCount.get()} errors=${errorCount.get()}",
+        )
     }
 
     private fun handle(exchange: HttpExchange) {
+        requestCount.incrementAndGet()
         try {
             if (exchange.requestMethod != "GET") {
                 send(exchange, 405, "text/plain; charset=utf-8", "Method not allowed".toByteArray())
@@ -112,6 +132,7 @@ internal class LocalWebMapServer(
                     if (match == null) {
                         send(exchange, 404, "text/plain; charset=utf-8", "Not found".toByteArray())
                     } else {
+                        tileRequestCount.incrementAndGet()
                         sendTile(
                             exchange,
                             zoom = match.groupValues[1].toInt(),
@@ -122,6 +143,11 @@ internal class LocalWebMapServer(
                 }
             }
         } catch (failure: Throwable) {
+            DesktopDiagnostics.error(
+                "map.server",
+                "request failed method=${exchange.requestMethod} path=${exchange.requestURI.path}",
+                failure,
+            )
             runCatching {
                 send(
                     exchange,
@@ -180,6 +206,8 @@ internal class LocalWebMapServer(
         contentType: String,
         bytes: ByteArray,
     ) {
+        if (status == 404) notFoundCount.incrementAndGet()
+        if (status >= 500) errorCount.incrementAndGet()
         exchange.responseHeaders.set("Content-Type", contentType)
         exchange.responseHeaders.set("Access-Control-Allow-Origin", baseUrl)
         exchange.sendResponseHeaders(status, bytes.size.toLong())

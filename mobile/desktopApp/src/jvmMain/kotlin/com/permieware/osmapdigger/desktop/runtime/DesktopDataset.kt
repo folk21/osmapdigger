@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.desktop.runtime
 
+import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.runtime.*
@@ -20,6 +21,7 @@ class DesktopDataset private constructor(
     private val connection: Connection,
 ) : Closeable {
     override fun close() {
+        DesktopDiagnostics.info("dataset", "Closing Desktop dataset")
         connection.close()
     }
 
@@ -84,6 +86,11 @@ class DesktopDataset private constructor(
                     null
                 }
 
+            DesktopDiagnostics.info(
+                "dataset",
+                "opened id=${info.id} hasMap=${info.hasMap} directory=${directory.toAbsolutePath()} database=${databaseFile.toAbsolutePath()}",
+            )
+
             val repository = JdbcGeoRepository(connection, info)
             val opener =
                 ExternalLinkOpener { url ->
@@ -114,6 +121,10 @@ class DesktopDataset private constructor(
             val name = packageFile.fileName.toString().removeSuffix(".omd.zip")
             val target = installRoot.resolve(name)
 
+            DesktopDiagnostics.info(
+                "dataset.install",
+                "source=${packageFile.toAbsolutePath()} target=${target.toAbsolutePath()}",
+            )
             DesktopDatasetChooser.installZip(packageFile, target)
 
             return open(target)
@@ -141,6 +152,7 @@ object DesktopDatasetChooser {
         }
 
         val selected = chooser.selectedFile.toPath()
+        DesktopDiagnostics.info("dataset.import", "selected=${selected.toAbsolutePath()}")
         return if (Files.isDirectory(selected)) {
             DesktopDataset.open(selected)
         } else {

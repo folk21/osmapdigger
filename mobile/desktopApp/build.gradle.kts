@@ -80,6 +80,13 @@ kotlin {
 compose.desktop {
     application {
         mainClass = "com.permieware.osmapdigger.desktop.MainKt"
+        val fatalErrorLog =
+            java.io.File(
+                System.getProperty("user.home"),
+                ".osmapdigger/logs/hs_err_pid%p.log",
+            ).absolutePath
+        jvmArgs += listOf("-XX:ErrorFile=$fatalErrorLog")
+
         if (intelMacHost) {
             jvmArgs += listOf(
                 "--add-modules=jdk.httpserver",

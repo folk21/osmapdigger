@@ -9,6 +9,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
+import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.runtime.MapPackage
@@ -17,7 +18,12 @@ import me.friwi.jcefmaven.CefAppBuilder
 import me.friwi.jcefmaven.MavenCefAppHandlerAdapter
 import org.cef.CefApp
 import org.cef.CefClient
+import org.cef.CefSettings
 import org.cef.browser.CefBrowser
+import org.cef.browser.CefFrame
+import org.cef.handler.CefDisplayHandlerAdapter
+import org.cef.handler.CefLoadHandler
+import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.BorderLayout
 import java.io.Closeable
 import java.nio.file.Files
@@ -34,7 +40,11 @@ import javax.swing.JPanel
 class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeable {
     private val sessions = mutableSetOf<WebMapSession>()
     private val cefRuntime: Result<CefRuntime> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        runCatching { CefRuntime.create() }
+        runCatching {
+            DesktopDiagnostics.measure("jcef.init") { CefRuntime.create() }
+        }.onFailure { failure ->
+            DesktopDiagnostics.error("jcef.init", "JCEF initialization failed", failure)
+        }
     }
 
     @Composable
@@ -72,6 +82,12 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
                     ).also { session ->
                         synchronized(sessions) { sessions += session }
                     }
+                }.onFailure { failure ->
+                    DesktopDiagnostics.error(
+                        "map.session",
+                        "Could not open Intel macOS map session dataset=${datasetInfo.id}",
+                        failure,
+                    )
                 }
             }
         val session = sessionResult.getOrNull()
@@ -101,7 +117,11 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
 
     override fun close() {
         val active = synchronized(sessions) { sessions.toList().also { sessions.clear() } }
-        active.forEach { runCatching { it.close() } }
+        DesktopDiagnostics.info("map.renderer", "Closing Intel macOS renderer sessions=${active.size}")
+        active.forEach { session ->
+            runCatching { session.close() }
+                .onFailure { failure -> DesktopDiagnostics.warn("map.session", "Session close failed", failure) }
+        }
         cefRuntime.getOrNull()?.close()
     }
 
@@ -155,8 +175,11 @@ private class CefRuntime private constructor(
                 pmtilesPath = mapPath,
             )
         return try {
+            DesktopDiagnostics.info("jcef", "Creating browser client dataset=${datasetInfo.id}")
             val client = app.createClient()
+            installDiagnostics(client)
             val browser = client.createBrowser(server.indexUrl, false, false)
+            DesktopDiagnostics.info("jcef", "Browser created indexUrl=${server.indexUrl}")
             WebMapSession(server = server, client = client, browser = browser)
         } catch (failure: Throwable) {
             server.close()
@@ -165,21 +188,93 @@ private class CefRuntime private constructor(
     }
 
     override fun close() {
+        DesktopDiagnostics.info("jcef", "Disposing CefApp")
         runCatching { app.dispose() }
+            .onFailure { failure -> DesktopDiagnostics.warn("jcef", "CefApp dispose failed", failure) }
+    }
+
+    private fun installDiagnostics(client: CefClient) {
+        client.addDisplayHandler(
+            object : CefDisplayHandlerAdapter() {
+                override fun onConsoleMessage(
+                    browser: CefBrowser,
+                    level: CefSettings.LogSeverity,
+                    message: String,
+                    source: String,
+                    line: Int,
+                ): Boolean {
+                    DesktopDiagnostics.info(
+                        "web.console",
+                        "level=$level source=$source line=$line message=$message",
+                    )
+                    return true
+                }
+            },
+        )
+        client.addLoadHandler(
+            object : CefLoadHandlerAdapter() {
+                override fun onLoadingStateChange(
+                    browser: CefBrowser,
+                    isLoading: Boolean,
+                    canGoBack: Boolean,
+                    canGoForward: Boolean,
+                ) {
+                    DesktopDiagnostics.info(
+                        "web.load",
+                        "loading=$isLoading url=${browser.url}",
+                    )
+                }
+
+                override fun onLoadEnd(
+                    browser: CefBrowser,
+                    frame: CefFrame,
+                    httpStatusCode: Int,
+                ) {
+                    DesktopDiagnostics.info(
+                        "web.load",
+                        "completed status=$httpStatusCode url=${browser.url}",
+                    )
+                }
+
+                override fun onLoadError(
+                    browser: CefBrowser,
+                    frame: CefFrame,
+                    errorCode: CefLoadHandler.ErrorCode,
+                    errorText: String,
+                    failedUrl: String,
+                ) {
+                    DesktopDiagnostics.warn(
+                        "web.load",
+                        "failed code=$errorCode text=$errorText url=$failedUrl",
+                    )
+                }
+            },
+        )
     }
 
     companion object {
         fun create(): CefRuntime {
-            val installDir =
-                Paths.get(System.getProperty("user.home"), ".osmapdigger", "runtime", "jcef")
-                    .toFile()
-                    .also { it.mkdirs() }
+            val runtimeRoot =
+                Paths.get(System.getProperty("user.home"), ".osmapdigger", "runtime")
+                    .toAbsolutePath()
+            val installDir = runtimeRoot.resolve("jcef")
+            val cacheDir = runtimeRoot.resolve("jcef-cache")
+            Files.createDirectories(installDir)
+            Files.createDirectories(cacheDir)
+
+            DesktopDiagnostics.info(
+                "jcef",
+                "Preparing runtime installDir=$installDir rootCachePath=$cacheDir thread=${Thread.currentThread().name}",
+            )
 
             val builder = CefAppBuilder()
-            builder.setInstallDir(installDir)
+            builder.setInstallDir(installDir.toFile())
             builder.getCefSettings().windowless_rendering_enabled = false
+            builder.getCefSettings().root_cache_path = cacheDir.toString()
             builder.setAppHandler(object : MavenCefAppHandlerAdapter() {})
-            return CefRuntime(builder.build())
+            val app = builder.build()
+            DesktopDiagnostics.info("jcef", "CefApp initialized thread=${Thread.currentThread().name}")
+            return CefRuntime(app)
         }
     }
 }
@@ -214,11 +309,17 @@ private class WebMapSession(
         val script =
             "window.osmapdiggerApplyState && window.osmapdiggerApplyState($stateJson, $focusSelected);"
         runCatching { browser.executeJavaScript(script, browser.url, 0) }
+            .onFailure { failure ->
+                DesktopDiagnostics.warn("web.state", "Could not apply map state", failure)
+            }
     }
 
     override fun close() {
+        DesktopDiagnostics.info("map.session", "Closing browser session url=${browser.url}")
         runCatching { browser.close(true) }
+            .onFailure { failure -> DesktopDiagnostics.warn("map.session", "Browser close failed", failure) }
         runCatching { client.dispose() }
+            .onFailure { failure -> DesktopDiagnostics.warn("map.session", "CefClient dispose failed", failure) }
         server.close()
     }
 }

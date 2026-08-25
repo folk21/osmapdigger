@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.desktop.runtime
 
+import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
@@ -39,8 +40,8 @@ object DesktopConfigLoader {
 
         val configFile = candidates.firstOrNull { Files.exists(it) }
 
-        println("Desktop configuration candidates: $candidates")
-        println("Selected desktop configuration: $configFile")
+        DesktopDiagnostics.info("desktop.config", "candidates=$candidates")
+        DesktopDiagnostics.info("desktop.config", "selected=$configFile")
 
         return when {
             configFile != null -> parse(configFile)
@@ -71,8 +72,8 @@ object DesktopConfigLoader {
     private fun parse(path: Path): DesktopConfig? =
         runCatching {
             json.decodeFromString<DesktopConfig>(Files.readString(path))
-        }.onFailure {
-            println("Cannot parse desktop config $path: ${it.message}")
+        }.onFailure { failure ->
+            DesktopDiagnostics.error("desktop.config", "Cannot parse config $path", failure)
         }.getOrNull()
 
     private fun userConfig(): Path =

@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.desktop.map.IntelMacWebMapSurface
 import com.permieware.osmapdigger.desktop.preferences.SqliteUserPreferencesRepository
 import com.permieware.osmapdigger.desktop.runtime.DesktopDataset
@@ -28,7 +29,14 @@ private fun loadConfiguredDataset(): DesktopDataset? {
     System.getenv("OSMAPDIGGER_DATASET_DIR")
         ?.takeIf { it.isNotBlank() }
         ?.let { path ->
-            return runCatching { DesktopDataset.open(Paths.get(path)) }.getOrNull()
+            DesktopDiagnostics.info("dataset.config", "Using OSMAPDIGGER_DATASET_DIR=$path")
+            return runCatching {
+                DesktopDiagnostics.measure("dataset.open.explicit") {
+                    DesktopDataset.open(Paths.get(path))
+                }
+            }.onFailure { failure ->
+                DesktopDiagnostics.error("dataset.open.explicit", "Could not open explicit dataset", failure)
+            }.getOrNull()
         }
 
     val config =
@@ -37,40 +45,58 @@ private fun loadConfiguredDataset(): DesktopDataset? {
 
     val packagePath = DesktopConfigLoader.resolvePackage(config)
 
-    println("Dataset package resolved: $packagePath")
-    println("Dataset package absolute: ${packagePath.toAbsolutePath()}")
-    println("Dataset package exists: ${java.nio.file.Files.exists(packagePath)}")
+    val absolutePackage = packagePath.toAbsolutePath()
+    val packageExists = java.nio.file.Files.exists(packagePath)
+    val packageSize =
+        if (packageExists && java.nio.file.Files.isRegularFile(packagePath)) {
+            runCatching { java.nio.file.Files.size(packagePath) }.getOrNull()
+        } else {
+            null
+        }
+    DesktopDiagnostics.info(
+        "dataset.config",
+        "package=$absolutePackage exists=$packageExists sizeBytes=${packageSize ?: "unknown"}",
+    )
 
     return runCatching {
-        println("Starting dataset installation")
-
-        val dataset = DesktopDataset.installAndOpen(packagePath)
-
-        println("Dataset installation completed")
-
-        dataset
-    }.onFailure {
-        println("Dataset installation failed: ${it.message}")
-        it.printStackTrace()
+        DesktopDiagnostics.measure("dataset.install-open") {
+            DesktopDataset.installAndOpen(packagePath)
+        }
+    }.onFailure { failure ->
+        DesktopDiagnostics.error("dataset.install-open", "Dataset installation/open failed", failure)
     }.getOrNull()
 }
 
 /** Desktop development/product host. */
 fun main() {
-    val configured =
-        loadConfiguredDataset()
+    DesktopDiagnostics.start()
+    val configured = loadConfiguredDataset()
 
     application {
         val datasetState = remember { mutableStateOf(configured) }
         val userPreferences = remember { SqliteUserPreferencesRepository.createDefault() }
-        val platformMapSurface = remember { IntelMacWebMapSurface.createIfSupported() }
+        val platformMapSurface =
+            remember {
+                IntelMacWebMapSurface.createIfSupported().also { surface ->
+                    DesktopDiagnostics.info(
+                        "map.renderer",
+                        if (surface != null) {
+                            "Selected Intel macOS JCEF renderer"
+                        } else {
+                            "No Desktop-host renderer override; shared Desktop map renderer/fallback owns rendering"
+                        },
+                    )
+                }
+            }
 
         // The effect belongs to the application lifetime, not to a particular dataset.
         // When the application is disposed, close whichever dataset is active at that time.
         DisposableEffect(Unit) {
             onDispose {
+                DesktopDiagnostics.info("shutdown", "Closing Desktop resources")
                 platformMapSurface?.close()
                 datasetState.value?.close()
+                DesktopDiagnostics.info("shutdown", "Desktop resources closed")
             }
         }
 
