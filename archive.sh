@@ -11,8 +11,10 @@ zip -qr "$OUT" osmapdigger \
   -x 'osmapdigger/**/__pycache__/*' \
   -x 'osmapdigger/**/.pytest_cache/*' \
   -x 'osmapdigger/**/build/*' \
+  -x 'osmapdigger/**/*.log' \
   -x 'osmapdigger/mobile/.gradle-dist/*' \
   -x 'osmapdigger/data/source/osm/*' \
   -x 'osmapdigger/data/generated/*' \
-  -x 'osmapdigger/osmapdigger_files.txt'
+  -x 'osmapdigger/osmapdigger_files.txt' \
+  -x 'osmapdigger/mobile/.kotlin/*'
 echo "$OUT"

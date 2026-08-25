@@ -2,6 +2,7 @@
 .vscode/
 .gradle/
 **/build/
+mobile/.kotlin/
 mobile/.gradle-dist/
 local.properties
 *.iml
@@ -27,6 +28,8 @@ data/generated/
 .DS_Store
 tmp/
 logs/
+*.log
+**/*.log
 
 # Local source snapshots generated for LLM review.
 osmapdigger_files.txt
