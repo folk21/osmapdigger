@@ -1,74 +1,13 @@
-"""Settlement extraction and configuration-driven spatial metric calculation."""
+"""Configuration-driven OSM category filtering and spatial metric calculation."""
 
 from __future__ import annotations
-
-import json
-from typing import Any
 
 import geopandas as gpd
 import pandas as pd
 
 from .metric_catalog import radius_token
-from .models import CategoryDefinition, SettlementRecord
-
-
-NAME_KEYS = ["name", "name:ru", "name:be", "name:en", "official_name"]
-
-
-def _is_missing(value: Any) -> bool:
-    """Handle pandas missing-value semantics without treating arrays as booleans."""
-    if value is None:
-        return True
-    try:
-        result = pd.isna(value)
-        return result if isinstance(result, bool) else False
-    except (TypeError, ValueError):
-        return False
-
-
-def _tags(row: pd.Series) -> dict[str, Any]:
-    """Decode Pyrosm's optional catch-all tags value into a dictionary."""
-    value = row.get("tags")
-    if isinstance(value, dict):
-        return value
-    if isinstance(value, str):
-        try:
-            parsed = json.loads(value)
-            return parsed if isinstance(parsed, dict) else {}
-        except json.JSONDecodeError:
-            return {}
-    return {}
-
-
-def extract_tag(row: pd.Series, key: str) -> Any:
-    """Read a tag from a dedicated column first, then fall back to catch-all tags."""
-    value = row.get(key)
-    return _tags(row).get(key) if _is_missing(value) else value
-
-
-def best_name(row: pd.Series) -> str | None:
-    """Return the first usable configured OSM name variant for display/persistence."""
-    for key in NAME_KEYS:
-        value = extract_tag(row, key)
-        if not _is_missing(value) and str(value).strip():
-            return str(value).strip()
-    return None
-
-
-def tag_series(frame: gpd.GeoDataFrame, key: str) -> pd.Series:
-    """Return one logical OSM tag as a Series even when Pyrosm stored it in `tags`."""
-    if key in frame.columns:
-        direct = frame[key].copy()
-        if "tags" not in frame.columns or direct.notna().all():
-            return direct
-        missing = direct.isna()
-        if missing.any():
-            direct.loc[missing] = frame.loc[missing].apply(
-                lambda row: extract_tag(row, key),
-                axis=1,
-            )
-        return direct
-    return frame.apply(lambda row: extract_tag(row, key), axis=1)
+from .models import CategoryDefinition
+from .settlements import tag_series
 
 
 def filter_category(
@@ -92,99 +31,6 @@ def filter_category(
         final_mask |= alternative_mask
 
     return frame[final_mask].copy()
-
-
-def _text(value: Any) -> str | None:
-    """Normalize optional OSM scalar text into a trimmed string or None."""
-    if _is_missing(value):
-        return None
-    text = str(value).strip()
-    return text or None
-
-
-def extract_settlements(
-    frame: gpd.GeoDataFrame,
-    settlement_places: list[str],
-    scope_geometry=None,
-) -> tuple[gpd.GeoDataFrame, list[SettlementRecord]]:
-    """Extract named settlements and derive one stable runtime point per place.
-
-    Non-point OSM place features use ``representative_point`` so the runtime coordinate
-    lies inside the mapped geometry. ``_sid`` is a temporary sequential build index used
-    only to connect calculated metric dictionaries to persisted settlement records.
-    """
-    places = tag_series(frame, "place")
-    settlements = frame[places.isin(settlement_places)].copy()
-
-    if scope_geometry is not None:
-        settlements = settlements[settlements.geometry.intersects(scope_geometry)].copy()
-
-    if settlements.empty:
-        return settlements, []
-
-    settlements["source_geometry_type"] = settlements.geometry.geom_type
-    settlements["geometry"] = settlements.geometry.apply(
-        lambda geometry: (
-            geometry if geometry.geom_type == "Point" else geometry.representative_point()
-        )
-    )
-    settlements["_display_name"] = settlements.apply(best_name, axis=1)
-    settlements = (
-        settlements[settlements["_display_name"].notna()]
-        .copy()
-        .reset_index(drop=True)
-    )
-    settlements["_sid"] = range(len(settlements))
-
-    records: list[SettlementRecord] = []
-    for _, row in settlements.iterrows():
-        osm_id = row.get("id") if not _is_missing(row.get("id")) else row.get("osm_id")
-        osm_id = int(osm_id) if not _is_missing(osm_id) else None
-
-        osm_type = (
-            row.get("osm_type")
-            if not _is_missing(row.get("osm_type"))
-            else row.get("type")
-        )
-        osm_type = str(osm_type) if not _is_missing(osm_type) else None
-
-        population = extract_tag(row, "population")
-        try:
-            population = (
-                int(str(population).replace(",", ""))
-                if not _is_missing(population)
-                else None
-            )
-        except ValueError:
-            population = None
-
-        stable_id = (
-            f"{osm_type or 'osm'}:{osm_id}"
-            if osm_id is not None
-            else f"generated:{int(row['_sid'])}"
-        )
-        local_name = (
-            _text(extract_tag(row, "name"))
-            or _text(extract_tag(row, "name:be"))
-            or _text(extract_tag(row, "name:ru"))
-        )
-
-        records.append(
-            SettlementRecord(
-                settlement_id=stable_id,
-                osm_id=osm_id,
-                osm_type=osm_type,
-                name=str(row["_display_name"]),
-                name_local=local_name,
-                name_en=_text(extract_tag(row, "name:en")),
-                place_type=_text(extract_tag(row, "place")),
-                population=population,
-                latitude=float(row.geometry.y),
-                longitude=float(row.geometry.x),
-            )
-        )
-
-    return settlements, records
 
 
 def calculate_metrics(
@@ -236,7 +82,7 @@ def _nearest(result, settlements, features, category) -> None:
     metric_id = f"{category.id}.distance_km"
 
     for _, row in joined.iterrows():
-        if not _is_missing(row.get("_distance_m")):
+        if pd.notna(row.get("_distance_m")):
             result[int(row["_sid"])][metric_id] = round(
                 float(row["_distance_m"]) / 1000.0,
                 3,

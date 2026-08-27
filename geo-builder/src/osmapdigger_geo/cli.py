@@ -28,6 +28,17 @@ def create_parser() -> argparse.ArgumentParser:
     build.add_argument("--metrics", type=Path, default=DEFAULT_METRICS)
     build.add_argument("--skip-map", action="store_true")
     build.add_argument("--map-backend", choices=["auto", "direct", "docker"], default="auto")
+    build.add_argument(
+        "--settlement-diagnostics",
+        action="store_true",
+        help="Print detailed nearby-settlement canonicalization diagnostics",
+    )
+    build.add_argument(
+        "--settlement-diagnostics-limit",
+        type=int,
+        default=20,
+        help="Maximum unresolved settlement pairs printed with --settlement-diagnostics",
+    )
 
     validate = sub.add_parser("validate")
     validate.add_argument("package_dir", type=Path)
@@ -50,6 +61,8 @@ def main() -> None:
             metrics_path=args.metrics,
             skip_map=args.skip_map,
             map_backend=args.map_backend,
+            settlement_diagnostics=args.settlement_diagnostics,
+            settlement_diagnostics_limit=args.settlement_diagnostics_limit,
         )
         return
 

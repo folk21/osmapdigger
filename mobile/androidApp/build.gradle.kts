@@ -22,6 +22,8 @@ kotlin {
 }
 
 android {
+    sourceSets.getByName("main").assets.srcDir(rootProject.file("config"))
+
     namespace = "com.permieware.osmapdigger"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 

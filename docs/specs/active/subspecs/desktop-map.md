@@ -41,7 +41,7 @@ semantics, or Android map behavior.
 The repository already contains:
 
 - generated local PMTiles and a style template with a runtime-resolved URI;
-- shared `ResultGeoJson` generation for search-result overlays;
+- shared `MapOverlayGeoJson` generation for search-result overlays;
 - Android MapLibre rendering;
 - a Desktop `MapPanel` contract;
 - Desktop package loading that resolves the installed PMTiles file into the style JSON.

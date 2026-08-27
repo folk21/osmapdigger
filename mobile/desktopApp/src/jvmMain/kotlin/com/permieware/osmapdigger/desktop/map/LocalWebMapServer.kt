@@ -4,7 +4,7 @@ import ch.poole.geo.pmtiles.Reader
 import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.Settlement
-import com.permieware.osmapdigger.map.ResultGeoJson
+import com.permieware.osmapdigger.map.MapOverlayGeoJson
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
 import kotlinx.serialization.json.Json
@@ -83,8 +83,8 @@ internal class LocalWebMapServer(
     ): String {
         val next =
             buildJsonObject {
-                put("results", Json.parseToJsonElement(ResultGeoJson.build(results)))
-                put("selected", Json.parseToJsonElement(ResultGeoJson.build(listOfNotNull(selected))))
+                put("results", Json.parseToJsonElement(MapOverlayGeoJson.build(results)))
+                put("selected", Json.parseToJsonElement(MapOverlayGeoJson.build(listOfNotNull(selected))))
             }.toString()
         stateJson.set(next)
         return next

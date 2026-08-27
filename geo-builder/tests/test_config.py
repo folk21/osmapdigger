@@ -18,6 +18,9 @@ def test_dataset_config_resolves_andorra():
     assert dataset.source_pbf.name == "andorra-260821.osm.pbf"
     assert dataset.metric_profile == "full"
     assert dataset.metric_profiles_file.name == "metric-profiles.toml"
+    assert dataset.settlement_name_tags == ("name", "name:en", "official_name", "alt_name")
+    assert dataset.settlement_deduplication_tolerance_m == 0.0
+    assert dataset.settlement_name_deduplication_distance_m == 0.0
 
 
 def test_metrics_are_dynamic_and_have_defaults():
@@ -37,6 +40,10 @@ def test_belarus_uses_core10_metric_profile():
     selected = select_categories(categories, category_ids, dataset.metric_profile)
 
     assert dataset.metric_profile == "core10"
+    assert dataset.settlement_deduplication_tolerance_m == 250.0
+    assert dataset.settlement_name_deduplication_distance_m == 1000.0
+    assert "name:be" in dataset.settlement_name_tags
+    assert "name:ru" in dataset.settlement_name_tags
     assert [category.id for category in selected] == [
         "forest",
         "water",

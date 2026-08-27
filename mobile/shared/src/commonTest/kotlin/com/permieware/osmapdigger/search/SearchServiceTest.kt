@@ -7,6 +7,7 @@ import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.domain.SearchRequest
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.domain.SettlementDetails
+import com.permieware.osmapdigger.domain.SettlementSearchEntry
 import com.permieware.osmapdigger.runtime.GeoRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -62,7 +63,7 @@ class SearchServiceTest {
 
         override suspend fun metricDefinitions(): List<MetricDefinition> = emptyList()
 
-        override suspend fun findSettlements(query: String, limit: Int): List<Settlement> = emptyList()
+        override suspend fun settlementSearchEntries(): List<SettlementSearchEntry> = emptyList()
 
         override suspend fun searchCandidates(
             conditions: List<SearchCondition>,

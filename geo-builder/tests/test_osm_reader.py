@@ -36,3 +36,23 @@ def test_in_memory_custom_read_keeps_pyrosm_default_tag_behavior():
     reader._read(osm, {"place": ["village"]}, "general features")
 
     assert "keep_other_tags" not in osm.calls[0]
+
+
+def test_custom_read_includes_dataset_settlement_name_tags():
+    reader = PbfReader(Path("large.osm.pbf"), engine="out_of_core")
+    reader._selected_engine = "out_of_core"
+    osm = RecordingOsm()
+
+    reader._read(
+        osm,
+        {"place": ["city"]},
+        "general features",
+        extra_tags=("name:be", "name:ru", "name:en", "alt_name"),
+    )
+
+    extra_attributes = osm.calls[0]["extra_attributes"]
+    assert "name:be" in extra_attributes
+    assert "name:ru" in extra_attributes
+    assert "name:en" in extra_attributes
+    assert "alt_name" in extra_attributes
+    assert len(extra_attributes) == len(set(extra_attributes))

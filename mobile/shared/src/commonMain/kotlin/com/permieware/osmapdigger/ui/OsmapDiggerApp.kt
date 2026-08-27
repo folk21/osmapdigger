@@ -6,12 +6,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.*
+import com.permieware.osmapdigger.external.ExternalSearchProvider
+import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
 import com.permieware.osmapdigger.preferences.UserPreferences
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
 import com.permieware.osmapdigger.preferences.UserPreferencesRestorer
 import com.permieware.osmapdigger.runtime.OsmapDiggerRuntime
 import com.permieware.osmapdigger.search.FilterSummaryBuilder
+import com.permieware.osmapdigger.search.SearchInputParser
 import com.permieware.osmapdigger.search.SearchService
+import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
 
 /** Shared OsmapDigger application surface used by Android and Desktop hosts. */
@@ -19,6 +23,7 @@ import kotlinx.coroutines.launch
 fun OsmapDiggerApp(
     runtime: OsmapDiggerRuntime?,
     userPreferences: UserPreferencesRepository,
+    externalSearchProviders: ExternalSearchProviderRepository,
     onImportDataset: () -> Unit,
     platformMapSurface: PlatformMapSurface? = null,
     modifier: Modifier = Modifier,
@@ -30,6 +35,7 @@ fun OsmapDiggerApp(
             LoadedDatasetApp(
                 runtime = runtime,
                 userPreferences = userPreferences,
+                externalSearchProviders = externalSearchProviders,
                 onImportDataset = onImportDataset,
                 platformMapSurface = platformMapSurface,
                 modifier = modifier,
@@ -69,6 +75,7 @@ private fun MissingDatasetScreen(
 private fun LoadedDatasetApp(
     runtime: OsmapDiggerRuntime,
     userPreferences: UserPreferencesRepository,
+    externalSearchProviders: ExternalSearchProviderRepository,
     onImportDataset: () -> Unit,
     platformMapSurface: PlatformMapSurface?,
     modifier: Modifier,
@@ -84,6 +91,7 @@ private fun LoadedDatasetApp(
     var error by remember { mutableStateOf<String?>(null) }
     var running by remember { mutableStateOf(false) }
     var preferencesReady by remember { mutableStateOf(false) }
+    var searchProviders by remember { mutableStateOf<List<ExternalSearchProvider>>(emptyList()) }
 
     LaunchedEffect(runtime) {
         preferencesReady = false
@@ -95,6 +103,7 @@ private fun LoadedDatasetApp(
         center = null
         radiusText = ""
         error = null
+        searchProviders = emptyList()
 
         runCatching {
             val info = runtime.repository.datasetInfo()
@@ -125,6 +134,13 @@ private fun LoadedDatasetApp(
         }
     }
 
+    LaunchedEffect(datasetInfo?.id, datasetInfo?.countryCode, externalSearchProviders) {
+        val info = datasetInfo ?: return@LaunchedEffect
+        runCatching { externalSearchProviders.providersFor(info.countryCode) }
+            .onSuccess { searchProviders = it }
+            .onFailure { error = "Could not load external search providers: ${it.message ?: it}" }
+    }
+
     LaunchedEffect(
         runtime,
         userPreferences,
@@ -146,7 +162,7 @@ private fun LoadedDatasetApp(
                     datasetId = info.id,
                     centerSettlementId = center?.id,
                     centerSettlementName = center?.name,
-                    radiusKm = center?.let { parsePositiveRadiusKm(radiusText) },
+                    radiusKm = center?.let { SearchInputParser.positiveRadiusKm(radiusText) },
                     conditions = conditions,
                 ),
             )
@@ -156,7 +172,7 @@ private fun LoadedDatasetApp(
     }
 
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
-    val parsedRadius = parsePositiveRadiusKm(radiusText)
+    val parsedRadius = SearchInputParser.positiveRadiusKm(radiusText)
     val radiusError =
         when {
             radiusText.isBlank() -> null
@@ -198,6 +214,8 @@ private fun LoadedDatasetApp(
         }
     }
 
+    val settlementSearch = remember(runtime.repository) { SettlementSearchService(runtime.repository) }
+
     BoxWithConstraints(modifier.fillMaxSize()) {
         val wide = maxWidth >= 900.dp
 
@@ -224,11 +242,12 @@ private fun LoadedDatasetApp(
                     summary = summary,
                     running = running,
                     error = error,
-                    repository = runtime.repository,
+                    settlementSearch = settlementSearch,
                     onSearch = performSearch,
                     onSelect = selectSettlement,
                     onImportDataset = onImportDataset,
                     externalLinks = runtime.externalLinks,
+                    searchProviders = searchProviders,
                 )
                 RuntimeMapPanel(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
@@ -268,11 +287,12 @@ private fun LoadedDatasetApp(
                         summary = summary,
                         running = running,
                         error = error,
-                        repository = runtime.repository,
+                        settlementSearch = settlementSearch,
                         onSearch = performSearch,
                         onSelect = selectSettlement,
                         onImportDataset = onImportDataset,
                         externalLinks = runtime.externalLinks,
+                        searchProviders = searchProviders,
                     )
                 } else {
                     RuntimeMapPanel(
@@ -318,5 +338,3 @@ private fun RuntimeMapPanel(
     }
 }
 
-private fun parsePositiveRadiusKm(value: String): Double? =
-    value.toDoubleOrNull()?.takeIf { it.isFinite() && it > 0.0 }

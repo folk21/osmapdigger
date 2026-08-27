@@ -1,3 +1,4 @@
+import java.io.File
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -45,6 +46,11 @@ kotlin {
     }
 
     sourceSets {
+        val jvmMain = getByName("jvmMain")
+        val jvmTest = getByName("jvmTest")
+
+        jvmMain.resources.srcDir(rootProject.file("config"))
+
         jvmMain.dependencies {
             implementation(projects.shared)
             implementation(compose.desktop.currentOs)
@@ -81,7 +87,7 @@ compose.desktop {
     application {
         mainClass = "com.permieware.osmapdigger.desktop.MainKt"
         val fatalErrorLog =
-            java.io.File(
+            File(
                 System.getProperty("user.home"),
                 ".osmapdigger/logs/hs_err_pid%p.log",
             ).absolutePath

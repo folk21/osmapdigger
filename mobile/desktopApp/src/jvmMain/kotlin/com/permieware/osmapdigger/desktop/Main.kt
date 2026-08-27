@@ -11,6 +11,7 @@ import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.desktop.map.IntelMacWebMapSurface
 import com.permieware.osmapdigger.desktop.preferences.SqliteUserPreferencesRepository
 import com.permieware.osmapdigger.desktop.runtime.DesktopDataset
+import com.permieware.osmapdigger.desktop.settings.SqliteExternalSearchProviderRepository
 import com.permieware.osmapdigger.desktop.runtime.DesktopDatasetChooser
 import com.permieware.osmapdigger.desktop.runtime.DesktopConfigLoader
 import com.permieware.osmapdigger.ui.OsmapDiggerApp
@@ -75,6 +76,7 @@ fun main() {
     application {
         val datasetState = remember { mutableStateOf(configured) }
         val userPreferences = remember { SqliteUserPreferencesRepository.createDefault() }
+        val externalSearchProviders = remember { SqliteExternalSearchProviderRepository.createDefault() }
         val platformMapSurface =
             remember {
                 IntelMacWebMapSurface.createIfSupported().also { surface ->
@@ -108,6 +110,7 @@ fun main() {
             OsmapDiggerApp(
                 runtime = datasetState.value?.runtime,
                 userPreferences = userPreferences,
+                externalSearchProviders = externalSearchProviders,
                 platformMapSurface = platformMapSurface,
                 onImportDataset = {
                     DesktopDatasetChooser.chooseAndOpen()?.let { opened ->

@@ -72,6 +72,27 @@ Supported values:
 - `docker` — require Docker;
 - `--skip-map` — do not run either backend.
 
+## Diagnose settlement canonicalization
+
+When a generated dataset still contains apparently duplicated nearby settlements, rerun
+the analytical build with bounded raw-pair diagnostics:
+
+```bash
+PYTHONPATH=geo-builder/src \
+python -m osmapdigger_geo.cli build belarus \
+  --datasets geo-builder/config/datasets.toml \
+  --metrics geo-builder/config/metrics.toml \
+  --skip-map \
+  --settlement-diagnostics \
+  --settlement-diagnostics-limit 30
+```
+
+Diagnostics report unresolved geographically nearby raw OSM candidates and then audit the
+final canonical settlements. `FINAL DUPLICATE SUSPECT` entries include canonical IDs, raw-member
+provenance, shared normalized aliases, distance, and direct comparison/merge history. This makes it
+possible to distinguish missed candidate pairing from a rejected merge without changing merge rules
+or package contents.
+
 ## Validate a generated package
 
 ```bash

@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.Settlement
-import com.permieware.osmapdigger.map.ResultGeoJson
+import com.permieware.osmapdigger.map.MapOverlayGeoJson
 import org.maplibre.compose.camera.CameraPosition
 import org.maplibre.compose.camera.rememberCameraState
 import org.maplibre.compose.expressions.dsl.const
@@ -111,8 +111,8 @@ private fun RenderMapLibrePanel(
         }
     }
 
-    val resultJson = remember(results) { ResultGeoJson.build(results) }
-    val selectedJson = remember(selected) { ResultGeoJson.build(listOfNotNull(selected)) }
+    val resultJson = remember(results) { MapOverlayGeoJson.build(results) }
+    val selectedJson = remember(selected) { MapOverlayGeoJson.build(listOfNotNull(selected)) }
 
     Box(modifier) {
         MaplibreMap(

@@ -90,6 +90,25 @@ class DatasetDatabaseWriter:
                 ],
             )
 
+            connection.executemany(
+                """
+                INSERT INTO settlement_name(
+                    settlement_id, name, normalized_name, language, kind
+                ) VALUES (?,?,?,?,?)
+                """,
+                [
+                    (
+                        settlement.settlement_id,
+                        name.name,
+                        name.normalized_name,
+                        name.language,
+                        name.kind,
+                    )
+                    for settlement in settlements
+                    for name in settlement.names
+                ],
+            )
+
             metric_rows: list[tuple[str, str, float]] = []
             for sid, values in metrics_by_sid.items():
                 if sid >= len(settlements):
@@ -117,8 +136,19 @@ def validate_database(path: Path) -> dict[str, int]:
         if integrity != "ok":
             raise RuntimeError(f"SQLite integrity check failed: {integrity}")
 
+        has_settlement_names = (
+            connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'settlement_name'"
+            ).fetchone()
+            is not None
+        )
         return {
             "settlements": int(connection.execute("SELECT COUNT(*) FROM settlement").fetchone()[0]),
+            "settlementNames": (
+                int(connection.execute("SELECT COUNT(*) FROM settlement_name").fetchone()[0])
+                if has_settlement_names
+                else 0
+            ),
             "metrics": int(
                 connection.execute("SELECT COUNT(*) FROM metric_definition").fetchone()[0]
             ),

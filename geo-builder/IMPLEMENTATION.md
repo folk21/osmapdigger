@@ -30,7 +30,8 @@ This document describes the current Python implementation under `geo-builder/`. 
 - initial camera;
 - context buffer;
 - geo-format schema/version paths;
-- external property-search defaults.
+- external property-search defaults;
+- configurable settlement name tags used for multilingual aliases.
 
 `load_categories()` converts raw selector TOML into immutable `CategoryDefinition`/`Selector` records.
 
@@ -65,18 +66,23 @@ A selector containing `*` requires tag presence regardless of value.
 
 The broad Pyrosm read filter is not the source of category truth; local selector evaluation is.
 
-## Settlement extraction
+## Settlement extraction and canonicalization
 
-`metrics.extract_settlements()`:
+`settlements.extract_settlements()`:
 
 1. filters `place` values configured by `settings.settlement_places`;
 2. optionally restricts candidates to the dataset scope geometry;
-3. converts non-point place geometry to `representative_point()`;
-4. resolves a display name through supported name tags;
-5. retains OSM identity/type, population when parseable, and coordinates;
-6. creates a stable runtime `settlement_id` when OSM identity is available.
+3. extracts names from the dataset's configured `settlement_name_tags`;
+4. normalizes aliases deterministically for runtime lookup;
+5. canonicalizes duplicate OSM representations before metric calculation;
+6. converts the chosen canonical geometry to one runtime point;
+7. retains stable OSM identity/type, population when parseable, coordinates, and searchable aliases.
 
-The function uses geometry coordinates rather than expecting `lat`/`lon` columns from Pyrosm.
+OSM may represent one settlement through several `place=*` objects. Exact OSM identity, Wikidata, or Wikipedia identity is treated as strong merge evidence even when source objects disagree slightly on `place=*`. Otherwise candidates become deduplication peers when they share at least one normalized configured name alias; `place=*` is retained as metadata but does not prevent a spatial name match.
+
+Two independent proximity policies are explicit configuration rather than hidden heuristics. `settlement_deduplication_tolerance_m` handles small geometry drift such as a place node just outside its matching area. `settlement_name_deduplication_distance_m` allows any representations sharing a normalized alias, including node/node pairs and differing `place=*` values, to merge when their representative points are within the configured distance. The distance constraint prevents global name deduplication from collapsing legitimate same-named settlements in different locations. The canonical place node wins when present, preserving its mapped label/center coordinate and stable node identity while aliases/population are merged from the component.
+
+Belarus currently uses a 250-meter geometry tolerance and a 1000-meter same-name distance. The stage logs raw/canonical/merged counts and merge-evidence counters, including `name_nearby`. It also reports a bounded sample of unresolved same-name nearby source pairs beyond the configured merge evidence. Geometry coordinates rather than assumed Pyrosm `lat`/`lon` columns remain authoritative.
 
 ## Metric calculation
 
@@ -115,6 +121,7 @@ Those definitions are inserted into SQLite alongside values, allowing generic ru
 - dataset metadata;
 - metric definitions;
 - settlements;
+- multilingual/alternate settlement names;
 - metric values.
 
 It then commits, runs `ANALYZE`, and asks SQLite to optimize. `validate_database()` reopens read-only and runs `PRAGMA integrity_check` plus table counts.
@@ -156,7 +163,7 @@ It is structural/integrity validation, not cryptographic trust validation.
 
 - `test_config.py` — dataset/category parsing and generated metric catalog;
 - `test_osm_reader.py` — Pyrosm adapter behavior, including bounded out-of-core tag reads;
-- `test_metrics.py` — geometry-driven settlement extraction, selector logic, synthetic spatial metrics;
+- `test_metrics.py` — settlement canonicalization/name normalization, selector logic, synthetic spatial metrics;
 - `test_database.py` — schema/writer round trip;
 - `test_package.py` — package validation/ZIP creation;
 - `test_pipeline.py` — synthetic staged pipeline behavior where present.
@@ -169,3 +176,12 @@ Real-PBF testing is intentionally separate through `make build-andorra-data`.
 - add new source families behind new adapters rather than putting source-specific branches into `pipeline.py`;
 - keep persisted output changes coordinated with `geo-format` and both runtime readers;
 - preserve data-only builds so analytical development does not depend on map tooling.
+
+
+## Settlement canonicalization diagnostics
+
+Use `--settlement-diagnostics` on a build to inspect both nearby raw candidates and the
+final canonical settlement graph. `--settlement-diagnostics-limit N` bounds detailed output
+(default 20). The final audit reports duplicate-looking canonical pairs, their merged raw-member
+provenance, normalized aliases, distance, and whether their raw members were directly compared
+or had a merge reason. Diagnostics do not change generated data or merge policy.

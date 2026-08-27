@@ -172,7 +172,7 @@ Search results are serialized into an in-memory GeoJSON feature collection and r
 
 ## External web-search boundary
 
-Real-estate discovery currently opens external search engines using dataset-configured site/term templates. The app does not scrape property portals and does not ingest their listings into the local database.
+Real-estate discovery uses an application-owned external-search provider registry stored in the local settings database. Dataset metadata contributes country identity and default search terms; enabled global and country-specific providers are selected dynamically at runtime. The app does not scrape property portals and does not ingest their listings into the local database.
 
 This boundary keeps the core product offline and avoids coupling dataset semantics to one commercial portal.
 

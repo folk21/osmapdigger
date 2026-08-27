@@ -5,12 +5,13 @@ import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.domain.SettlementDetails
+import com.permieware.osmapdigger.domain.SettlementSearchEntry
 
 /** Platform-provided local dataset repository. */
 interface GeoRepository {
     suspend fun datasetInfo(): DatasetInfo
     suspend fun metricDefinitions(): List<MetricDefinition>
-    suspend fun findSettlements(query: String, limit: Int = 20): List<Settlement>
+    suspend fun settlementSearchEntries(): List<SettlementSearchEntry>
     suspend fun searchCandidates(
         conditions: List<SearchCondition>,
         latitudeRange: ClosedFloatingPointRange<Double>?,

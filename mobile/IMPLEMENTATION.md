@@ -27,7 +27,8 @@ This document describes the current Kotlin Multiplatform implementation under `m
 - `DatasetInfo` — runtime dataset identity/initial camera/map availability;
 - `PreferredDirection` — descriptive lower/higher preference metadata;
 - `MetricDefinition` — one persisted numeric filter definition;
-- `Settlement` — one searchable settlement point;
+- `Settlement` — one canonical searchable settlement point;
+- `SettlementName` / `SettlementSearchEntry` / `SettlementSearchMatch` — multilingual alias index and ranked center-lookup models;
 - `SearchCondition` — optional min/max range for one metric ID;
 - `SearchRequest` — center, radius, metric conditions, result limit;
 - `MetricValue` — hydrated metric definition/value;
@@ -43,7 +44,7 @@ Platform implementations provide:
 
 - dataset metadata;
 - metric catalog;
-- settlement-name search;
+- complete settlement-name search index loading with legacy-dataset fallback;
 - SQL-reduced search candidates;
 - detailed settlement hydration.
 
@@ -59,13 +60,15 @@ Restore is dataset-scoped. Metric conditions are retained only when their stable
 
 ## Search orchestration
 
+`search/SettlementSearch.kt` owns shared center-settlement lookup semantics. It normalizes configured aliases, lazily caches the compact search index for the opened dataset, and ranks exact, prefix, substring, then bounded Levenshtein fuzzy matches. Platform repositories read `settlement_name` when available and synthesize aliases from legacy `name`/`name_local`/`name_en` columns for older format-version-1 datasets. This avoids platform-specific SQLite Unicode/FTS behavior.
+
 `search/SearchService.kt` is intentionally small and deterministic.
 
 ```mermaid
 sequenceDiagram
     participant UI as OsmapDiggerApp
     participant S as SearchService
-    participant G as GeoMath
+    participant G as geo.GeoMath
     participant R as GeoRepository
 
     UI->>S: search(SearchRequest)
@@ -86,18 +89,13 @@ It is presentation logic only: the generated sentence does not become an executa
 
 ## External property links
 
-`external/PropertySearchLinks.kt` builds percent-encoded Google/Yandex URLs from:
+`external/ExternalSearchProviders.kt` owns the shared provider model, repository contract, seed-catalog parser, percent encoding, and URL-template expansion. `mobile/config/external-search-providers.json` owns the packaged default provider rows. `SearchPane` receives already loaded providers and renders the action list dynamically; it does not know provider IDs or construct provider-specific URLs.
 
-- provider;
-- selected settlement;
-- dataset-provided optional site restriction;
-- dataset-provided terms.
-
-It does not perform HTTP requests itself.
+Desktop and Android store provider rows in the same application-owned settings SQLite used for user preferences. The existing physical filename `preferences.sqlite` is retained for backward compatibility even though the database now contains broader application settings. Platform settings database owners migrate schema version 1 to version 2 by adding `external_search_provider`. Seed insertion uses `INSERT OR IGNORE`, preserving customized rows. Provider selection returns global rows plus rows matching `DatasetInfo.countryCode`.
 
 ## Map overlay
 
-`map/GeoJson.kt` serializes search results into a small in-memory GeoJSON FeatureCollection.
+`map/MapOverlayGeoJson.kt` serializes search results into a small engine-neutral in-memory GeoJSON FeatureCollection used by native MapLibre and the Intel macOS web renderer.
 
 `ui/MapPanel.kt`:
 
@@ -121,7 +119,7 @@ Wide layouts show search/details and map side by side. Narrow layouts use Search
 
 `ui/SearchPane.kt` implements:
 
-- center settlement lookup;
+- multilingual/fuzzy center settlement lookup with alias-aware suggestions;
 - radius input;
 - dynamic default/additional filters;
 - deterministic filter description;
@@ -189,9 +187,10 @@ phases, redirects JVM fatal-error reports into the same log directory, and maint
 unclean-shutdown marker under `~/.osmapdigger/runtime/`. The diagnostics API is not exposed to
 `shared`.
 
-The Intel macOS renderer attaches JCEF console/load handlers and uses an explicit
-`~/.osmapdigger/runtime/jcef-cache` CEF root-cache path. `LocalWebMapServer` logs lifecycle, PMTiles
-metadata, failures, and aggregate request counters rather than one line per successful tile.
+Desktop diagnostics deliberately observe JCEF initialization from outside the native runtime and do not
+modify CEF cache/settings or attach browser handlers. This keeps diagnostics from changing JCEF startup
+behavior during native-crash investigation. `LocalWebMapServer` still logs lifecycle, PMTiles metadata,
+failures, and aggregate request counters rather than one line per successful tile.
 
 ### `Main.kt`
 

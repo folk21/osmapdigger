@@ -14,7 +14,7 @@ class FakeReader:
     def __init__(self, pbf_path, bounding_geometry=None):
         self.pbf_path = pbf_path
 
-    def read_general(self, places, categories):
+    def read_general(self, places, categories, settlement_name_tags):
         return gpd.GeoDataFrame(
             [
                 {"id": 1, "osm_type": "node", "name": "Village", "place": "village", "natural": None},

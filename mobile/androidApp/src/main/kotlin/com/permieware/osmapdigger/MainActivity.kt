@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import com.permieware.osmapdigger.runtime.AndroidDataset
 import com.permieware.osmapdigger.preferences.AndroidUserPreferencesRepository
 import com.permieware.osmapdigger.runtime.AndroidDatasetInstaller
+import com.permieware.osmapdigger.settings.AndroidExternalSearchProviderRepository
 import com.permieware.osmapdigger.ui.OsmapDiggerApp
 
 /** Android host with local dataset ZIP import. */
@@ -36,6 +37,7 @@ class MainActivity : ComponentActivity() {
                 ?.let { runCatching { AndroidDataset.open(this, it) }.getOrNull() }
 
         val userPreferences = AndroidUserPreferencesRepository(this)
+        val externalSearchProviders = AndroidExternalSearchProviderRepository(this)
 
         setContent {
             val state = remember { mutableStateOf(initial) }
@@ -44,6 +46,7 @@ class MainActivity : ComponentActivity() {
             OsmapDiggerApp(
                 runtime = state.value?.runtime,
                 userPreferences = userPreferences,
+                externalSearchProviders = externalSearchProviders,
                 onImportDataset = {
                     datasetPicker.launch(arrayOf("application/zip", "application/octet-stream"))
                 },

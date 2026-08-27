@@ -50,6 +50,36 @@ data class Settlement(
     val location: GeoPoint,
 )
 
+/** One searchable name associated with a canonical settlement. */
+data class SettlementName(
+    val value: String,
+    val normalizedValue: String,
+    val language: String? = null,
+    val kind: String = "alternate",
+)
+
+/** Search-index row containing one settlement and all persisted/fallback aliases. */
+data class SettlementSearchEntry(
+    val settlement: Settlement,
+    val names: List<SettlementName>,
+)
+
+/** Quality of the best alias match for a settlement query. */
+enum class SettlementMatchKind {
+    EXACT,
+    PREFIX,
+    SUBSTRING,
+    FUZZY,
+}
+
+/** Ranked settlement lookup result used by the center picker. */
+data class SettlementSearchMatch(
+    val settlement: Settlement,
+    val matchedName: String,
+    val aliases: List<String>,
+    val kind: SettlementMatchKind,
+)
+
 /** Optional min/max constraint for one metric. */
 data class SearchCondition(
     val metricId: String,

@@ -9,17 +9,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.external.ExternalSearchProvider
-import com.permieware.osmapdigger.external.PropertySearchLinks
+import com.permieware.osmapdigger.external.ExternalSearchUrlBuilder
+import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.runtime.ExternalLinkOpener
-import com.permieware.osmapdigger.runtime.GeoRepository
+import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
-import kotlin.math.roundToInt
 
 /**
  * Shared search/details surface driven entirely by runtime metric definitions.
  *
  * The pane owns presentation state only. It delegates name lookup/details to the
- * repository and delegates actual structured search execution to its parent callback.
+ * shared settlement-search service and delegates structured search execution to its parent callback.
  */
 @Composable
 internal fun SearchPane(
@@ -38,11 +38,12 @@ internal fun SearchPane(
     summary: String,
     running: Boolean,
     error: String?,
-    repository: GeoRepository,
+    settlementSearch: SettlementSearchService,
     onSearch: () -> Unit,
     onSelect: (Settlement) -> Unit,
     onImportDataset: () -> Unit,
     externalLinks: ExternalLinkOpener,
+    searchProviders: List<ExternalSearchProvider>,
 ) {
     LazyColumn(
         modifier = modifier.padding(16.dp),
@@ -71,7 +72,7 @@ internal fun SearchPane(
 
         item {
             CenterSelector(
-                repository = repository,
+                settlementSearch = settlementSearch,
                 center = center,
                 onCenterChanged = onCenterChanged,
                 radiusText = radiusText,
@@ -125,14 +126,21 @@ internal fun SearchPane(
         }
 
         selected?.let { details ->
-            item { SettlementDetailsCard(details = details, datasetInfo = datasetInfo, externalLinks = externalLinks) }
+            item {
+                SettlementDetailsCard(
+                    details = details,
+                    datasetInfo = datasetInfo,
+                    externalLinks = externalLinks,
+                    searchProviders = searchProviders,
+                )
+            }
         }
     }
 }
 
 @Composable
 private fun CenterSelector(
-    repository: GeoRepository,
+    settlementSearch: SettlementSearchService,
     center: Settlement?,
     onCenterChanged: (Settlement?) -> Unit,
     radiusText: String,
@@ -141,7 +149,7 @@ private fun CenterSelector(
 ) {
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
-    var suggestions by remember { mutableStateOf<List<Settlement>>(emptyList()) }
+    var suggestions by remember { mutableStateOf<List<SettlementSearchMatch>>(emptyList()) }
 
     LaunchedEffect(center?.id, center?.name) {
         if (center != null) {
@@ -167,6 +175,7 @@ private fun CenterSelector(
                 value = query,
                 onValueChange = { value ->
                     query = value
+                    suggestions = emptyList()
                     if (center != null && value != center.name) {
                         onCenterChanged(null)
                     }
@@ -179,10 +188,11 @@ private fun CenterSelector(
             Button(
                 onClick = {
                     scope.launch {
-                        val found = if (query.isBlank()) emptyList() else repository.findSettlements(query)
-                        val exactMatches = found.filter { it.name.equals(query, ignoreCase = true) }
+                        val found =
+                            if (query.isBlank()) emptyList() else settlementSearch.find(query)
+                        val exactMatches = found.filter { it.kind == SettlementMatchKind.EXACT }
                         if (exactMatches.size == 1) {
-                            val exact = exactMatches.single()
+                            val exact = exactMatches.single().settlement
                             onCenterChanged(exact)
                             query = exact.name
                             suggestions = emptyList()
@@ -196,15 +206,27 @@ private fun CenterSelector(
                 Text("Find center")
             }
 
-            suggestions.take(6).forEach { settlement ->
+            suggestions.take(6).forEach { match ->
                 TextButton(
                     onClick = {
-                        onCenterChanged(settlement)
+                        onCenterChanged(match.settlement)
                         suggestions = emptyList()
-                        query = settlement.name
+                        query = match.settlement.name
                     },
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Use ${settlement.name} as center")
+                    Column(Modifier.fillMaxWidth()) {
+                        Text("Use ${match.settlement.name} as center")
+                        val details =
+                            listOfNotNull(
+                                match.matchedName.takeIf { it != match.settlement.name },
+                                match.settlement.placeType,
+                                match.kind.name.lowercase().takeIf { match.kind == SettlementMatchKind.FUZZY },
+                            ).joinToString(" · ")
+                        if (details.isNotBlank()) {
+                            Text(details, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
             }
 
@@ -350,6 +372,7 @@ private fun SettlementDetailsCard(
     details: SettlementDetails,
     datasetInfo: DatasetInfo?,
     externalLinks: ExternalLinkOpener,
+    searchProviders: List<ExternalSearchProvider>,
 ) {
     Card {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -372,22 +395,24 @@ private fun SettlementDetailsCard(
                     }
                 }
 
-            Text("External property search", style = MaterialTheme.typography.labelLarge)
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                ExternalSearchProvider.entries.forEach { provider ->
-                    OutlinedButton(
-                        onClick = {
-                            externalLinks.open(
-                                PropertySearchLinks.build(
-                                    provider = provider,
-                                    settlement = details.settlement,
-                                    site = datasetInfo?.propertySearchSite,
-                                    terms = datasetInfo?.propertySearchTerms ?: "property",
-                                ),
-                            )
-                        },
-                    ) {
-                        Text(provider.title)
+            if (searchProviders.isNotEmpty()) {
+                Text("External property search", style = MaterialTheme.typography.labelLarge)
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    searchProviders.forEach { provider ->
+                        OutlinedButton(
+                            onClick = {
+                                externalLinks.open(
+                                    ExternalSearchUrlBuilder.build(
+                                        provider = provider,
+                                        settlement = details.settlement,
+                                        terms = datasetInfo?.propertySearchTerms ?: "property",
+                                    ),
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(provider.title)
+                        }
                     }
                 }
             }
@@ -396,6 +421,6 @@ private fun SettlementDetailsCard(
 }
 
 private fun formatMetric(value: Double, unit: String): String {
-    val rounded = if (value % 1.0 == 0.0) value.toInt().toString() else ((value * 100).roundToInt() / 100.0).toString()
-    return if (unit == "count") rounded else "$rounded $unit"
+    val formatted = NumberFormatter.compact(value)
+    return if (unit == "count") formatted else "$formatted $unit"
 }

@@ -1,4 +1,4 @@
-package com.permieware.osmapdigger.search
+package com.permieware.osmapdigger.geo
 
 import com.permieware.osmapdigger.domain.GeoPoint
 import kotlin.test.Test

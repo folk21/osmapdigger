@@ -86,6 +86,19 @@ class DatasetDefinition:
     metric_profile: str
     property_search_site: str | None
     property_search_terms: str
+    settlement_name_tags: tuple[str, ...]
+    settlement_deduplication_tolerance_m: float
+    settlement_name_deduplication_distance_m: float
+
+
+@dataclass(frozen=True)
+class SettlementNameRecord:
+    """One persisted searchable name attached to a canonical settlement."""
+
+    name: str
+    normalized_name: str
+    language: str | None
+    kind: Literal["primary", "localized", "official", "alternate"]
 
 
 @dataclass(frozen=True)
@@ -102,3 +115,4 @@ class SettlementRecord:
     population: int | None
     latitude: float
     longitude: float
+    names: tuple[SettlementNameRecord, ...] = ()

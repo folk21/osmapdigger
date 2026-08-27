@@ -3,6 +3,7 @@ package com.permieware.osmapdigger.runtime
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import com.permieware.osmapdigger.domain.*
+import com.permieware.osmapdigger.search.SettlementNameNormalizer
 
 /** Android SQLite implementation over a generated read-only database. */
 class AndroidGeoRepository(
@@ -28,21 +29,96 @@ class AndroidGeoRepository(
             }
         }
 
-    override suspend fun findSettlements(query: String, limit: Int): List<Settlement> {
-        val pattern = "%$query%"
-        return database.rawQuery(
+    override suspend fun settlementSearchEntries(): List<SettlementSearchEntry> =
+        if (hasSettlementNameTable()) {
+            readPersistedSettlementSearchEntries()
+        } else {
+            readLegacySettlementSearchEntries()
+        }
+
+    private fun hasSettlementNameTable(): Boolean =
+        database.rawQuery(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'settlement_name'",
+            null,
+        ).use { cursor -> cursor.moveToFirst() }
+
+    private fun readPersistedSettlementSearchEntries(): List<SettlementSearchEntry> =
+        database.rawQuery(
+            """
+            SELECT s.settlement_id, s.name, s.name_local, s.name_en, s.place_type,
+                   s.population, s.latitude, s.longitude,
+                   n.name, n.normalized_name, n.language, n.kind
+            FROM settlement s
+            LEFT JOIN settlement_name n ON n.settlement_id = s.settlement_id
+            ORDER BY s.settlement_id,
+                     CASE n.kind
+                         WHEN 'primary' THEN 0
+                         WHEN 'localized' THEN 1
+                         WHEN 'official' THEN 2
+                         ELSE 3
+                     END,
+                     n.name
+            """.trimIndent(),
+            null,
+        ).use { cursor ->
+            val entries = linkedMapOf<String, Pair<Settlement, MutableList<SettlementName>>>()
+            while (cursor.moveToNext()) {
+                val settlement = readSettlement(cursor)
+                val pair = entries.getOrPut(settlement.id) { settlement to mutableListOf() }
+                cursor.stringOrNull(8)?.let { name ->
+                    pair.second +=
+                        SettlementName(
+                            value = name,
+                            normalizedValue = cursor.getString(9),
+                            language = cursor.stringOrNull(10),
+                            kind = cursor.getString(11),
+                        )
+                }
+            }
+            entries.values.map { (settlement, names) ->
+                SettlementSearchEntry(
+                    settlement = settlement,
+                    names = names.ifEmpty { legacyNames(settlement).toMutableList() },
+                )
+            }
+        }
+
+    private fun readLegacySettlementSearchEntries(): List<SettlementSearchEntry> =
+        database.rawQuery(
             """
             SELECT settlement_id, name, name_local, name_en, place_type, population, latitude, longitude
             FROM settlement
-            WHERE lower(name) LIKE lower(?)
-               OR lower(COALESCE(name_local, '')) LIKE lower(?)
-               OR lower(COALESCE(name_en, '')) LIKE lower(?)
-            ORDER BY name
-            LIMIT ?
+            ORDER BY settlement_id
             """.trimIndent(),
-            arrayOf(pattern, pattern, pattern, limit.toString()),
-        ).use(::readSettlements)
-    }
+            null,
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    val settlement = readSettlement(cursor)
+                    add(SettlementSearchEntry(settlement, legacyNames(settlement)))
+                }
+            }
+        }
+
+    private fun legacyNames(settlement: Settlement): List<SettlementName> =
+        listOfNotNull(
+            settlement.name.takeIf { it.isNotBlank() }?.let {
+                SettlementName(it, SettlementNameNormalizer.normalize(it), kind = "primary")
+            },
+            settlement.localName
+                ?.takeIf { it.isNotBlank() && it != settlement.name }
+                ?.let { SettlementName(it, SettlementNameNormalizer.normalize(it), kind = "localized") },
+            settlement.englishName
+                ?.takeIf { it.isNotBlank() && it != settlement.name && it != settlement.localName }
+                ?.let {
+                    SettlementName(
+                        it,
+                        SettlementNameNormalizer.normalize(it),
+                        language = "en",
+                        kind = "localized",
+                    )
+                },
+        )
 
     /**
      * Apply generic metric ranges and optional coordinate bounds using Android SQLite.

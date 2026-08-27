@@ -18,11 +18,6 @@ from .models import CategoryDefinition
 
 
 COMMON_EXTRA_TAGS = [
-    "name",
-    "name:ru",
-    "name:be",
-    "name:en",
-    "official_name",
     "population",
     "wikidata",
     "wikipedia",
@@ -147,11 +142,17 @@ class PbfReader:
         self,
         settlement_places: list[str],
         categories: list[CategoryDefinition],
+        settlement_name_tags: tuple[str, ...],
     ) -> gpd.GeoDataFrame:
         """Read settlements plus all non-road category candidate features in one batch."""
         custom_filter = _merge_custom_filter(categories, include_roads=False)
         custom_filter["place"] = settlement_places
-        return self._read(self._get_osm(), custom_filter, "general features")
+        return self._read(
+            self._get_osm(),
+            custom_filter,
+            "general features",
+            extra_tags=settlement_name_tags,
+        )
 
     def read_roads(
         self,
@@ -168,6 +169,7 @@ class PbfReader:
         osm,
         custom_filter: dict[str, Any],
         title: str,
+        extra_tags: tuple[str, ...] = (),
     ) -> gpd.GeoDataFrame:
         """Execute one Pyrosm custom-filter read and normalize geometry to WGS84.
 
@@ -183,7 +185,7 @@ class PbfReader:
             "keep_nodes": True,
             "keep_ways": True,
             "keep_relations": True,
-            "extra_attributes": COMMON_EXTRA_TAGS,
+            "extra_attributes": list(dict.fromkeys([*COMMON_EXTRA_TAGS, *extra_tags])),
         }
         if self._selected_engine == "out_of_core":
             read_kwargs["keep_other_tags"] = False

@@ -22,7 +22,8 @@ from .database import DatasetDatabaseWriter, validate_database
 from .geometry import buffer_wgs84, estimate_metric_crs, load_boundary
 from .map_builder import build_pmtiles, write_style_template
 from .metric_catalog import build_metric_definitions
-from .metrics import calculate_metrics, extract_settlements
+from .metrics import calculate_metrics
+from .settlements import extract_settlements
 from .osm_reader import PbfReader, crop_pbf
 from .package import create_package_zip, sha256, utc_now, validate_package
 
@@ -33,6 +34,8 @@ def build_dataset(
     metrics_path: Path,
     skip_map: bool = False,
     map_backend: str = "auto",
+    settlement_diagnostics: bool = False,
+    settlement_diagnostics_limit: int = 20,
 ) -> Path:
     """Build and atomically publish one configured OsmapDigger dataset.
 
@@ -72,10 +75,19 @@ def build_dataset(
         context_geometry = buffer_wgs84(scope_geometry, dataset.context_km, metric_crs)
 
     reader = PbfReader(dataset.source_pbf, bounding_geometry=context_geometry)
-    general = reader.read_general(places, categories)
+    general = reader.read_general(places, categories, dataset.settlement_name_tags)
     roads = reader.read_roads(categories)
 
-    settlements_gdf, settlements = extract_settlements(general, places, scope_geometry)
+    settlements_gdf, settlements = extract_settlements(
+        general,
+        places,
+        dataset.settlement_name_tags,
+        scope_geometry,
+        deduplication_tolerance_m=dataset.settlement_deduplication_tolerance_m,
+        name_deduplication_distance_m=dataset.settlement_name_deduplication_distance_m,
+        diagnostics=settlement_diagnostics,
+        diagnostics_limit=settlement_diagnostics_limit,
+    )
     if not settlements:
         raise RuntimeError("No named settlements found in selected dataset scope")
 

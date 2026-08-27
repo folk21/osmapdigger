@@ -1,5 +1,7 @@
 package com.permieware.osmapdigger.search
 
+import com.permieware.osmapdigger.geo.GeoMath
+
 import com.permieware.osmapdigger.domain.SearchRequest
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.runtime.GeoRepository

@@ -40,7 +40,11 @@ Runtime filter catalog. It separates the stable metric ID/category from presenta
 
 ### `settlement`
 
-One searchable point-like settlement record. Geographic geometry is reduced to latitude/longitude for the current runtime contract; general source geometries remain build-time concerns.
+One canonical searchable point-like settlement record. The builder resolves duplicate OSM node/area representations before persistence. Geographic geometry is reduced to latitude/longitude for the current runtime contract; general source geometries remain build-time concerns.
+
+### `settlement_name`
+
+Searchable primary/localized/official/alternate names attached to a canonical settlement. `normalized_name` is generated deterministically by the builder for portable lookup semantics. The table is additive in format version 1: updated readers use it when present and fall back to legacy `settlement.name`, `name_local`, and `name_en` columns when opening older version-1 packages.
 
 ### `settlement_metric`
 
@@ -60,6 +64,7 @@ Because producer/readers are separated, persisted changes must inspect all of th
 ## Compatibility rules
 
 - Additive rows in `metric_definition`/`settlement_metric` are normal dataset evolution and do not require a schema-version bump.
+- The additive `settlement_name` table remains format-version-1 compatible because new readers explicitly fall back when it is absent and old readers ignore it.
 - Renaming/changing semantic meaning of a stable metric ID requires care because future saved searches may refer to IDs.
 - Adding nullable/additive schema fields can remain compatible only if all existing readers tolerate them.
 - Removing/renaming required columns/tables or changing meaning incompatibly requires `VERSION` increment and coordinated reader support.

@@ -32,7 +32,7 @@ def load_dataset_definition(config_path: Path, dataset_id: str) -> DatasetDefini
     output_root = _resolve(base, builder["output_root"])
     boundary = raw.get("boundary_geojson")
 
-    return DatasetDefinition(
+    dataset = DatasetDefinition(
         id=dataset_id,
         display_name=raw["display_name"],
         country_code=raw.get("country_code"),
@@ -51,7 +51,34 @@ def load_dataset_definition(config_path: Path, dataset_id: str) -> DatasetDefini
         metric_profile=str(raw.get("metric_profile", "full")),
         property_search_site=raw.get("property_search_site"),
         property_search_terms=raw.get("property_search_terms", "property"),
+        settlement_name_tags=tuple(
+            str(value)
+            for value in raw.get(
+                "settlement_name_tags",
+                builder.get(
+                    "settlement_name_tags",
+                    ["name", "name:en", "official_name", "alt_name"],
+                ),
+            )
+        ),
+        settlement_deduplication_tolerance_m=float(
+            raw.get(
+                "settlement_deduplication_tolerance_m",
+                builder.get("settlement_deduplication_tolerance_m", 0.0),
+            )
+        ),
+        settlement_name_deduplication_distance_m=float(
+            raw.get(
+                "settlement_name_deduplication_distance_m",
+                builder.get("settlement_name_deduplication_distance_m", 0.0),
+            )
+        ),
     )
+    if dataset.settlement_deduplication_tolerance_m < 0:
+        raise ValueError("settlement_deduplication_tolerance_m must be >= 0")
+    if dataset.settlement_name_deduplication_distance_m < 0:
+        raise ValueError("settlement_name_deduplication_distance_m must be >= 0")
+    return dataset
 
 
 def list_dataset_ids(config_path: Path) -> list[str]:

@@ -12,6 +12,7 @@ src/osmapdigger_geo/models.py
 src/osmapdigger_geo/osm_reader.py
 src/osmapdigger_geo/package.py
 src/osmapdigger_geo/pipeline.py
+src/osmapdigger_geo/settlements.py
 src/osmapdigger_geo_builder.egg-info/PKG-INFO
 src/osmapdigger_geo_builder.egg-info/SOURCES.txt
 src/osmapdigger_geo_builder.egg-info/dependency_links.txt
@@ -22,5 +23,6 @@ tests/test_config.py
 tests/test_database.py
 tests/test_map_builder.py
 tests/test_metrics.py
+tests/test_osm_reader.py
 tests/test_package.py
 tests/test_pipeline.py

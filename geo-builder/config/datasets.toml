@@ -5,6 +5,7 @@ format_schema = "../../geo-format/schema.sql"
 format_version_file = "../../geo-format/VERSION"
 metric_profiles = "metric-profiles.toml"
 context_km = 25.0
+settlement_name_tags = ["name", "name:en", "official_name", "alt_name"]
 
 [datasets.andorra]
 display_name = "Andorra"
@@ -26,6 +27,9 @@ initial_zoom = 6.0
 property_search_site = "kufar.by"
 property_search_terms = "дом недвижимость"
 metric_profile = "core10"
+settlement_name_tags = ["name", "name:be", "name:ru", "name:en", "official_name", "alt_name"]
+settlement_deduplication_tolerance_m = 250.0
+settlement_name_deduplication_distance_m = 1000.0
 
 # Large countries should normally use a regional PBF as a separate dataset.
 # Optional boundary_geojson can further constrain an input PBF when needed.

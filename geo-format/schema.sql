@@ -50,10 +50,27 @@ CREATE TABLE settlement (
     longitude REAL NOT NULL
 );
 
--- Name lookup supports the center-settlement picker; coordinate lookup supports the
--- coarse radius bounding-box reduction performed before exact Haversine filtering.
+-- Legacy primary-name lookup remains indexed for older readers; the multilingual center
+-- picker uses settlement_name when available. Coordinate lookup supports coarse radius
+-- bounding-box reduction before exact Haversine filtering.
 CREATE INDEX idx_settlement_name ON settlement(name);
 CREATE INDEX idx_settlement_lat_lon ON settlement(latitude, longitude);
+
+-- Searchable multilingual/alternate names for one canonical settlement. The builder
+-- normalizes these values using the same deterministic rules reproduced by shared
+-- Kotlin search. Existing readers may ignore this additive table and continue using
+-- settlement.name/name_local/name_en.
+CREATE TABLE settlement_name (
+    settlement_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    normalized_name TEXT NOT NULL,
+    language TEXT,
+    kind TEXT NOT NULL CHECK(kind IN ('primary', 'localized', 'official', 'alternate')),
+    PRIMARY KEY (settlement_id, normalized_name),
+    FOREIGN KEY (settlement_id) REFERENCES settlement(settlement_id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_settlement_name_normalized ON settlement_name(normalized_name);
 
 -- Sparse numeric metric values. One row exists only when the builder could calculate
 -- a value for that settlement/metric pair. The composite primary key prevents

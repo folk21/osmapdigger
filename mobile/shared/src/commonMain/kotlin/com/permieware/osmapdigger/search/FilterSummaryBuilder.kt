@@ -2,7 +2,7 @@ package com.permieware.osmapdigger.search
 
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.SearchRequest
-import kotlin.math.roundToInt
+import com.permieware.osmapdigger.presentation.NumberFormatter
 
 /** Produces a human-readable equivalent of the visual filter state without generative AI. */
 object FilterSummaryBuilder {
@@ -14,7 +14,7 @@ object FilterSummaryBuilder {
 
         request.center?.let { center ->
             if (request.radiusKm != null) {
-                parts += "within ${format(request.radiusKm)} km of ${center.name}"
+                parts += "within ${NumberFormatter.compact(request.radiusKm)} km of ${center.name}"
             } else {
                 parts += "around ${center.name}"
             }
@@ -27,11 +27,11 @@ object FilterSummaryBuilder {
                 val unit = if (definition.unit == "count") "" else " ${definition.unit}"
                 parts += when {
                     condition.minValue != null && condition.maxValue != null ->
-                        "${definition.title}: ${format(condition.minValue)}–${format(condition.maxValue)}$unit"
+                        "${definition.title}: ${NumberFormatter.compact(condition.minValue)}–${NumberFormatter.compact(condition.maxValue)}$unit"
                     condition.minValue != null ->
-                        "${definition.title}: at least ${format(condition.minValue)}$unit"
+                        "${definition.title}: at least ${NumberFormatter.compact(condition.minValue)}$unit"
                     condition.maxValue != null ->
-                        "${definition.title}: up to ${format(condition.maxValue)}$unit"
+                        "${definition.title}: up to ${NumberFormatter.compact(condition.maxValue)}$unit"
                     else -> return@forEach
                 }
             }
@@ -43,8 +43,4 @@ object FilterSummaryBuilder {
         }
     }
 
-    private fun format(value: Double): String {
-        if (value % 1.0 == 0.0) return value.toInt().toString()
-        return ((value * 100.0).roundToInt() / 100.0).toString()
-    }
 }

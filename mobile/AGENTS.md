@@ -12,6 +12,7 @@ Root [`../AGENTS.md`](../AGENTS.md) applies. Read [`README.md`](README.md), [`IM
 - `shared` owns immutable domain models, search orchestration, dynamic filter UI, filter descriptions, GeoJSON overlays, and shared MapLibre presentation.
 - `desktopApp` owns JDBC SQLite, JVM filesystem/ZIP import, Desktop browser integration, and Desktop resource lifecycle.
 - `androidApp` owns Android SQLite, Storage Access Framework import, app-private package installation, browser intents, and Activity lifecycle.
+- External-search provider definitions are configuration-driven; do not hardcode provider/country branches in shared UI. The settings SQLite is the runtime source of truth after packaged seed configuration is inserted.
 
 Common code must not import Android/JVM filesystem or database APIs.
 

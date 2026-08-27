@@ -20,6 +20,7 @@ Current format version: **1**.
 The format is intentionally dynamic with respect to OSM-derived filters:
 
 - `metric_definition` describes available runtime numeric metrics;
+- `settlement_name` stores multilingual/alternate lookup names for canonical settlements;
 - `settlement_metric` stores sparse `(settlement, metric, value)` rows;
 - shared UI reads metric definitions instead of assuming columns/categories.
 

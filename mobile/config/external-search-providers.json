@@ -1,0 +1,81 @@
+{
+  "providers": [
+    {
+      "id": "google",
+      "title": "Google",
+      "countryCode": null,
+      "urlTemplate": "https://www.google.com/search?q={query}",
+      "priority": 10
+    },
+    {
+      "id": "yandex",
+      "title": "Yandex",
+      "countryCode": null,
+      "urlTemplate": "https://yandex.com/search/?text={query}",
+      "priority": 20
+    },
+    {
+      "id": "kufar-by",
+      "title": "Kufar",
+      "countryCode": "BY",
+      "urlTemplate": "https://www.google.com/search?q=site%3Are.kufar.by%20{query}",
+      "priority": 100
+    },
+    {
+      "id": "avito-ru",
+      "title": "Avito",
+      "countryCode": "RU",
+      "urlTemplate": "https://www.google.com/search?q=site%3Aavito.ru%20{query}",
+      "priority": 100
+    },
+    {
+      "id": "idealista-es",
+      "title": "Idealista",
+      "countryCode": "ES",
+      "urlTemplate": "https://www.google.com/search?q=site%3Aidealista.com%20{query}",
+      "priority": 100
+    },
+    {
+      "id": "idealista-pt",
+      "title": "Idealista",
+      "countryCode": "PT",
+      "urlTemplate": "https://www.google.com/search?q=site%3Aidealista.pt%20{query}",
+      "priority": 100
+    },
+    {
+      "id": "immoscout24-de",
+      "title": "ImmobilienScout24",
+      "countryCode": "DE",
+      "urlTemplate": "https://www.google.com/search?q=site%3Aimmobilienscout24.de%20{query}",
+      "priority": 100
+    },
+    {
+      "id": "seloger-fr",
+      "title": "SeLoger",
+      "countryCode": "FR",
+      "urlTemplate": "https://www.google.com/search?q=site%3Aseloger.com%20{query}",
+      "priority": 100
+    },
+    {
+      "id": "rightmove-gb",
+      "title": "Rightmove",
+      "countryCode": "GB",
+      "urlTemplate": "https://www.google.com/search?q=site%3Arightmove.co.uk%20{query}",
+      "priority": 100
+    },
+    {
+      "id": "funda-nl",
+      "title": "Funda",
+      "countryCode": "NL",
+      "urlTemplate": "https://www.google.com/search?q=site%3Afunda.nl%20{query}",
+      "priority": 100
+    },
+    {
+      "id": "immoweb-be",
+      "title": "Immoweb",
+      "countryCode": "BE",
+      "urlTemplate": "https://www.google.com/search?q=site%3Aimmoweb.be%20{query}",
+      "priority": 100
+    }
+  ]
+}

@@ -21,7 +21,10 @@ The `[builder]` section defines paths shared by configured datasets:
 - `output_root` — local ignored generated package root;
 - `format_schema` — authoritative SQLite schema;
 - `format_version_file` — persisted format version;
-- `context_km` — default context outside a configured boundary for nearby-feature analysis.
+- `context_km` — default context outside a configured boundary for nearby-feature analysis;
+- `settlement_name_tags` — default ordered OSM name tags persisted as searchable aliases;
+- `settlement_deduplication_tolerance_m` — optional default meter tolerance for geometry-based duplicate resolution such as a label point just outside its matching area; `0` disables this tolerance.
+- `settlement_name_deduplication_distance_m` — optional default maximum representative-point distance for merging candidates that share a normalized name alias; `place=*` differences do not block this match, and `0` disables name+distance merging.
 
 Each `[datasets.<id>]` entry defines one installable package scope.
 
@@ -32,9 +35,12 @@ Important fields:
 - `source_pbf` — filename relative to `source_root`;
 - `boundary_geojson` — optional boundary for extracting a smaller package from a larger PBF;
 - `initial_center_latitude`, `initial_center_longitude`, `initial_zoom` — initial map camera;
-- `property_search_site` — optional domain restriction for external web search;
-- `property_search_terms` — default property query terms.
-- `metric_profile` — named build profile selecting which metric categories are physically processed for this dataset.
+- `property_search_site` — legacy package metadata retained for compatibility; current provider selection does not depend on this field;
+- `property_search_terms` — default terms passed to enabled external-search provider templates.
+- `metric_profile` — named build profile selecting which metric categories are physically processed for this dataset;
+- `settlement_name_tags` — optional dataset override of searchable OSM name tags. Belarus currently includes `name`, `name:be`, `name:ru`, `name:en`, `official_name`, and `alt_name`;
+- `settlement_deduplication_tolerance_m` — optional dataset override for geometry-based settlement canonicalization. Belarus uses `250` meters to absorb small gaps between a mapped place label and its matching boundary/alternate OSM representation;
+- `settlement_name_deduplication_distance_m` — optional dataset override for same-name spatial canonicalization. Belarus uses `1000` meters, so nearby candidates sharing a normalized alias merge even when both are OSM nodes or their `place=*` values differ.
 
 A dataset does **not** need to be a country. For a large country, add a regional PBF as its own dataset entry.
 
@@ -51,9 +57,9 @@ The current profiles are:
 
 ### External property-search configuration
 
-Current runtime property-search behavior is intentionally small: generated dataset metadata carries the optional `property_search_site` restriction and `property_search_terms`, while shared Kotlin exposes explicit Google and Yandex actions. The application does not load a separate provider registry at runtime and does not scrape property portals.
+External-search providers are application-owned runtime configuration rather than dataset-format configuration. `mobile/config/external-search-providers.json` is the packaged seed catalog. On first use its rows are inserted into the local settings SQLite, which then becomes the authoritative runtime registry. Dataset `country_code` selects applicable country rows and `property_search_terms` supplies default query terms. Provider URLs are templates expanded locally by shared Kotlin; the application does not scrape property portals.
 
-`config/external-services.yaml` is not part of the current runtime configuration path. Treat it as non-authoritative planning material unless a future change specification explicitly introduces a provider-registry contract and wires it through the builder/runtime boundary.
+Provider customization currently has no dedicated settings screen. Advanced/manual changes may update the application settings database directly; seeded defaults use `INSERT OR IGNORE`, so existing customized rows are not overwritten on startup.
 
 ## Metric configuration model
 

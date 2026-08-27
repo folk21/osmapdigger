@@ -18,12 +18,7 @@ import me.friwi.jcefmaven.CefAppBuilder
 import me.friwi.jcefmaven.MavenCefAppHandlerAdapter
 import org.cef.CefApp
 import org.cef.CefClient
-import org.cef.CefSettings
 import org.cef.browser.CefBrowser
-import org.cef.browser.CefFrame
-import org.cef.handler.CefDisplayHandlerAdapter
-import org.cef.handler.CefLoadHandler
-import org.cef.handler.CefLoadHandlerAdapter
 import java.awt.BorderLayout
 import java.io.Closeable
 import java.nio.file.Files
@@ -177,7 +172,6 @@ private class CefRuntime private constructor(
         return try {
             DesktopDiagnostics.info("jcef", "Creating browser client dataset=${datasetInfo.id}")
             val client = app.createClient()
-            installDiagnostics(client)
             val browser = client.createBrowser(server.indexUrl, false, false)
             DesktopDiagnostics.info("jcef", "Browser created indexUrl=${server.indexUrl}")
             WebMapSession(server = server, client = client, browser = browser)
@@ -193,64 +187,6 @@ private class CefRuntime private constructor(
             .onFailure { failure -> DesktopDiagnostics.warn("jcef", "CefApp dispose failed", failure) }
     }
 
-    private fun installDiagnostics(client: CefClient) {
-        client.addDisplayHandler(
-            object : CefDisplayHandlerAdapter() {
-                override fun onConsoleMessage(
-                    browser: CefBrowser,
-                    level: CefSettings.LogSeverity,
-                    message: String,
-                    source: String,
-                    line: Int,
-                ): Boolean {
-                    DesktopDiagnostics.info(
-                        "web.console",
-                        "level=$level source=$source line=$line message=$message",
-                    )
-                    return true
-                }
-            },
-        )
-        client.addLoadHandler(
-            object : CefLoadHandlerAdapter() {
-                override fun onLoadingStateChange(
-                    browser: CefBrowser,
-                    isLoading: Boolean,
-                    canGoBack: Boolean,
-                    canGoForward: Boolean,
-                ) {
-                    DesktopDiagnostics.info(
-                        "web.load",
-                        "loading=$isLoading url=${browser.url}",
-                    )
-                }
-
-                override fun onLoadEnd(
-                    browser: CefBrowser,
-                    frame: CefFrame,
-                    httpStatusCode: Int,
-                ) {
-                    DesktopDiagnostics.info(
-                        "web.load",
-                        "completed status=$httpStatusCode url=${browser.url}",
-                    )
-                }
-
-                override fun onLoadError(
-                    browser: CefBrowser,
-                    frame: CefFrame,
-                    errorCode: CefLoadHandler.ErrorCode,
-                    errorText: String,
-                    failedUrl: String,
-                ) {
-                    DesktopDiagnostics.warn(
-                        "web.load",
-                        "failed code=$errorCode text=$errorText url=$failedUrl",
-                    )
-                }
-            },
-        )
-    }
 
     companion object {
         fun create(): CefRuntime {
@@ -258,19 +194,16 @@ private class CefRuntime private constructor(
                 Paths.get(System.getProperty("user.home"), ".osmapdigger", "runtime")
                     .toAbsolutePath()
             val installDir = runtimeRoot.resolve("jcef")
-            val cacheDir = runtimeRoot.resolve("jcef-cache")
             Files.createDirectories(installDir)
-            Files.createDirectories(cacheDir)
 
             DesktopDiagnostics.info(
                 "jcef",
-                "Preparing runtime installDir=$installDir rootCachePath=$cacheDir thread=${Thread.currentThread().name}",
+                "Preparing runtime installDir=$installDir thread=${Thread.currentThread().name}",
             )
 
             val builder = CefAppBuilder()
             builder.setInstallDir(installDir.toFile())
             builder.getCefSettings().windowless_rendering_enabled = false
-            builder.getCefSettings().root_cache_path = cacheDir.toString()
             builder.setAppHandler(object : MavenCefAppHandlerAdapter() {})
             val app = builder.build()
             DesktopDiagnostics.info("jcef", "CefApp initialized thread=${Thread.currentThread().name}")

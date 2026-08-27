@@ -101,7 +101,11 @@ Stores the runtime filter catalog. Important semantics:
 
 ### `settlement`
 
-Stores one searchable point representation per named settlement. The builder derives the point from OSM geometry; non-point place geometry uses a representative point. OSM identity fields are retained when available.
+Stores one canonical searchable point representation per named settlement. Before persistence the builder merges duplicate OSM representations only with strong evidence: matching place type plus shared Wikidata identity, or matching normalized name backed by point/area or intersecting-area geometry. A place node is preferred as the canonical runtime coordinate when present.
+
+### `settlement_name`
+
+Stores searchable primary/localized/official/alternate aliases for each canonical settlement. Belarus currently preserves Belarusian, Russian, and English configured name tags. The builder stores a deterministic normalized form for each alias; format-version-1 runtime readers fall back to the legacy settlement name columns when opening older packages without this additive table.
 
 ### `settlement_metric`
 
@@ -167,7 +171,7 @@ sequenceDiagram
 
 Desktop implements `GeoRepository` through Xerial SQLite JDBC. Android uses `android.database.sqlite.SQLiteDatabase`. Shared code therefore does not depend on a specific SQLite library.
 
-Mutable user state is separate from generated dataset SQLite. Shared `UserPreferencesRepository` and restore logic persist the current dataset ID, stable center ID, optional radius, and dynamic metric ranges. Desktop stores this in `~/.osmapdigger/settings/preferences.sqlite`; Android uses app-private `filesDir/settings/preferences.sqlite`. The settings schema and version lifecycle are independent from `geo-format`.
+Mutable application state is separate from generated dataset SQLite. Shared `UserPreferencesRepository` and restore logic persist the current dataset ID, stable center ID, optional radius, and dynamic metric ranges. The same application-owned settings SQLite also stores enabled external-search provider definitions behind `ExternalSearchProviderRepository`. Desktop stores this database in `~/.osmapdigger/settings/preferences.sqlite`; Android uses app-private `filesDir/settings/preferences.sqlite`. The legacy `preferences.sqlite` filename is retained to avoid moving existing user state even though the database now owns broader application settings. The settings schema and version lifecycle are independent from `geo-format`.
 
 ## Dynamic filter UI
 
@@ -185,7 +189,9 @@ The current UI uses text numeric inputs. More specialized controls may be added 
 
 ## Center/radius search
 
-The user can search settlement names and choose one as a center. Shared `GeoMath.boundingBox()` computes a coarse latitude/longitude box. Platform SQL applies the box and metric filters. Shared `GeoMath.distanceKm()` then performs exact Haversine filtering.
+The user can search settlement names and choose one as a center. `SettlementSearchService` lazily loads the dataset's compact settlement-name index and applies shared deterministic ranking across all aliases: exact match, prefix, substring, then bounded Levenshtein fuzzy fallback. This keeps Cyrillic/Latin alias behavior identical on Desktop and Android without depending on SQLite ICU/FTS extensions. Equal-name results remain separate and are ordered deterministically, with population used only as a ranking tie-breaker.
+
+Shared `geo.GeoMath.boundingBox()` computes a coarse latitude/longitude box. Platform SQL applies the box and metric filters. Shared `GeoMath.distanceKm()` then performs exact Haversine filtering.
 
 This approach intentionally avoids requiring SpatiaLite or custom SQLite math functions in both platform runtimes.
 
@@ -193,7 +199,7 @@ This approach intentionally avoids requiring SpatiaLite or custom SQLite math fu
 
 `GeoRepository.details()` hydrates the selected settlement plus every persisted metric value, ordered by definition sort order. Shared UI groups values by `group`.
 
-`PropertySearchLinks` builds explicit Google/Yandex query URLs. Dataset metadata may define a site restriction such as `kufar.by`; no property portal is scraped or embedded.
+`ExternalSearchProviderRepository` returns enabled global and dataset-country providers from application settings SQLite. The packaged seed catalog is owned by `mobile/config/external-search-providers.json` and currently defines Google/Yandex plus country-specific property portals such as Kufar, Avito, Idealista, ImmobilienScout24, SeLoger, Rightmove, Funda, and Immoweb. Seeding uses `INSERT OR IGNORE`, so customized rows remain authoritative. `ExternalSearchUrlBuilder` expands persisted URL templates with percent-encoded settlement/query terms; no property portal is scraped or embedded.
 
 ## Desktop package loading
 
@@ -269,7 +275,7 @@ These checks must be rerun on a configured development workstation before treati
 - Multiple simultaneously installed datasets are not yet managed through a full dataset-manager screen.
 - Desktop can import/open generated packages but does not yet provide an integrated “select PBF and run Python builder” wizard.
 - Android imports prebuilt packages; it does not run Pyrosm/tilemaker locally.
-- Search result ranking is currently deterministic name/order + filters, not a scoring model.
+- Analytical result ranking remains deterministic name/order + filters rather than a scoring model; center-settlement name lookup separately uses exact/prefix/substring/fuzzy alias ranking.
 - Favorites, notes, named saved searches, and comparisons are not persisted yet; only the current search context is restored.
 - Non-OSM environmental sources are not implemented yet.
 
