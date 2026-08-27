@@ -62,6 +62,18 @@ def validate_package(package_dir: Path) -> dict:
             raise RuntimeError(f"SQLite integrity failed: {integrity}")
         settlements = connection.execute("SELECT COUNT(*) FROM settlement").fetchone()[0]
         metrics = connection.execute("SELECT COUNT(*) FROM metric_definition").fetchone()[0]
+        has_preference_defaults = (
+            connection.execute(
+                "SELECT 1 FROM sqlite_master "
+                "WHERE type = 'table' AND name = 'metric_preference_default'"
+            ).fetchone()
+            is not None
+        )
+        preference_defaults = (
+            connection.execute("SELECT COUNT(*) FROM metric_preference_default").fetchone()[0]
+            if has_preference_defaults
+            else 0
+        )
     finally:
         connection.close()
 
@@ -69,6 +81,7 @@ def validate_package(package_dir: Path) -> dict:
         "datasetId": metadata["datasetId"],
         "settlements": int(settlements),
         "metrics": int(metrics),
+        "preferenceDefaults": int(preference_defaults),
         "hasMap": any(package_dir.glob("*.pmtiles")),
     }
 

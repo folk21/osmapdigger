@@ -16,6 +16,7 @@ from .config import (
     load_categories,
     load_dataset_definition,
     load_metric_profile,
+    load_preference_profile,
     select_categories,
 )
 from .database import DatasetDatabaseWriter, validate_database
@@ -65,6 +66,16 @@ def build_dataset(
 
     format_version = int(dataset.format_version_file.read_text(encoding="utf-8").strip())
     metric_definitions = build_metric_definitions(categories)
+    preference_defaults = load_preference_profile(
+        dataset.preference_profiles_file,
+        dataset.preference_profile,
+        metric_definitions,
+    )
+    print(
+        f"Preference profile {dataset.preference_profile or 'none'}: "
+        f"{len(preference_defaults)} defaults selected",
+        flush=True,
+    )
 
     scope_geometry = load_boundary(dataset.boundary_geojson) if dataset.boundary_geojson else None
     metric_crs = None
@@ -126,6 +137,7 @@ def build_dataset(
             metric_definitions,
             settlements,
             metrics_by_sid,
+            preference_defaults=preference_defaults,
         )
 
         db_stats = validate_database(database_path)
@@ -181,6 +193,8 @@ def build_dataset(
                 "metricProfile": dataset.metric_profile,
                 "metricCategoryCount": len(categories),
                 "metricDefinitionCount": len(metric_definitions),
+                "preferenceProfile": dataset.preference_profile,
+                "preferenceDefaultCount": len(preference_defaults),
             },
             "statistics": db_stats,
         }

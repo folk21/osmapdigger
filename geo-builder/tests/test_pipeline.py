@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import geopandas as gpd
@@ -35,6 +36,17 @@ def test_pipeline_publishes_data_package_without_map(tmp_path, monkeypatch):
     pbf = source_root / "fixture.osm.pbf"
     pbf.write_bytes(b"synthetic-pbf-placeholder")
 
+    preference_profiles = tmp_path / "preference-profiles.toml"
+    preference_profiles.write_text(
+        """
+[profiles.test]
+preferences = [
+    { metric_id = "forest.distance_km", enabled = true, target = 1.0, limit = 10.0, weight = 6 },
+]
+""".strip(),
+        encoding="utf-8",
+    )
+
     datasets = tmp_path / "datasets.toml"
     datasets.write_text(
         f"""
@@ -43,6 +55,7 @@ source_root = "{source_root.as_posix()}"
 output_root = "{output_root.as_posix()}"
 format_schema = "{(ROOT / 'geo-format/schema.sql').as_posix()}"
 format_version_file = "{(ROOT / 'geo-format/VERSION').as_posix()}"
+preference_profiles = "{preference_profiles.as_posix()}"
 context_km = 5.0
 
 [datasets.test]
@@ -53,6 +66,7 @@ initial_center_longitude = 1.5
 initial_zoom = 10.0
 property_search_site = "example.test"
 property_search_terms = "house"
+preference_profile = "test"
 """.strip(),
         encoding="utf-8",
     )
@@ -87,4 +101,10 @@ selectors = [[{ tag = "natural", values = ["wood"] }]]
     assert (package_dir / "georisk.sqlite").exists()
     assert (package_dir / "metadata.json").exists()
     assert (package_dir / "test.omd.zip").exists()
-    assert validate_database(package_dir / "georisk.sqlite")["settlements"] == 1
+    stats = validate_database(package_dir / "georisk.sqlite")
+    assert stats["settlements"] == 1
+    assert stats["preferenceDefaults"] == 1
+
+    metadata = json.loads((package_dir / "metadata.json").read_text(encoding="utf-8"))
+    assert metadata["build"]["preferenceProfile"] == "test"
+    assert metadata["build"]["preferenceDefaultCount"] == 1

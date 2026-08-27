@@ -41,7 +41,7 @@ class CategoryDefinition:
     distance: bool
     coverage_radii_km: tuple[float, ...]
     count_radii_km: tuple[float, ...]
-    preferred_direction: Literal["lower", "higher"]
+    preferred_direction: Literal["lower", "higher", "neutral"]
     road_batch: bool = False
 
 
@@ -59,6 +59,18 @@ class MetricDefinition:
     preferred_direction: str
     default_enabled: bool
     sort_order: int
+
+
+@dataclass(frozen=True)
+class MetricPreferenceDefault:
+    """Resolved dataset-provided default for one scoreable runtime metric."""
+
+    metric_id: str
+    direction: Literal["lower", "higher"]
+    target_value: float
+    limit_value: float
+    weight: int
+    default_enabled: bool
 
 
 @dataclass(frozen=True)
@@ -84,6 +96,8 @@ class DatasetDefinition:
     format_version_file: Path
     metric_profiles_file: Path | None
     metric_profile: str
+    preference_profiles_file: Path | None
+    preference_profile: str | None
     property_search_site: str | None
     property_search_terms: str
     settlement_name_tags: tuple[str, ...]

@@ -3,6 +3,7 @@ package com.permieware.osmapdigger.search
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.MetricDefinition
+import com.permieware.osmapdigger.domain.MetricPreferenceDefault
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.domain.SettlementAnalysisCandidate
 import com.permieware.osmapdigger.domain.SearchRequest
@@ -63,6 +64,8 @@ class SearchServiceTest {
             DatasetInfo("test", "Test", null, GeoPoint(0.0, 0.0), 10.0, false, null, "property")
 
         override suspend fun metricDefinitions(): List<MetricDefinition> = emptyList()
+
+        override suspend fun preferenceDefaults(): List<MetricPreferenceDefault> = emptyList()
 
         override suspend fun settlementSearchEntries(): List<SettlementSearchEntry> = emptyList()
 

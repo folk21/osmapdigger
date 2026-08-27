@@ -21,6 +21,7 @@ Common code must not import Android/JVM filesystem or database APIs.
 - UI must not construct SQL.
 - `SearchCondition` uses generic metric IDs and optional min/max values.
 - Missing metric rows are unknown, not zero.
+- Dataset scoring defaults come from `GeoRepository.preferenceDefaults()`; UI/shared code must not read builder preference TOML or infer defaults from metric IDs.
 - Platform repositories perform metric/bounding-box candidate reduction.
 - Shared `SearchService` performs exact radius filtering so Android/Desktop semantics stay aligned.
 - Ranked analysis must batch-load only requested scoring metrics; never call full `details()` once per candidate.

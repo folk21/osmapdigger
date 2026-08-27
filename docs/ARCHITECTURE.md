@@ -78,21 +78,26 @@ The current package contains:
 
 SQLite is normalized around dynamic metric definitions. Runtime code does not require a schema column for every possible OSM category.
 
-## Dynamic metric boundary
+## Dynamic metric and preference-default boundary
 
-Build configuration defines categories and generated measures. The builder publishes those measures as runtime `metric_definition` records.
+Build configuration defines categories and generated measures. The builder publishes those measures as runtime `metric_definition` records and may additionally publish resolved dataset-provided scoring defaults as `metric_preference_default` rows. Preference defaults are intentionally separate from metric-generation profiles and hard-filter `default_enabled` metadata.
 
 ```mermaid
 flowchart LR
-    TOML[metrics.toml] --> PY[Python metric catalog]
+    METRICS[metrics.toml] --> PY[Python metric catalog]
+    MPROFILE[metric-profiles.toml] --> PY
+    PPROFILE[preference-profiles.toml] --> PREF[Preference profile resolver]
     PY --> DEF[metric_definition rows]
     PY --> VALUES[settlement_metric values]
-    DEF --> UI[Dynamic filter UI]
+    DEF --> PREF
+    PREF --> PDEF[metric_preference_default rows]
+    DEF --> UI[Dynamic hard-filter UI]
     DEF --> SUMMARY[Human-readable filter summary]
-    VALUES --> QUERY[Runtime search]
+    VALUES --> QUERY[Runtime search / scoring]
+    PDEF --> RANK[Generic preference initialization]
 ```
 
-This is the extension mechanism for new OSM-derived filters. Shared Kotlin UI should not need source changes when an additive numeric metric is added to the dataset contract.
+This is the extension mechanism for new OSM-derived filters and dataset-provided ranking defaults. Shared Kotlin must not need category-specific source changes when an additive numeric metric or preference default is introduced through the generated runtime contract.
 
 ## Runtime responsibilities
 
@@ -118,6 +123,7 @@ flowchart TB
 - search request semantics;
 - exact radius post-filtering;
 - deterministic filter descriptions;
+- deterministic preference scoring/ranking and dataset-default models;
 - result-to-GeoJSON conversion;
 - immutable user-preference/search-context contracts and restore validation;
 - shared responsive UI and map overlays.

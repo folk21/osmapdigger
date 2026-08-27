@@ -26,7 +26,8 @@ This document describes the current Kotlin Multiplatform implementation under `m
 - `GeoPoint` — WGS84 coordinate;
 - `DatasetInfo` — runtime dataset identity/initial camera/map availability;
 - `PreferredDirection` — descriptive lower/higher preference metadata;
-- `MetricDefinition` — one persisted numeric filter definition;
+- `MetricDefinition` — one persisted numeric metric/filter definition;
+- `MetricPreferenceDefault` — one validated dataset-provided generic scoring default with legacy-package absence represented by an empty catalog;
 - `Settlement` — one canonical searchable settlement point;
 - `SettlementName` / `SettlementSearchEntry` / `SettlementSearchMatch` — multilingual alias index and ranked center-lookup models;
 - `SearchCondition` — optional min/max range for one metric ID;
@@ -44,6 +45,7 @@ Platform implementations provide:
 
 - dataset metadata;
 - metric catalog;
+- optional dataset preference-default catalog with legacy-v1 empty fallback;
 - complete settlement-name search index loading with legacy-dataset fallback;
 - legacy SQL-reduced hard-filter search candidates;
 - batch hard-filter-eligible analysis candidates with only requested scoring metric values;
@@ -116,9 +118,7 @@ The repository path intentionally has no unrelated name-based final limit and ne
 `search/SearchRequestSemantics.kt` centralizes radius validation, coarse bounds, exact radius matching,
 and effective-condition selection so legacy `SearchService` and ranked analysis cannot drift.
 
-The current Compose UI still calls the legacy `SearchService`; ranked analysis is not user-visible yet.
-Preference-default persistence, application settings for custom weights/targets, and analysis-state/UI
-integration remain later sub-spec increments.
+The current Compose UI still calls the legacy `SearchService`; ranked analysis is not user-visible yet. Generated datasets may now expose `MetricPreferenceDefault` values through `GeoRepository.preferenceDefaults()`, but the application does not initialize UI analysis state from them yet. Application settings for customized weights/targets and analysis-state/UI integration remain later sub-spec increments.
 
 ## Filter summaries
 
@@ -183,6 +183,8 @@ subquery per effective metric condition, deterministic name ordering, and a repo
 `SettlementAnalysisCandidate` values. Missing scoring rows therefore remain unknown rather than
 excluding the settlement or becoming zero.
 
+`preferenceDefaults()` reads `metric_preference_default` ordered by the owning metric's `sort_order`. It first probes `sqlite_master`; a legacy format-v1 database without the additive table returns an empty list. Persisted rows are converted into validated shared `MetricPreferenceDefault` values, so unsupported direction or invalid numeric contracts fail instead of being silently reinterpreted.
+
 ### `SqliteUserPreferencesRepository`
 
 Stores the current search context at `~/.osmapdigger/settings/preferences.sqlite` using a single-row application-owned schema with `PRAGMA user_version = 1`. Connections are short-lived and preference I/O runs on `Dispatchers.IO`.
@@ -241,7 +243,7 @@ loading or native map initialization.
 
 Implements both legacy hard-filter and batch ranked-analysis candidate semantics through
 `SQLiteDatabase.rawQuery()`. Its `analysisCandidates()` query mirrors Desktop hard predicates and
-active-metric `LEFT JOIN` behavior so shared scoring sees the same sparse metric contract.
+active-metric `LEFT JOIN` behavior so shared scoring sees the same sparse metric contract. `preferenceDefaults()` mirrors Desktop's additive-table probe/order/validation and returns an empty list for legacy v1 packages without the table.
 
 ### `AndroidDatasetInstaller`
 

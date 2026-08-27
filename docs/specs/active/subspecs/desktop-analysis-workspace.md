@@ -75,7 +75,7 @@ A scoring implementation must not call `GeoRepository.details()` once per candid
 ranking requires a batch repository contract that returns the active scoring metric values for all
 eligible candidates without an N+1 query pattern.
 
-The first two implementation increments are now complete. Shared `analysis/PreferenceModels.kt`,
+The first three implementation increments are now complete. Shared `analysis/PreferenceModels.kt`,
 `analysis/PreferenceScorer.kt`, and `analysis/SettlementRanker.kt` define validated immutable
 preference/contribution/score models, pure deterministic `LOWER`/`HIGHER` scoring with explicit
 unknown-data coverage, and stable score/coverage/name/ID ranking.
@@ -88,10 +88,11 @@ analysis then applies exact radius filtering, scoring, deterministic ranking, an
 limit. The existing `SearchService`/`searchCandidates()` path remains available unchanged for the
 current hard-filter UI until the later analysis-state/UI increment switches workflows deliberately.
 
-Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, and Desktop JDBC
-tests cover batch active-metric retrieval, hard-filter preservation, unknown metric values, and the
-no-scoring-metric branch. Preference defaults, user-customized scoring persistence, shared analysis
-state, and Compose integration are still pending.
+Dataset-provided preference defaults are now implemented independently from hard-filter visibility. `geo-builder/config/preference-profiles.toml` defines named defaults over stable generated metric IDs, `datasets.toml` selects a profile, and the builder validates/resolves it only against the metrics physically produced by the selected metric profile. Resolved rows are persisted in additive format-v1 table `metric_preference_default` with explicit direction, target, limit, weight, and enabled state.
+
+`GeoRepository.preferenceDefaults()` exposes the catalog on Desktop and Android. Updated readers probe for the additive table and return an empty list for legacy format-v1 packages that predate it; older readers safely ignore the table in newly generated v1 packages. The current Compose UI does not consume these defaults yet.
+
+Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration and preference-default validation. Desktop JDBC tests cover preference-default loading/legacy fallback, batch active-metric retrieval, hard-filter preservation, unknown metric values, and the no-scoring-metric branch. User-customized scoring persistence, shared analysis state, and Compose integration are still pending.
 
 ## Requirements
 
@@ -566,15 +567,13 @@ Two independent persisted boundaries may evolve during this increment:
 2. mutable user preference state, governed by the application settings database and its independent
    migration/version owner.
 
-Before implementation commits to a dataset representation:
+The generated dataset decision is now explicit:
 
-1. inspect the current `metric_definition` and optional additive-table compatibility strategy;
-2. decide whether preference defaults belong in an additive definition table or an explicit metric
-   metadata extension;
-3. preserve stable metric IDs;
-4. define legacy package behavior explicitly;
-5. coordinate Python publication, package validation, Desktop reader, Android reader, and tests;
-6. keep user-customized targets/weights out of generated dataset artifacts.
+1. preference defaults use additive table `metric_preference_default`, separate from `metric_definition.default_enabled`;
+2. rows reference stable generated `metric_id` values and store resolved scoreable direction, target, limit, weight, and initial enabled state;
+3. `geo-format/VERSION` remains `1` because older readers ignore the additive table and updated readers explicitly fall back to an empty default catalog when it is absent;
+4. Python profile validation, SQLite constraints, Desktop reader tests, and Android reader parity protect the writer/reader contract;
+5. user-customized targets/weights remain outside generated dataset artifacts and belong to the application settings boundary.
 
 The application settings payload/schema may need a new version to persist preference state. Existing
 saved hard-filter context must either migrate deterministically or remain loadable with documented
@@ -630,8 +629,9 @@ Suggested implementation order:
 5. **Implemented:** implement Desktop/Android repository support and Desktop regression tests for
    batch active-metric retrieval; Android adapter compile/device validation remains part of configured
    validation.
-6. Decide and implement generic preference-default persistence/configuration with explicit package
-   compatibility.
+6. **Implemented:** add independent preference-profile configuration, additive format-v1
+   `metric_preference_default` persistence, Desktop/Android readers with legacy empty fallback, and
+   cross-boundary validation/tests.
 7. Extend application-owned preference persistence for user-customized target/limit/weight state.
 8. **Implemented:** add parallel ranked-analysis orchestration so hard filtering and exact radius
    precede scoring and final result limiting follows ranking, while retaining the legacy hard-filter

@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-from .models import MetricDefinition, SettlementRecord
+from .models import MetricDefinition, MetricPreferenceDefault, SettlementRecord
 
 
 class DatasetDatabaseWriter:
@@ -26,6 +26,7 @@ class DatasetDatabaseWriter:
         definitions: list[MetricDefinition],
         settlements: list[SettlementRecord],
         metrics_by_sid: dict[int, dict[str, float]],
+        preference_defaults: list[MetricPreferenceDefault] | None = None,
     ) -> None:
         """Replace ``target`` with a new SQLite database populated in one transaction.
 
@@ -64,6 +65,24 @@ class DatasetDatabaseWriter:
                         definition.sort_order,
                     )
                     for definition in definitions
+                ],
+            )
+            connection.executemany(
+                """
+                INSERT INTO metric_preference_default(
+                    metric_id, direction, target_value, limit_value, weight, default_enabled
+                ) VALUES (?,?,?,?,?,?)
+                """,
+                [
+                    (
+                        preference.metric_id,
+                        preference.direction,
+                        preference.target_value,
+                        preference.limit_value,
+                        preference.weight,
+                        1 if preference.default_enabled else 0,
+                    )
+                    for preference in (preference_defaults or [])
                 ],
             )
             connection.executemany(
@@ -136,21 +155,30 @@ def validate_database(path: Path) -> dict[str, int]:
         if integrity != "ok":
             raise RuntimeError(f"SQLite integrity check failed: {integrity}")
 
-        has_settlement_names = (
-            connection.execute(
-                "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'settlement_name'"
-            ).fetchone()
-            is not None
-        )
+        table_names = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            ).fetchall()
+        }
         return {
             "settlements": int(connection.execute("SELECT COUNT(*) FROM settlement").fetchone()[0]),
             "settlementNames": (
                 int(connection.execute("SELECT COUNT(*) FROM settlement_name").fetchone()[0])
-                if has_settlement_names
+                if "settlement_name" in table_names
                 else 0
             ),
             "metrics": int(
                 connection.execute("SELECT COUNT(*) FROM metric_definition").fetchone()[0]
+            ),
+            "preferenceDefaults": (
+                int(
+                    connection.execute(
+                        "SELECT COUNT(*) FROM metric_preference_default"
+                    ).fetchone()[0]
+                )
+                if "metric_preference_default" in table_names
+                else 0
             ),
             "values": int(
                 connection.execute("SELECT COUNT(*) FROM settlement_metric").fetchone()[0]

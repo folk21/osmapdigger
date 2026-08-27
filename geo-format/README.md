@@ -19,12 +19,13 @@ Current format version: **1**.
 
 The format is intentionally dynamic with respect to OSM-derived filters:
 
-- `metric_definition` describes available runtime numeric metrics;
+- `metric_definition` describes available runtime numeric metrics and hard-filter presentation defaults;
+- `metric_preference_default` optionally stores separate dataset-provided generic ranking defaults;
 - `settlement_name` stores multilingual/alternate lookup names for canonical settlements;
 - `settlement_metric` stores sparse `(settlement, metric, value)` rows;
 - shared UI reads metric definitions instead of assuming columns/categories.
 
-This lets a rebuilt dataset expose additive numeric filters without adding a new SQLite column or a category-specific Kotlin branch.
+This lets a rebuilt dataset expose additive numeric filters and ranking defaults without category-specific Kotlin branches. Preference defaults remain separate from hard-filter visibility and metric-generation profile selection.
 
 A missing `settlement_metric` row means the value is unavailable/unknown, **not zero**.
 

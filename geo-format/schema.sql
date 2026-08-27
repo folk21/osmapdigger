@@ -34,6 +34,23 @@ CREATE TABLE metric_definition (
     sort_order INTEGER NOT NULL
 );
 
+-- Dataset-provided scoring defaults are deliberately separate from hard-filter
+-- visibility. New readers may use these rows to initialize generic ranking
+-- preferences; legacy format-v1 readers safely ignore this additive table.
+CREATE TABLE metric_preference_default (
+    metric_id TEXT PRIMARY KEY NOT NULL,
+    direction TEXT NOT NULL CHECK(direction IN ('lower', 'higher')),
+    target_value REAL NOT NULL,
+    limit_value REAL NOT NULL,
+    weight INTEGER NOT NULL CHECK(weight BETWEEN 1 AND 10),
+    default_enabled INTEGER NOT NULL CHECK(default_enabled IN (0, 1)),
+    CHECK(
+        (direction = 'lower' AND target_value < limit_value) OR
+        (direction = 'higher' AND target_value > limit_value)
+    ),
+    FOREIGN KEY (metric_id) REFERENCES metric_definition(metric_id) ON DELETE CASCADE
+);
+
 -- One searchable settlement represented by a WGS84 point. The builder may derive
 -- this point from a non-point OSM place geometry, but general source geometry is a
 -- build-time concern and is not persisted in the current runtime format.

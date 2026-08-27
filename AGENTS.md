@@ -38,7 +38,7 @@ An active spec owns the intended delta while implementation is in progress. Curr
 - `mobile/shared` owns country-agnostic domain models, deterministic search orchestration, filter summaries, shared Compose UI, and map/result presentation contracts.
 - `mobile/desktopApp` and `mobile/androidApp` own filesystem APIs, SQLite adapters, package import, browser opening, and platform lifecycle.
 - UI must not construct SQL, parse SQLite rows, parse metadata JSON directly, or know OSM selector details.
-- Python configuration must not leak directly into runtime code; generated `metric_definition` rows are the runtime filter contract.
+- Python configuration must not leak directly into runtime code; generated `metric_definition` rows are the runtime metric/filter contract and additive `metric_preference_default` rows are the separate dataset scoring-default contract.
 - MapLibre-specific concerns must not leak into domain/search logic.
 
 ## Persisted-format discipline

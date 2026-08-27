@@ -116,6 +116,79 @@ class JdbcGeoRepositoryTest {
         }
     }
 
+
+    @Test
+    fun readsPersistedPreferenceDefaultsInMetricOrder() = runBlocking {
+        val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite::memory:" }
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                createAnalysisTables(statement)
+                statement.execute(
+                    """
+                    CREATE TABLE metric_preference_default(
+                        metric_id TEXT, direction TEXT, target_value REAL, limit_value REAL,
+                        weight INTEGER, default_enabled INTEGER
+                    )
+                    """.trimIndent(),
+                )
+                statement.execute(
+                    """
+                    INSERT INTO metric_definition VALUES (
+                        'water.distance_km','water','Nature','Water','Water','km',
+                        'distance','lower',1,20
+                    )
+                    """.trimIndent(),
+                )
+                statement.execute(
+                    """
+                    INSERT INTO metric_definition VALUES (
+                        'landfill.distance_km','landfill','Risks','Landfill','Landfill','km',
+                        'distance','higher',1,10
+                    )
+                    """.trimIndent(),
+                )
+                statement.execute(
+                    """
+                    INSERT INTO metric_preference_default VALUES (
+                        'water.distance_km','lower',2.0,15.0,8,1
+                    )
+                    """.trimIndent(),
+                )
+                statement.execute(
+                    """
+                    INSERT INTO metric_preference_default VALUES (
+                        'landfill.distance_km','higher',15.0,3.0,9,0
+                    )
+                    """.trimIndent(),
+                )
+            }
+
+            val defaults = repository(connection).preferenceDefaults()
+
+            assertEquals(
+                listOf("landfill.distance_km", "water.distance_km"),
+                defaults.map { it.metricId },
+            )
+            assertEquals(PreferredDirection.HIGHER, defaults[0].direction)
+            assertEquals(15.0, defaults[0].targetValue)
+            assertEquals(3.0, defaults[0].limitValue)
+            assertEquals(9, defaults[0].weight)
+            assertEquals(false, defaults[0].defaultEnabled)
+            assertEquals(PreferredDirection.LOWER, defaults[1].direction)
+            assertEquals(true, defaults[1].defaultEnabled)
+        }
+    }
+
+    @Test
+    fun legacyV1WithoutPreferenceDefaultTableReturnsNoDefaults() = runBlocking {
+        val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite::memory:" }
+        dataSource.connection.use { connection ->
+            connection.createStatement().use(::createAnalysisTables)
+
+            assertTrue(repository(connection).preferenceDefaults().isEmpty())
+        }
+    }
+
     @Test
     fun readsPersistedMultilingualSettlementNames() = runBlocking {
         val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite::memory:" }

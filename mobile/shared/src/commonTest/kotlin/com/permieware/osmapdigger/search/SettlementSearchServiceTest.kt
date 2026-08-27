@@ -92,6 +92,8 @@ class SettlementSearchServiceTest {
 
         override suspend fun metricDefinitions(): List<MetricDefinition> = emptyList()
 
+        override suspend fun preferenceDefaults(): List<MetricPreferenceDefault> = emptyList()
+
         override suspend fun settlementSearchEntries(): List<SettlementSearchEntry> = entries
 
         override suspend fun searchCandidates(

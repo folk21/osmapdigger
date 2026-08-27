@@ -4,9 +4,11 @@ from osmapdigger_geo.config import (
     load_categories,
     load_dataset_definition,
     load_metric_profile,
+    load_preference_profile,
     select_categories,
 )
 from osmapdigger_geo.metric_catalog import build_metric_definitions
+from osmapdigger_geo.models import MetricDefinition
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -18,6 +20,8 @@ def test_dataset_config_resolves_andorra():
     assert dataset.source_pbf.name == "andorra-260821.osm.pbf"
     assert dataset.metric_profile == "full"
     assert dataset.metric_profiles_file.name == "metric-profiles.toml"
+    assert dataset.preference_profile == "balanced-living"
+    assert dataset.preference_profiles_file.name == "preference-profiles.toml"
     assert dataset.settlement_name_tags == ("name", "name:en", "official_name", "alt_name")
     assert dataset.settlement_deduplication_tolerance_m == 0.0
     assert dataset.settlement_name_deduplication_distance_m == 0.0
@@ -82,3 +86,132 @@ def test_metric_profile_rejects_unknown_category(tmp_path):
         assert "does_not_exist" in str(exc)
     else:
         raise AssertionError("Unknown profile category must fail before PBF processing")
+
+
+def test_balanced_preference_profile_resolves_against_generated_catalog():
+    dataset = load_dataset_definition(ROOT / "geo-builder/config/datasets.toml", "belarus")
+    _, categories = load_categories(ROOT / "geo-builder/config/metrics.toml")
+    category_ids = load_metric_profile(dataset.metric_profiles_file, dataset.metric_profile)
+    definitions = build_metric_definitions(
+        select_categories(categories, category_ids, dataset.metric_profile)
+    )
+
+    defaults = load_preference_profile(
+        dataset.preference_profiles_file,
+        dataset.preference_profile,
+        definitions,
+    )
+
+    assert len(defaults) == 10
+    forest = next(item for item in defaults if item.metric_id == "forest.distance_km")
+    landfill = next(item for item in defaults if item.metric_id == "landfill.distance_km")
+    assert forest.direction == "lower"
+    assert forest.default_enabled is True
+    assert forest.target_value == 1.0
+    assert forest.limit_value == 10.0
+    assert forest.weight == 8
+    assert landfill.direction == "higher"
+    assert landfill.target_value == 15.0
+    assert landfill.limit_value == 3.0
+
+
+def test_preference_profile_rejects_metric_not_generated_by_selected_metric_profile(tmp_path):
+    profile_path = tmp_path / "preferences.toml"
+    profile_path.write_text(
+        """
+[profiles.invalid]
+preferences = [
+    { metric_id = "not.generated", enabled = true, target = 1.0, limit = 5.0, weight = 5 },
+]
+""".strip(),
+        encoding="utf-8",
+    )
+    _, categories = load_categories(ROOT / "geo-builder/config/metrics.toml")
+    definitions = build_metric_definitions(categories[:1])
+
+    try:
+        load_preference_profile(profile_path, "invalid", definitions)
+    except ValueError as exc:
+        assert "not generated" in str(exc)
+    else:
+        raise AssertionError("Unknown preference metric must fail before PBF processing")
+
+
+def test_neutral_metric_requires_explicit_preference_direction(tmp_path):
+    profile_path = tmp_path / "preferences.toml"
+    profile_path.write_text(
+        """
+[profiles.invalid]
+[[profiles.invalid.preferences]]
+metric_id = "scrub_heath.distance_km"
+enabled = false
+target = 1.0
+limit = 5.0
+weight = 5
+""".strip(),
+        encoding="utf-8",
+    )
+    _, categories = load_categories(ROOT / "geo-builder/config/metrics.toml")
+    definitions = build_metric_definitions(categories)
+
+    try:
+        load_preference_profile(profile_path, "invalid", definitions)
+    except ValueError as exc:
+        assert "explicit direction" in str(exc)
+    else:
+        raise AssertionError("Neutral metric default must require an explicit scoreable direction")
+
+
+def test_preference_profile_accepts_explicit_direction_for_neutral_metric(tmp_path):
+    profile_path = tmp_path / "preferences.toml"
+    profile_path.write_text(
+        """
+[profiles.explicit]
+[[profiles.explicit.preferences]]
+metric_id = "scrub_heath.distance_km"
+direction = "higher"
+enabled = false
+target = 10.0
+limit = 1.0
+weight = 3
+""".strip(),
+        encoding="utf-8",
+    )
+    _, categories = load_categories(ROOT / "geo-builder/config/metrics.toml")
+    definitions = build_metric_definitions(categories)
+
+    defaults = load_preference_profile(profile_path, "explicit", definitions)
+
+    assert defaults[0].direction == "higher"
+    assert defaults[0].target_value == 10.0
+    assert defaults[0].limit_value == 1.0
+
+
+def test_preference_enabled_state_is_independent_from_hard_filter_visibility(tmp_path):
+    profile_path = tmp_path / "preferences.toml"
+    profile_path.write_text(
+        """
+[profiles.independent]
+preferences = [
+    { metric_id = "custom.distance_km", enabled = true, target = 1.0, limit = 5.0, weight = 4 },
+]
+""".strip(),
+        encoding="utf-8",
+    )
+    definition = MetricDefinition(
+        metric_id="custom.distance_km",
+        category_id="custom",
+        group_id="Test",
+        title="Custom distance",
+        description="Test metric",
+        unit="km",
+        measure_type="distance",
+        preferred_direction="lower",
+        default_enabled=False,
+        sort_order=0,
+    )
+
+    defaults = load_preference_profile(profile_path, "independent", [definition])
+
+    assert definition.default_enabled is False
+    assert defaults[0].default_enabled is True

@@ -29,6 +29,36 @@ class AndroidGeoRepository(
             }
         }
 
+    override suspend fun preferenceDefaults(): List<MetricPreferenceDefault> {
+        if (!hasTable("metric_preference_default")) return emptyList()
+
+        return database.rawQuery(
+            """
+            SELECT p.metric_id, p.direction, p.target_value, p.limit_value,
+                   p.weight, p.default_enabled
+            FROM metric_preference_default p
+            JOIN metric_definition d ON d.metric_id = p.metric_id
+            ORDER BY d.sort_order, p.metric_id
+            """.trimIndent(),
+            null,
+        ).use { cursor ->
+            buildList {
+                while (cursor.moveToNext()) {
+                    add(
+                        MetricPreferenceDefault(
+                            metricId = cursor.getString(0),
+                            direction = readPreferenceDirection(cursor.getString(1)),
+                            targetValue = cursor.getDouble(2),
+                            limitValue = cursor.getDouble(3),
+                            weight = cursor.getInt(4),
+                            defaultEnabled = cursor.getInt(5) != 0,
+                        ),
+                    )
+                }
+            }
+        }
+    }
+
     override suspend fun settlementSearchEntries(): List<SettlementSearchEntry> =
         if (hasSettlementNameTable()) {
             readPersistedSettlementSearchEntries()
@@ -36,10 +66,12 @@ class AndroidGeoRepository(
             readLegacySettlementSearchEntries()
         }
 
-    private fun hasSettlementNameTable(): Boolean =
+    private fun hasSettlementNameTable(): Boolean = hasTable("settlement_name")
+
+    private fun hasTable(name: String): Boolean =
         database.rawQuery(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'settlement_name'",
-            null,
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
+            arrayOf(name),
         ).use { cursor -> cursor.moveToFirst() }
 
     private fun readPersistedSettlementSearchEntries(): List<SettlementSearchEntry> =
@@ -290,6 +322,13 @@ class AndroidGeoRepository(
             SettlementAnalysisCandidate(settlement, metricValues.toMap())
         }
     }
+
+    private fun readPreferenceDirection(value: String): PreferredDirection =
+        when (value) {
+            "lower" -> PreferredDirection.LOWER
+            "higher" -> PreferredDirection.HIGHER
+            else -> error("Unsupported preference direction: $value")
+        }
 
     private fun readMetricDefinition(cursor: Cursor): MetricDefinition =
         MetricDefinition(

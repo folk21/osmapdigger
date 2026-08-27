@@ -36,7 +36,13 @@ Small key/value compatibility/identity metadata available to SQLite readers with
 
 ### `metric_definition`
 
-Runtime filter catalog. It separates the stable metric ID/category from presentation metadata and generated measure type.
+Runtime metric/filter catalog. It separates the stable metric ID/category from presentation metadata and generated measure type. `default_enabled` remains hard-filter visibility metadata.
+
+### `metric_preference_default`
+
+Optional dataset-provided ranking defaults keyed by `metric_id`. Each row stores resolved `lower`/`higher` direction, target, limit, weight `1..10`, and initial enabled state. Foreign-key and `CHECK` constraints preserve referential integrity and direction-specific target/limit ordering. The table deliberately does not reuse `metric_definition.default_enabled`.
+
+This table is additive in format version 1. Updated readers return no defaults when opening an older v1 package without it; older readers ignore the additional table in a newly generated v1 package.
 
 ### `settlement`
 
@@ -65,6 +71,7 @@ Because producer/readers are separated, persisted changes must inspect all of th
 
 - Additive rows in `metric_definition`/`settlement_metric` are normal dataset evolution and do not require a schema-version bump.
 - The additive `settlement_name` table remains format-version-1 compatible because new readers explicitly fall back when it is absent and old readers ignore it.
+- The additive `metric_preference_default` table follows the same compatibility rule: new readers explicitly return an empty default catalog when it is absent and old readers ignore it when present.
 - Renaming/changing semantic meaning of a stable metric ID requires care because future saved searches may refer to IDs.
 - Adding nullable/additive schema fields can remain compatible only if all existing readers tolerate them.
 - Removing/renaming required columns/tables or changing meaning incompatibly requires `VERSION` increment and coordinated reader support.
@@ -78,4 +85,4 @@ The style template references PMTiles through a placeholder resolved by platform
 
 ## Validation
 
-The Python builder runs SQLite integrity checks and package structural validation before publication. Full compatibility validation additionally requires Desktop/Android readers to open a generated package.
+The Python builder validates preference-profile semantics before publication, SQLite enforces persisted direction/weight/bound constraints, and package/database validation records the resulting default count. Full compatibility validation additionally requires Desktop/Android readers to open a generated package and legacy v1 packages without the additive table.

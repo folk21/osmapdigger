@@ -11,7 +11,7 @@ description: Entry point for the build-time Python geospatial processing subsyst
 
 ```mermaid
 flowchart LR
-    C[Dataset + metric TOML] --> P[PbfReader / Pyrosm]
+    C[Dataset + metric/preference config] --> P[PbfReader / Pyrosm]
     P --> S[Settlement extraction]
     P --> F[Configured feature categories]
     S --> M[Distance/count/coverage metrics]
@@ -30,7 +30,7 @@ The package can be built without PMTiles using `--skip-map`, which keeps analyti
 | Module | Responsibility |
 |---|---|
 | `cli.py` | Thin command-line composition root: list/build/validate |
-| `config.py` | Resolve dataset paths, metric profiles, and dynamic category definitions |
+| `config.py` | Resolve dataset paths, metric/preference profiles, and dynamic category definitions |
 | `models.py` | Immutable builder contracts used across stages |
 | `osm_reader.py` | Lazy Pyrosm adapter, batch reads, optional regional PBF crop |
 | `geometry.py` | Boundary loading, metric CRS selection, context buffering |
@@ -43,7 +43,7 @@ The package can be built without PMTiles using `--skip-map`, which keeps analyti
 
 See [`IMPLEMENTATION.md`](IMPLEMENTATION.md) for contracts/call paths and [`../docs/CONFIGURATION.md`](../docs/CONFIGURATION.md) for TOML semantics.
 
-Dataset entries select a named profile from `config/metric-profiles.toml`; profiles bound which metric categories are physically processed without changing UI `default_filter` semantics.
+Dataset entries select a named profile from `config/metric-profiles.toml`; profiles bound which metric categories are physically processed without changing UI `default_filter` semantics. Optional `config/preference-profiles.toml` profiles independently define generic persisted ranking defaults for generated metric IDs.
 
 ## Setup
 

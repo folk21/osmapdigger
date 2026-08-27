@@ -26,6 +26,7 @@ def test_package_validation_and_zip(tmp_path):
 
     result = validate_package(tmp_path)
     assert result["datasetId"] == "test"
+    assert result["preferenceDefaults"] == 0
 
     archive = create_package_zip(tmp_path, "test")
     assert archive.exists()

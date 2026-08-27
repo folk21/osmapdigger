@@ -17,7 +17,7 @@ make check
 
 Currently this runs Python synthetic/unit tests under `geo-builder/tests/`.
 
-The tests cover configuration parsing, dynamic metric generation, synthetic settlement extraction, selector semantics, distance/count/coverage calculations, SQLite round trips, package validation, and a synthetic pipeline path.
+The tests cover configuration parsing, metric/preference profile validation, dynamic metric generation, synthetic settlement extraction, selector semantics, distance/count/coverage calculations, SQLite round trips including preference-default constraints, package validation, and a synthetic pipeline path.
 
 ## Python unit tests directly
 
@@ -77,7 +77,7 @@ make test-desktop
 make test-mobile
 ```
 
-Shared tests cover Haversine distance, search-input parsing, deterministic preference scoring/ranking, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, user-preference payload round trips, dataset scoping, removed metrics, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover legacy dynamic SQL filtering, batch analysis-candidate retrieval of only requested scoring metrics, unknown scoring values, the no-scoring-metric branch, settings SQLite preference round trips, schema migration, provider seeding/custom-row preservation, and malformed-filter behavior.
+Shared tests cover Haversine distance, search-input parsing, deterministic preference scoring/ranking, dataset preference-default contract validation, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, user-preference payload round trips, dataset scoping, removed metrics, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, unknown scoring values, the no-scoring-metric branch, settings SQLite preference round trips, schema migration, provider seeding/custom-row preservation, and malformed-filter behavior.
 
 ## Desktop offline map acceptance
 
@@ -114,9 +114,9 @@ Use this before accepting a cross-project change when the local toolchain suppor
 
 Any change to `geo-format/schema.sql`, `geo-format/VERSION`, or metadata semantics must test both sides of the boundary:
 
-- Python writer/package validation;
-- Desktop SQLite/metadata reader;
-- Android SQLite/metadata reader.
+- Python writer/package validation and schema constraints;
+- Desktop SQLite/metadata reader, including explicit legacy fallback for additive v1 tables;
+- Android SQLite/metadata reader or at minimum configured compile/device validation of the matching contract.
 
 An incompatible format change must not be accepted solely because the Python writer tests pass.
 

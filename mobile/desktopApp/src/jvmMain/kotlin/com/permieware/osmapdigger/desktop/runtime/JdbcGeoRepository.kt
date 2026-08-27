@@ -31,6 +31,37 @@ class JdbcGeoRepository(
             }
         }
 
+    override suspend fun preferenceDefaults(): List<MetricPreferenceDefault> {
+        if (!hasTable("metric_preference_default")) return emptyList()
+
+        return connection.prepareStatement(
+            """
+            SELECT p.metric_id, p.direction, p.target_value, p.limit_value,
+                   p.weight, p.default_enabled
+            FROM metric_preference_default p
+            JOIN metric_definition d ON d.metric_id = p.metric_id
+            ORDER BY d.sort_order, p.metric_id
+            """.trimIndent(),
+        ).use { statement ->
+            statement.executeQuery().use { rows ->
+                buildList {
+                    while (rows.next()) {
+                        add(
+                            MetricPreferenceDefault(
+                                metricId = rows.getString(1),
+                                direction = readPreferenceDirection(rows.getString(2)),
+                                targetValue = rows.getDouble(3),
+                                limitValue = rows.getDouble(4),
+                                weight = rows.getInt(5),
+                                defaultEnabled = rows.getInt(6) != 0,
+                            ),
+                        )
+                    }
+                }
+            }
+        }
+    }
+
     override suspend fun settlementSearchEntries(): List<SettlementSearchEntry> =
         if (hasSettlementNameTable()) {
             readPersistedSettlementSearchEntries()
@@ -38,10 +69,13 @@ class JdbcGeoRepository(
             readLegacySettlementSearchEntries()
         }
 
-    private fun hasSettlementNameTable(): Boolean =
+    private fun hasSettlementNameTable(): Boolean = hasTable("settlement_name")
+
+    private fun hasTable(name: String): Boolean =
         connection.prepareStatement(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'settlement_name'",
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?",
         ).use { statement ->
+            statement.setString(1, name)
             statement.executeQuery().use { rows -> rows.next() }
         }
 
@@ -326,6 +360,13 @@ class JdbcGeoRepository(
             SettlementAnalysisCandidate(settlement, metricValues.toMap())
         }
     }
+
+    private fun readPreferenceDirection(value: String): PreferredDirection =
+        when (value) {
+            "lower" -> PreferredDirection.LOWER
+            "higher" -> PreferredDirection.HIGHER
+            else -> error("Unsupported preference direction: $value")
+        }
 
     private fun readMetricDefinition(rows: ResultSet): MetricDefinition =
         MetricDefinition(

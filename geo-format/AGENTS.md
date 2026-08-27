@@ -28,6 +28,7 @@ Do not reuse an existing metric ID for a materially different meaning.
 
 - Keep `settlement_metric` sparse.
 - Missing metric rows mean unknown/unavailable, not zero.
+- Keep dataset ranking defaults separate from `metric_definition.default_enabled`; additive `metric_preference_default` rows own resolved target/limit/weight/enabled scoring defaults.
 - Preserve referential integrity between settlements, definitions, and values.
 - Keep schema comments aligned with runtime semantics; this file is frequently read directly by contributors/LLMs.
 

@@ -4,6 +4,7 @@ output_root = "../../data/generated/packages"
 format_schema = "../../geo-format/schema.sql"
 format_version_file = "../../geo-format/VERSION"
 metric_profiles = "metric-profiles.toml"
+preference_profiles = "preference-profiles.toml"
 context_km = 25.0
 settlement_name_tags = ["name", "name:en", "official_name", "alt_name"]
 
@@ -16,6 +17,7 @@ initial_center_longitude = 1.5218
 initial_zoom = 10.0
 property_search_terms = "house property"
 metric_profile = "full"
+preference_profile = "balanced-living"
 
 [datasets.belarus]
 display_name = "Belarus"
@@ -27,6 +29,7 @@ initial_zoom = 6.0
 property_search_site = "kufar.by"
 property_search_terms = "дом недвижимость"
 metric_profile = "core10"
+preference_profile = "balanced-living"
 settlement_name_tags = ["name", "name:be", "name:ru", "name:en", "official_name", "alt_name"]
 settlement_deduplication_tolerance_m = 250.0
 settlement_name_deduplication_distance_m = 1000.0

@@ -39,6 +39,45 @@ data class MetricDefinition(
     val sortOrder: Int,
 )
 
+/** Dataset-provided default values for one generic scoreable metric preference. */
+data class MetricPreferenceDefault(
+    val metricId: String,
+    val direction: PreferredDirection,
+    val targetValue: Double,
+    val limitValue: Double,
+    val weight: Int,
+    val defaultEnabled: Boolean,
+) {
+    init {
+        require(metricId.isNotBlank()) { "Preference default metric ID must not be blank" }
+        require(direction != PreferredDirection.NEUTRAL) {
+            "Preference default requires a scoreable direction"
+        }
+        require(targetValue.isFinite() && limitValue.isFinite()) {
+            "Preference default target and limit must be finite"
+        }
+        require(weight in WEIGHT_RANGE) { "Preference default weight must be in $WEIGHT_RANGE" }
+
+        when (direction) {
+            PreferredDirection.LOWER ->
+                require(targetValue < limitValue) {
+                    "Lower-is-better preference default requires target < limit"
+                }
+
+            PreferredDirection.HIGHER ->
+                require(targetValue > limitValue) {
+                    "Higher-is-better preference default requires target > limit"
+                }
+
+            PreferredDirection.NEUTRAL -> error("Neutral direction is rejected above")
+        }
+    }
+
+    companion object {
+        val WEIGHT_RANGE: IntRange = 1..10
+    }
+}
+
 /** Searchable settlement record. */
 data class Settlement(
     val id: String,

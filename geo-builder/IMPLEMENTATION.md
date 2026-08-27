@@ -37,6 +37,8 @@ This document describes the current Python implementation under `geo-builder/`. 
 
 `metric-profiles.toml` defines named build profiles over stable category IDs. `DatasetDefinition.metric_profile` selects one profile per dataset. The pipeline validates and applies the profile before broad Pyrosm filters or metric definitions are built, so excluded categories do not consume country-scale PBF read or spatial-calculation work. `full` selects the complete catalog; Belarus currently uses the bounded `core10` profile while Andorra retains `full` for broad integration coverage.
 
+`preference-profiles.toml` is a separate product-default layer. `DatasetDefinition.preference_profile` selects one optional profile whose stable metric IDs are resolved against the already selected/generated metric catalog. `load_preference_profile()` validates duplicates, missing generated metrics, explicit direction for neutral metrics, finite target/limit values, direction-specific ordering, weight range, and enabled booleans. The resolved immutable `MetricPreferenceDefault` records are persisted; runtime Kotlin never reads builder TOML directly.
+
 ## PBF reader
 
 `PbfReader` is lazy: construction stores path/geometry configuration, while `_get_osm()` imports/creates Pyrosm only when a read is requested. Importing the package therefore performs no PBF parsing.
@@ -112,7 +114,7 @@ Coverage is therefore an area ratio, not a count or nearest-distance approximati
 - `forest.coverage_pct_1km`;
 - `school.count_10km`.
 
-Those definitions are inserted into SQLite alongside values, allowing generic runtime UI.
+Those definitions are inserted into SQLite alongside values, allowing generic runtime UI. Dataset preference profiles reference these stable generated IDs rather than source category names or Kotlin branches.
 
 ## SQLite publication
 
@@ -120,11 +122,12 @@ Those definitions are inserted into SQLite alongside values, allowing generic ru
 
 - dataset metadata;
 - metric definitions;
+- optional dataset-provided metric preference defaults;
 - settlements;
 - multilingual/alternate settlement names;
 - metric values.
 
-It then commits, runs `ANALYZE`, and asks SQLite to optimize. `validate_database()` reopens read-only and runs `PRAGMA integrity_check` plus table counts.
+It then commits, runs `ANALYZE`, and asks SQLite to optimize. `validate_database()` reopens read-only and runs `PRAGMA integrity_check` plus table counts, including additive preference-default rows when present. The pipeline records selected preference profile/count in package build metadata.
 
 ## Map generation
 

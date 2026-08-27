@@ -1,0 +1,71 @@
+[profiles.balanced-living]
+
+[[profiles.balanced-living.preferences]]
+metric_id = "forest.distance_km"
+enabled = true
+target = 1.0
+limit = 10.0
+weight = 8
+
+[[profiles.balanced-living.preferences]]
+metric_id = "water.distance_km"
+enabled = true
+target = 2.0
+limit = 15.0
+weight = 8
+
+[[profiles.balanced-living.preferences]]
+metric_id = "industrial.distance_km"
+enabled = true
+target = 10.0
+limit = 2.0
+weight = 7
+
+[[profiles.balanced-living.preferences]]
+metric_id = "landfill.distance_km"
+enabled = true
+target = 15.0
+limit = 3.0
+weight = 9
+
+[[profiles.balanced-living.preferences]]
+metric_id = "railway_station.distance_km"
+enabled = false
+target = 10.0
+limit = 50.0
+weight = 4
+
+[[profiles.balanced-living.preferences]]
+metric_id = "bus_stop.distance_km"
+enabled = true
+target = 1.0
+limit = 10.0
+weight = 5
+
+[[profiles.balanced-living.preferences]]
+metric_id = "major_road.distance_km"
+enabled = false
+target = 3.0
+limit = 20.0
+weight = 4
+
+[[profiles.balanced-living.preferences]]
+metric_id = "school.distance_km"
+enabled = false
+target = 5.0
+limit = 25.0
+weight = 4
+
+[[profiles.balanced-living.preferences]]
+metric_id = "medical.distance_km"
+enabled = true
+target = 5.0
+limit = 30.0
+weight = 7
+
+[[profiles.balanced-living.preferences]]
+metric_id = "supermarket.distance_km"
+enabled = true
+target = 5.0
+limit = 30.0
+weight = 5

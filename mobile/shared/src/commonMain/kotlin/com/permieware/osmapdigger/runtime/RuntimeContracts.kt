@@ -2,6 +2,7 @@ package com.permieware.osmapdigger.runtime
 
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.MetricDefinition
+import com.permieware.osmapdigger.domain.MetricPreferenceDefault
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.domain.SettlementAnalysisCandidate
@@ -12,6 +13,15 @@ import com.permieware.osmapdigger.domain.SettlementSearchEntry
 interface GeoRepository {
     suspend fun datasetInfo(): DatasetInfo
     suspend fun metricDefinitions(): List<MetricDefinition>
+
+    /**
+     * Return dataset-provided generic preference defaults when the package defines them.
+     *
+     * Legacy format-v1 packages may not contain the additive preference-default table;
+     * in that case repositories return an empty list rather than inventing defaults.
+     */
+    suspend fun preferenceDefaults(): List<MetricPreferenceDefault>
+
     suspend fun settlementSearchEntries(): List<SettlementSearchEntry>
     suspend fun searchCandidates(
         conditions: List<SearchCondition>,

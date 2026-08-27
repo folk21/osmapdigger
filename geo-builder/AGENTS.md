@@ -19,9 +19,9 @@ Root [`../AGENTS.md`](../AGENTS.md) applies. Read [`README.md`](README.md), [`IM
 
 ## Configuration-driven metrics
 
-Prefer adding ordinary OSM-derived numeric filters through `config/metrics.toml`.
+Prefer adding ordinary OSM-derived numeric filters through `config/metrics.toml`. Dataset-provided ranking defaults belong in `config/preference-profiles.toml`; do not overload `default_filter` or metric-generation profiles with scoring semantics.
 
-Keep category IDs and generated metric IDs stable when possible. Renaming IDs can break future saved-search compatibility even if the SQLite schema remains unchanged.
+Keep category IDs and generated metric IDs stable when possible. Renaming IDs can break saved search/preference compatibility even if the SQLite schema remains unchanged. Preference profiles must reference generated stable metric IDs and be validated against the selected metric profile before publication.
 
 The broad Pyrosm custom filter is an optimization. Exact category meaning comes from local OR-of-AND selector evaluation; do not make correctness depend on merged-filter semantics.
 
