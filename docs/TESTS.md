@@ -77,7 +77,7 @@ make test-desktop
 make test-mobile
 ```
 
-Shared tests cover Haversine distance, search-input parsing, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, user-preference payload round trips, dataset scoping, removed metrics, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover dynamic SQL filtering, settings SQLite preference round trips, schema migration, provider seeding/custom-row preservation, and malformed-filter behavior.
+Shared tests cover Haversine distance, search-input parsing, deterministic preference scoring/ranking, missing-score coverage semantics, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, user-preference payload round trips, dataset scoping, removed metrics, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover dynamic SQL filtering, settings SQLite preference round trips, schema migration, provider seeding/custom-row preservation, and malformed-filter behavior.
 
 ## Desktop offline map acceptance
 

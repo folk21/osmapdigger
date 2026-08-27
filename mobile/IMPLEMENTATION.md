@@ -81,6 +81,26 @@ sequenceDiagram
 
 This keeps SQL spatial requirements minimal and behavior consistent across Android/JVM.
 
+## Preference scoring
+
+`analysis/PreferenceModels.kt`, `analysis/PreferenceScorer.kt`, and `analysis/SettlementRanker.kt` own
+the first implementation slice of the active Desktop analysis workspace. The package contains immutable scoreable preference, contribution, aggregate score, and
+scored-settlement models plus two pure services:
+
+- `PreferenceScorer` validates one enabled preference per metric ID, rejects `NEUTRAL` until an
+  explicit scoreable direction exists, calculates linear `LOWER`/`HIGHER` quality, weighted score,
+  and weighted data coverage, and preserves missing metrics as unknown;
+- `SettlementRanker` orders scored settlements by score, coverage, display name, and stable ID without
+  locale, time, random, network, map, or platform dependencies.
+
+A contribution exposes both the raw weighted numerator term and its final score-point contribution so
+future UI can explain a score without recomputing hidden semantics. Non-finite present metric values
+fail fast instead of being treated as missing.
+
+This scoring core is not yet wired into `SearchService`, `GeoRepository`, preferences persistence, or
+Compose. The next increment must add batch retrieval of active scoring metrics before the existing
+name-ordered repository limit can be replaced by rank-before-limit analysis orchestration.
+
 ## Filter summaries
 
 `FilterSummaryBuilder` renders the current structured request into readable text. It uses persisted metric title/unit metadata and therefore requires no category-specific wording branches for normal range metrics.
@@ -236,7 +256,7 @@ Current dependency families:
 
 ## Tests
 
-- `shared/commonTest` covers geography, filter summaries, external links, preference payloads, and restore semantics;
+- `shared/commonTest` covers geography, deterministic preference scoring/ranking, filter summaries, external links, preference payloads, and restore semantics;
 - `shared/desktopTest` covers Desktop MapLibre host capability resolution;
 - `desktopApp/jvmTest` covers dynamic metric SQL and preferences SQLite round trips;
 - Android compilation/host tests are separate Gradle tasks.

@@ -20,7 +20,7 @@ This document maps the stable architecture in [`ARCHITECTURE.md`](ARCHITECTURE.m
 |---|---|---|
 | `geo-builder/` | Local PBF reading, category filtering, spatial metrics, SQLite writing, PMTiles invocation, package validation/publication | [`../geo-builder/IMPLEMENTATION.md`](../geo-builder/IMPLEMENTATION.md) |
 | `geo-format/` | Format version, SQLite schema, metadata schema, writer/reader compatibility contract | [`../geo-format/IMPLEMENTATION.md`](../geo-format/IMPLEMENTATION.md) |
-| `mobile/shared` | Domain models, search orchestration, filter summaries, GeoJSON result overlay, shared Compose/MapLibre UI | [`../mobile/IMPLEMENTATION.md`](../mobile/IMPLEMENTATION.md) |
+| `mobile/shared` | Domain models, deterministic preference scoring/ranking, search orchestration, filter summaries, GeoJSON result overlay, shared Compose/MapLibre UI | [`../mobile/IMPLEMENTATION.md`](../mobile/IMPLEMENTATION.md) |
 | `mobile/desktopApp` | JDBC SQLite, local directory/ZIP package opening, Desktop browser, JVM host | [`../mobile/IMPLEMENTATION.md`](../mobile/IMPLEMENTATION.md) |
 | `mobile/androidApp` | Android SQLite, SAF ZIP import, app-private installation, Android browser, Activity host | [`../mobile/IMPLEMENTATION.md`](../mobile/IMPLEMENTATION.md) |
 | `geo-builder/config/` | Dataset source/output configuration and dynamic OSM metric catalog | [`CONFIGURATION.md`](CONFIGURATION.md) |
@@ -95,7 +95,7 @@ Stores the runtime filter catalog. Important semantics:
 - `category_id` groups related measures produced from one source category;
 - `group_id`, `title`, `description`, and `unit` support generic UI;
 - `measure_type` distinguishes distance/count/coverage semantics;
-- `preferred_direction` is descriptive metadata for future scoring/presentation; it does not currently alter search filtering;
+- `preferred_direction` is descriptive scoring/presentation metadata; the shared scoring core can use an explicit scoreable direction, but current hard-filter search orchestration is unchanged;
 - `default_enabled` controls the initial filter rows shown by the shared UI;
 - `sort_order` gives deterministic presentation order.
 
@@ -170,6 +170,24 @@ sequenceDiagram
 ```
 
 Desktop implements `GeoRepository` through Xerial SQLite JDBC. Android uses `android.database.sqlite.SQLiteDatabase`. Shared code therefore does not depend on a specific SQLite library.
+
+## Preference scoring core
+
+The first Desktop analysis-workspace increment adds a pure shared scoring core in
+`mobile/shared/.../analysis/PreferenceModels.kt`, `PreferenceScorer.kt`, and `SettlementRanker.kt`.
+It is deliberately not connected to repository queries or UI state yet.
+
+`MetricPreference` represents one enabled scoreable metric by stable metric ID, explicit
+`LOWER`/`HIGHER` direction, finite target/limit values, and a weight from 1 to 10. `NEUTRAL` is
+rejected until an explicit scoreable direction is chosen. `PreferenceScorer` calculates normalized
+quality, weighted score, weighted data coverage, and per-preference contribution details. Missing
+metric entries remain unknown and are excluded from the known-weight score denominator.
+
+`SettlementRanker` orders already scored settlements by score descending, coverage descending, then
+stable settlement name and ID. This establishes deterministic ranking semantics without changing the
+existing hard-filter `SearchService`, repository SQL, generated dataset format, preferences storage,
+or Compose workflow. Batch scoring retrieval and search integration remain subsequent increments of
+the active Desktop analysis sub-spec.
 
 Mutable application state is separate from generated dataset SQLite. Shared `UserPreferencesRepository` and restore logic persist the current dataset ID, stable center ID, optional radius, and dynamic metric ranges. The same application-owned settings SQLite also stores enabled external-search provider definitions behind `ExternalSearchProviderRepository`. Desktop stores this database in `~/.osmapdigger/settings/preferences.sqlite`; Android uses app-private `filesDir/settings/preferences.sqlite`. The legacy `preferences.sqlite` filename is retained to avoid moving existing user state even though the database now owns broader application settings. The settings schema and version lifecycle are independent from `geo-format`.
 

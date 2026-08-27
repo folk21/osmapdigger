@@ -75,6 +75,14 @@ A scoring implementation must not call `GeoRepository.details()` once per candid
 ranking requires a batch repository contract that returns the active scoring metric values for all
 eligible candidates without an N+1 query pattern.
 
+The first implementation increment is now complete: shared `analysis/PreferenceModels.kt`,
+`analysis/PreferenceScorer.kt`, and `analysis/SettlementRanker.kt` define validated immutable
+preference/contribution/score models, pure deterministic `LOWER`/`HIGHER`
+scoring with explicit unknown-data coverage, and stable score/coverage/name/ID ranking. Focused
+`commonTest` coverage verifies saturation, interpolation, weighting, missing data, invalid contracts,
+and deterministic tie-breaking. This core is intentionally not wired to repository queries, persisted
+defaults, user settings, or Compose yet.
+
 ## Requirements
 
 ### DA-R1 — map-first wide Desktop composition
@@ -605,8 +613,8 @@ record the measured bottleneck that justifies it.
 Suggested implementation order:
 
 1. Commit and tag the repository baseline before implementation begins.
-2. Define immutable shared preference, score, coverage, and contribution models.
-3. Implement pure deterministic scoring/ranking and focused shared tests.
+2. **Implemented:** define immutable shared preference, score, coverage, and contribution models.
+3. **Implemented:** add pure deterministic scoring/ranking and focused shared tests.
 4. Define the batch repository input contract needed for scoring without N+1 details queries.
 5. Implement Desktop/Android repository support and tests for batch active-metric retrieval.
 6. Decide and implement generic preference-default persistence/configuration with explicit package
