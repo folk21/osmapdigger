@@ -14,10 +14,12 @@ Implementation complete; acceptance verification pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-This sub-spec remains the current implementation focus under the active initial-product umbrella
-until the remaining acceptance checks are recorded. The implementation covers the Desktop part of
-the existing offline-map requirements without changing analytical search semantics or the generated
-dataset format.
+This sub-spec is no longer the current coding focus. Its implementation remains verification-pending
+until the remaining acceptance checks are recorded. The active umbrella now points to
+[`desktop-analysis-workspace.md`](desktop-analysis-workspace.md) as the current implementation focus.
+
+The implementation here covers the Desktop part of the existing offline-map requirements without
+changing analytical search semantics or the generated dataset format.
 
 ## Goal
 

@@ -11,7 +11,9 @@ This roadmap stays intentionally compact. Detailed requirements for significant 
 
 Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
-Current implementation focus: [`specs/active/subspecs/desktop-map.md`](specs/active/subspecs/desktop-map.md) — implementation complete, acceptance verification pending.
+Current implementation focus: [`specs/active/subspecs/desktop-analysis-workspace.md`](specs/active/subspecs/desktop-analysis-workspace.md) — map-first Desktop analysis workspace with explainable weighted preference ranking.
+
+Previously implemented Desktop map and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
 
 Acceptance requires a configured workstation to demonstrate:
 

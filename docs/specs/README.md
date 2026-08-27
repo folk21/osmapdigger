@@ -95,4 +95,9 @@ Umbrella:
 
 Current implementation focus:
 
-- [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — Desktop offline map implementation complete; acceptance verification pending.
+- [`active/subspecs/desktop-analysis-workspace.md`](active/subspecs/desktop-analysis-workspace.md) — map-first Desktop analysis workspace, explainable weighted preference scoring, ranked results, and map-overlay settlement details.
+
+Verification-pending completed increments:
+
+- [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — Desktop offline map implementation complete; remaining acceptance verification pending.
+- [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — local search-context persistence implementation complete; remaining cross-platform verification pending.
