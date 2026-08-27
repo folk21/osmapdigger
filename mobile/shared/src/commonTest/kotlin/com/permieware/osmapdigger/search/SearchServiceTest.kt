@@ -4,6 +4,7 @@ import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.SearchCondition
+import com.permieware.osmapdigger.domain.SettlementAnalysisCandidate
 import com.permieware.osmapdigger.domain.SearchRequest
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.domain.SettlementDetails
@@ -71,6 +72,13 @@ class SearchServiceTest {
             longitudeRange: ClosedFloatingPointRange<Double>?,
             limit: Int,
         ): List<Settlement> = settlements.take(limit)
+
+        override suspend fun analysisCandidates(
+            conditions: List<SearchCondition>,
+            latitudeRange: ClosedFloatingPointRange<Double>?,
+            longitudeRange: ClosedFloatingPointRange<Double>?,
+            scoringMetricIds: Set<String>,
+        ): List<SettlementAnalysisCandidate> = error("not used")
 
         override suspend fun details(settlementId: String): SettlementDetails =
             SettlementDetails(settlements.first { it.id == settlementId }, emptyList())

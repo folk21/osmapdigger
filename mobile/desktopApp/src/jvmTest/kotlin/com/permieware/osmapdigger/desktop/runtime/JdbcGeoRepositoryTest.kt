@@ -43,6 +43,79 @@ class JdbcGeoRepositoryTest {
             assertEquals(listOf("A"), result.map { it.name })
         }
     }
+
+    @Test
+    fun analysisCandidatesBatchLoadsOnlyRequestedMetricsAndKeepsUnknowns() = runBlocking {
+        val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite::memory:" }
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                createAnalysisTables(statement)
+                statement.execute(
+                    "INSERT INTO settlement VALUES ('a','Alpha',NULL,NULL,'village',NULL,42.5,1.5)",
+                )
+                statement.execute(
+                    "INSERT INTO settlement VALUES ('b','Beta',NULL,NULL,'village',NULL,42.6,1.6)",
+                )
+                statement.execute(
+                    "INSERT INTO settlement VALUES ('c','Gamma',NULL,NULL,'village',NULL,42.7,1.7)",
+                )
+                statement.execute("INSERT INTO settlement_metric VALUES ('a','water.distance_km',2.0)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('a','forest.distance_km',1.0)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('a','school.distance_km',3.0)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('b','water.distance_km',4.0)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('b','school.distance_km',2.0)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('c','water.distance_km',8.0)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('c','forest.distance_km',0.5)")
+            }
+
+            val result =
+                repository(connection).analysisCandidates(
+                    conditions = listOf(SearchCondition("water.distance_km", maxValue = 5.0)),
+                    latitudeRange = null,
+                    longitudeRange = null,
+                    scoringMetricIds = setOf("forest.distance_km", "school.distance_km"),
+                )
+
+            assertEquals(listOf("a", "b"), result.map { it.settlement.id })
+            assertEquals(
+                mapOf(
+                    "forest.distance_km" to 1.0,
+                    "school.distance_km" to 3.0,
+                ),
+                result[0].metricValues,
+            )
+            assertEquals(mapOf("school.distance_km" to 2.0), result[1].metricValues)
+            assertTrue(result.none { "water.distance_km" in it.metricValues })
+        }
+    }
+
+    @Test
+    fun analysisCandidatesSupportsNoScoringMetricsWithoutDroppingEligibleSettlements() = runBlocking {
+        val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite::memory:" }
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                createAnalysisTables(statement)
+                statement.execute(
+                    "INSERT INTO settlement VALUES ('a','Alpha',NULL,NULL,'village',NULL,42.5,1.5)",
+                )
+                statement.execute(
+                    "INSERT INTO settlement VALUES ('b','Beta',NULL,NULL,'village',NULL,42.6,1.6)",
+                )
+            }
+
+            val result =
+                repository(connection).analysisCandidates(
+                    conditions = emptyList(),
+                    latitudeRange = null,
+                    longitudeRange = null,
+                    scoringMetricIds = emptySet(),
+                )
+
+            assertEquals(listOf("a", "b"), result.map { it.settlement.id })
+            assertTrue(result.all { it.metricValues.isEmpty() })
+        }
+    }
+
     @Test
     fun readsPersistedMultilingualSettlementNames() = runBlocking {
         val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite::memory:" }
@@ -105,6 +178,18 @@ class JdbcGeoRepositoryTest {
             assertEquals(listOf("Віцебск", "Vitebsk"), entry.names.map { it.value })
             assertTrue(entry.names.all { it.normalizedValue.isNotBlank() })
         }
+    }
+
+    private fun createAnalysisTables(statement: java.sql.Statement) {
+        statement.execute(
+            "CREATE TABLE settlement(settlement_id TEXT, name TEXT, name_local TEXT, name_en TEXT, place_type TEXT, population INTEGER, latitude REAL, longitude REAL)",
+        )
+        statement.execute(
+            "CREATE TABLE metric_definition(metric_id TEXT, category_id TEXT, group_id TEXT, title TEXT, description TEXT, unit TEXT, measure_type TEXT, preferred_direction TEXT, default_enabled INTEGER, sort_order INTEGER)",
+        )
+        statement.execute(
+            "CREATE TABLE settlement_metric(settlement_id TEXT, metric_id TEXT, value REAL)",
+        )
     }
 
     private fun repository(connection: java.sql.Connection) =

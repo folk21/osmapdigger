@@ -4,6 +4,7 @@ import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.domain.Settlement
+import com.permieware.osmapdigger.domain.SettlementAnalysisCandidate
 import com.permieware.osmapdigger.domain.SettlementDetails
 import com.permieware.osmapdigger.domain.SettlementSearchEntry
 
@@ -18,6 +19,21 @@ interface GeoRepository {
         longitudeRange: ClosedFloatingPointRange<Double>?,
         limit: Int,
     ): List<Settlement>
+
+    /**
+     * Return all hard-filter-eligible candidates plus only requested scoring metrics.
+     *
+     * Implementations must not apply an unrelated final result limit here: shared
+     * analysis performs exact radius filtering, scoring, ranking, and final limiting.
+     * Missing requested metrics remain absent from each candidate metric map.
+     */
+    suspend fun analysisCandidates(
+        conditions: List<SearchCondition>,
+        latitudeRange: ClosedFloatingPointRange<Double>?,
+        longitudeRange: ClosedFloatingPointRange<Double>?,
+        scoringMetricIds: Set<String>,
+    ): List<SettlementAnalysisCandidate>
+
     suspend fun details(settlementId: String): SettlementDetails
 }
 

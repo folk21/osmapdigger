@@ -101,6 +101,13 @@ class SettlementSearchServiceTest {
             limit: Int,
         ): List<Settlement> = emptyList()
 
+        override suspend fun analysisCandidates(
+            conditions: List<SearchCondition>,
+            latitudeRange: ClosedFloatingPointRange<Double>?,
+            longitudeRange: ClosedFloatingPointRange<Double>?,
+            scoringMetricIds: Set<String>,
+        ): List<SettlementAnalysisCandidate> = emptyList()
+
         override suspend fun details(settlementId: String): SettlementDetails = error("not used")
     }
 }

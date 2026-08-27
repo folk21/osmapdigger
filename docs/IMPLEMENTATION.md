@@ -171,23 +171,31 @@ sequenceDiagram
 
 Desktop implements `GeoRepository` through Xerial SQLite JDBC. Android uses `android.database.sqlite.SQLiteDatabase`. Shared code therefore does not depend on a specific SQLite library.
 
-## Preference scoring core
+## Preference scoring and ranked analysis
 
-The first Desktop analysis-workspace increment adds a pure shared scoring core in
-`mobile/shared/.../analysis/PreferenceModels.kt`, `PreferenceScorer.kt`, and `SettlementRanker.kt`.
-It is deliberately not connected to repository queries or UI state yet.
+The active Desktop analysis-workspace implementation now has a pure shared scoring core plus a
+parallel ranked-analysis path. `MetricPreference` represents one enabled scoreable metric by stable
+metric ID, explicit `LOWER`/`HIGHER` direction, finite target/limit values, and a weight from 1 to 10.
+`NEUTRAL` is rejected until an explicit scoreable direction is chosen. `PreferenceScorer` calculates
+normalized quality, weighted score, weighted data coverage, and per-preference contribution details.
+Missing metric entries remain unknown and are excluded from the known-weight score denominator.
 
-`MetricPreference` represents one enabled scoreable metric by stable metric ID, explicit
-`LOWER`/`HIGHER` direction, finite target/limit values, and a weight from 1 to 10. `NEUTRAL` is
-rejected until an explicit scoreable direction is chosen. `PreferenceScorer` calculates normalized
-quality, weighted score, weighted data coverage, and per-preference contribution details. Missing
-metric entries remain unknown and are excluded from the known-weight score denominator.
+`SettlementAnalysisService` accepts a hard `SearchRequest` plus enabled preferences. It asks
+`GeoRepository.analysisCandidates()` for every hard-filter-eligible candidate and only the requested
+scoring metric values, applies exact shared Haversine radius semantics, calculates scores, sorts with
+`SettlementRanker`, and applies the user-visible limit only after ranking. The service never loops over
+`GeoRepository.details()` for candidates.
 
-`SettlementRanker` orders already scored settlements by score descending, coverage descending, then
-stable settlement name and ID. This establishes deterministic ranking semantics without changing the
-existing hard-filter `SearchService`, repository SQL, generated dataset format, preferences storage,
-or Compose workflow. Batch scoring retrieval and search integration remain subsequent increments of
-the active Desktop analysis sub-spec.
+Desktop JDBC and Android SQLite adapters implement the batch contract with one query using the same
+hard-condition `EXISTS` predicates as legacy search plus a `LEFT JOIN` restricted to active scoring
+metric IDs. The left join preserves candidates whose scoring metric is unknown, and no repository
+name/order limit is applied on this analysis path. The existing `SearchService.searchCandidates()`
+path remains unchanged for the current UI, so this increment does not yet alter user-visible search
+behavior.
+
+Generated dataset format, preference defaults, application settings, and Compose are unchanged by
+this increment. Persisted scoring defaults and UI/state integration remain subsequent work in the
+active Desktop analysis sub-spec.
 
 Mutable application state is separate from generated dataset SQLite. Shared `UserPreferencesRepository` and restore logic persist the current dataset ID, stable center ID, optional radius, and dynamic metric ranges. The same application-owned settings SQLite also stores enabled external-search provider definitions behind `ExternalSearchProviderRepository`. Desktop stores this database in `~/.osmapdigger/settings/preferences.sqlite`; Android uses app-private `filesDir/settings/preferences.sqlite`. The legacy `preferences.sqlite` filename is retained to avoid moving existing user state even though the database now owns broader application settings. The settings schema and version lifecycle are independent from `geo-format`.
 
@@ -293,7 +301,7 @@ These checks must be rerun on a configured development workstation before treati
 - Multiple simultaneously installed datasets are not yet managed through a full dataset-manager screen.
 - Desktop can import/open generated packages but does not yet provide an integrated “select PBF and run Python builder” wizard.
 - Android imports prebuilt packages; it does not run Pyrosm/tilemaker locally.
-- Analytical result ranking remains deterministic name/order + filters rather than a scoring model; center-settlement name lookup separately uses exact/prefix/substring/fuzzy alias ranking.
+- A shared preference-scoring/ranked-analysis path now exists, but the current Compose workflow still uses the legacy hard-filter search path until analysis state/UI integration is implemented; center-settlement lookup separately uses exact/prefix/substring/fuzzy alias ranking.
 - Favorites, notes, named saved searches, and comparisons are not persisted yet; only the current search context is restored.
 - Non-OSM environmental sources are not implemented yet.
 

@@ -23,6 +23,8 @@ Common code must not import Android/JVM filesystem or database APIs.
 - Missing metric rows are unknown, not zero.
 - Platform repositories perform metric/bounding-box candidate reduction.
 - Shared `SearchService` performs exact radius filtering so Android/Desktop semantics stay aligned.
+- Ranked analysis must batch-load only requested scoring metrics; never call full `details()` once per candidate.
+- Ranked-analysis repository queries must not apply an unrelated final limit before shared scoring; exact radius, scoring, stable ranking, and final limiting belong in shared analysis orchestration.
 - Search results must not depend on map rendering/style state.
 
 ## Dynamic filters

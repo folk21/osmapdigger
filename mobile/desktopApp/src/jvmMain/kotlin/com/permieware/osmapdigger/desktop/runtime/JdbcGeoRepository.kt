@@ -126,12 +126,11 @@ class JdbcGeoRepository(
         )
 
     /**
-     * Build the dynamic SQL candidate query from generic metric ranges.
+     * Build the legacy dynamic SQL candidate query from generic metric ranges.
      *
-     * Each effective metric uses an EXISTS subquery. Consequently a missing metric row
-     * does not behave like zero and cannot satisfy the requested condition. Geographic
-     * ranges are only a coarse radius reduction; shared SearchService applies exact
-     * Haversine filtering after this method returns.
+     * This method retains the current hard-filter UI behavior, including deterministic
+     * name ordering and its repository-side pre-limit. Ranked analysis uses
+     * [analysisCandidates] instead so scoring can happen before the final result limit.
      */
     override suspend fun searchCandidates(
         conditions: List<SearchCondition>,
@@ -149,7 +148,76 @@ class JdbcGeoRepository(
                 """.trimIndent(),
             )
         val parameters = mutableListOf<Any>()
+        appendCandidatePredicates(sql, parameters, conditions, latitudeRange, longitudeRange)
 
+        sql.append("\nORDER BY s.name\nLIMIT ?")
+        parameters += limit
+
+        return connection.prepareStatement(sql.toString()).use { statement ->
+            bindParameters(statement, parameters)
+            statement.executeQuery().use(::readSettlements)
+        }
+    }
+
+    /**
+     * Return every hard-filter-eligible settlement with requested scoring metrics in one query.
+     *
+     * The LEFT JOIN deliberately preserves candidates whose requested metric is missing;
+     * absence remains unknown and is represented by a missing entry in [SettlementAnalysisCandidate.metricValues].
+     */
+    override suspend fun analysisCandidates(
+        conditions: List<SearchCondition>,
+        latitudeRange: ClosedFloatingPointRange<Double>?,
+        longitudeRange: ClosedFloatingPointRange<Double>?,
+        scoringMetricIds: Set<String>,
+    ): List<SettlementAnalysisCandidate> {
+        require(scoringMetricIds.none { it.isBlank() }) { "Scoring metric IDs must not be blank" }
+        val metricIds = scoringMetricIds.sorted()
+        val parameters = mutableListOf<Any>()
+        val sql =
+            if (metricIds.isEmpty()) {
+                StringBuilder(
+                    """
+                    SELECT s.settlement_id, s.name, s.name_local, s.name_en, s.place_type,
+                           s.population, s.latitude, s.longitude,
+                           NULL AS scoring_metric_id, NULL AS scoring_metric_value
+                    FROM settlement s
+                    WHERE 1 = 1
+                    """.trimIndent(),
+                )
+            } else {
+                parameters.addAll(metricIds)
+                StringBuilder(
+                    """
+                    SELECT s.settlement_id, s.name, s.name_local, s.name_en, s.place_type,
+                           s.population, s.latitude, s.longitude,
+                           sm_score.metric_id AS scoring_metric_id,
+                           sm_score.value AS scoring_metric_value
+                    FROM settlement s
+                    LEFT JOIN settlement_metric sm_score
+                      ON sm_score.settlement_id = s.settlement_id
+                     AND sm_score.metric_id IN (${metricIds.joinToString(",") { "?" }})
+                    WHERE 1 = 1
+                    """.trimIndent(),
+                )
+            }
+
+        appendCandidatePredicates(sql, parameters, conditions, latitudeRange, longitudeRange)
+        sql.append("\nORDER BY s.settlement_id, scoring_metric_id")
+
+        return connection.prepareStatement(sql.toString()).use { statement ->
+            bindParameters(statement, parameters)
+            statement.executeQuery().use(::readAnalysisCandidates)
+        }
+    }
+
+    private fun appendCandidatePredicates(
+        sql: StringBuilder,
+        parameters: MutableList<Any>,
+        conditions: List<SearchCondition>,
+        latitudeRange: ClosedFloatingPointRange<Double>?,
+        longitudeRange: ClosedFloatingPointRange<Double>?,
+    ) {
         latitudeRange?.let {
             sql.append("\nAND s.latitude BETWEEN ? AND ?")
             parameters += it.start
@@ -183,20 +251,19 @@ class JdbcGeoRepository(
             }
             sql.append("\n)")
         }
+    }
 
-        sql.append("\nORDER BY s.name\nLIMIT ?")
-        parameters += limit
-
-        return connection.prepareStatement(sql.toString()).use { statement ->
-            parameters.forEachIndexed { index, value ->
-                when (value) {
-                    is String -> statement.setString(index + 1, value)
-                    is Double -> statement.setDouble(index + 1, value)
-                    is Int -> statement.setInt(index + 1, value)
-                    else -> statement.setObject(index + 1, value)
-                }
+    private fun bindParameters(
+        statement: java.sql.PreparedStatement,
+        parameters: List<Any>,
+    ) {
+        parameters.forEachIndexed { index, value ->
+            when (value) {
+                is String -> statement.setString(index + 1, value)
+                is Double -> statement.setDouble(index + 1, value)
+                is Int -> statement.setInt(index + 1, value)
+                else -> statement.setObject(index + 1, value)
             }
-            statement.executeQuery().use(::readSettlements)
         }
     }
 
@@ -240,6 +307,24 @@ class JdbcGeoRepository(
             }
 
         return SettlementDetails(settlement, metrics)
+    }
+
+    private fun readAnalysisCandidates(rows: ResultSet): List<SettlementAnalysisCandidate> {
+        val candidates =
+            linkedMapOf<String, Pair<Settlement, MutableMap<String, Double>>>()
+        while (rows.next()) {
+            val settlement = readSettlement(rows)
+            val candidate =
+                candidates.getOrPut(settlement.id) {
+                    settlement to linkedMapOf()
+                }
+            rows.getString(9)?.let { metricId ->
+                candidate.second[metricId] = rows.getDouble(10)
+            }
+        }
+        return candidates.values.map { (settlement, metricValues) ->
+            SettlementAnalysisCandidate(settlement, metricValues.toMap())
+        }
     }
 
     private fun readMetricDefinition(rows: ResultSet): MetricDefinition =

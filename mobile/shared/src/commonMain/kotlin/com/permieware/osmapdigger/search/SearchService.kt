@@ -1,7 +1,5 @@
 package com.permieware.osmapdigger.search
 
-import com.permieware.osmapdigger.geo.GeoMath
-
 import com.permieware.osmapdigger.domain.SearchRequest
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.runtime.GeoRepository
@@ -16,38 +14,20 @@ class SearchService(
      * the exact radial check and final result limit in shared code.
      */
     suspend fun search(request: SearchRequest): List<Settlement> {
-        val center = request.center
-        val radius = request.radiusKm
-
-        require(radius == null || center != null) {
-            "Radius requires a selected center settlement"
-        }
-        require(radius == null || (radius.isFinite() && radius > 0.0)) {
-            "Radius must be a finite positive number"
-        }
-
-        val bounds =
-            if (center != null && radius != null) {
-                GeoMath.boundingBox(center.location, radius)
-            } else {
-                null
-            }
+        SearchRequestSemantics.validate(request)
+        val bounds = SearchRequestSemantics.boundingBox(request)
+        val resultLimit = SearchRequestSemantics.resultLimit(request)
 
         val candidates =
             repository.searchCandidates(
-                conditions = request.conditions.filter { it.isEffective },
+                conditions = SearchRequestSemantics.effectiveConditions(request),
                 latitudeRange = bounds?.first,
                 longitudeRange = bounds?.second,
-                limit = request.limit.coerceAtLeast(1) * 4,
+                limit = resultLimit * 4,
             )
 
-        val filtered =
-            if (center != null && radius != null) {
-                candidates.filter { GeoMath.distanceKm(center.location, it.location) <= radius }
-            } else {
-                candidates
-            }
-
-        return filtered.take(request.limit.coerceAtLeast(1))
+        return candidates
+            .filter { SearchRequestSemantics.matchesExactRadius(request, it) }
+            .take(resultLimit)
     }
 }

@@ -45,8 +45,9 @@ Platform implementations provide:
 - dataset metadata;
 - metric catalog;
 - complete settlement-name search index loading with legacy-dataset fallback;
-- SQL-reduced search candidates;
-- detailed settlement hydration.
+- legacy SQL-reduced hard-filter search candidates;
+- batch hard-filter-eligible analysis candidates with only requested scoring metric values;
+- detailed single-settlement hydration.
 
 `OsmapDiggerRuntime` bundles dataset-scoped repository/map/browser dependencies. The platform host separately creates one application-scoped `UserPreferencesRepository` and injects it into `OsmapDiggerApp`.
 
@@ -81,25 +82,43 @@ sequenceDiagram
 
 This keeps SQL spatial requirements minimal and behavior consistent across Android/JVM.
 
-## Preference scoring
+## Preference scoring and ranked analysis
 
 `analysis/PreferenceModels.kt`, `analysis/PreferenceScorer.kt`, and `analysis/SettlementRanker.kt` own
-the first implementation slice of the active Desktop analysis workspace. The package contains immutable scoreable preference, contribution, aggregate score, and
-scored-settlement models plus two pure services:
+immutable scoreable preferences, contribution breakdowns, aggregate score/coverage, and deterministic
+ranking. `PreferenceScorer` rejects implicit `NEUTRAL` direction, calculates linear `LOWER`/`HIGHER`
+quality, preserves missing metrics as unknown, and fails fast on non-finite present metric values.
 
-- `PreferenceScorer` validates one enabled preference per metric ID, rejects `NEUTRAL` until an
-  explicit scoreable direction exists, calculates linear `LOWER`/`HIGHER` quality, weighted score,
-  and weighted data coverage, and preserves missing metrics as unknown;
-- `SettlementRanker` orders scored settlements by score, coverage, display name, and stable ID without
-  locale, time, random, network, map, or platform dependencies.
+`analysis/SettlementAnalysisModels.kt` defines the full ranked-analysis request above the existing
+hard `SearchRequest`. The repository-facing `SettlementAnalysisCandidate` lives in `domain/` so the
+`runtime` contract does not depend back on the `analysis` service package; it carries one eligible
+settlement plus only requested metric values.
 
-A contribution exposes both the raw weighted numerator term and its final score-point contribution so
-future UI can explain a score without recomputing hidden semantics. Non-finite present metric values
-fail fast instead of being treated as missing.
+`SettlementAnalysisService` owns the new orchestration path:
 
-This scoring core is not yet wired into `SearchService`, `GeoRepository`, preferences persistence, or
-Compose. The next increment must add batch retrieval of active scoring metrics before the existing
-name-ordered repository limit can be replaced by rank-before-limit analysis orchestration.
+```mermaid
+sequenceDiagram
+    participant A as SettlementAnalysisService
+    participant R as GeoRepository
+    participant DB as Dataset SQLite
+
+    A->>R: analysisCandidates(hard conditions, bounds, scoring metric IDs)
+    R->>DB: EXISTS hard filters + LEFT JOIN active scoring metrics
+    DB-->>R: eligible settlements + sparse scoring values
+    R-->>A: analysis candidates
+    A->>A: exact radius filter
+    A->>A: PreferenceScorer + SettlementRanker
+    A-->>A: final result limit after ranking
+```
+
+The repository path intentionally has no unrelated name-based final limit and never hydrates full
+`SettlementDetails` per candidate. Missing joined scoring rows remain absent from the metric map.
+`search/SearchRequestSemantics.kt` centralizes radius validation, coarse bounds, exact radius matching,
+and effective-condition selection so legacy `SearchService` and ranked analysis cannot drift.
+
+The current Compose UI still calls the legacy `SearchService`; ranked analysis is not user-visible yet.
+Preference-default persistence, application settings for custom weights/targets, and analysis-state/UI
+integration remain later sub-spec increments.
 
 ## Filter summaries
 
@@ -156,15 +175,13 @@ The UI never constructs SQL.
 
 Uses Xerial SQLite JDBC.
 
-`searchCandidates()` builds SQL with:
+`searchCandidates()` retains the current UI contract: optional coordinate bounds, one `EXISTS`
+subquery per effective metric condition, deterministic name ordering, and a repository-side limit.
 
-- optional latitude range;
-- optional longitude range;
-- one `EXISTS` subquery per effective metric condition;
-- lower/upper comparisons only when supplied;
-- deterministic name ordering and limit.
-
-Using `EXISTS` means a missing metric row fails a condition rather than being treated as zero.
+`analysisCandidates()` reuses the same hard predicates but has no final result limit. It performs one
+`LEFT JOIN` restricted to sorted active scoring metric IDs and folds the sparse rows into immutable
+`SettlementAnalysisCandidate` values. Missing scoring rows therefore remain unknown rather than
+excluding the settlement or becoming zero.
 
 ### `SqliteUserPreferencesRepository`
 
@@ -222,7 +239,9 @@ loading or native map initialization.
 
 ### `AndroidGeoRepository`
 
-Implements the same repository semantics through `SQLiteDatabase.rawQuery()` and the same `EXISTS` metric-filter pattern.
+Implements both legacy hard-filter and batch ranked-analysis candidate semantics through
+`SQLiteDatabase.rawQuery()`. Its `analysisCandidates()` query mirrors Desktop hard predicates and
+active-metric `LEFT JOIN` behavior so shared scoring sees the same sparse metric contract.
 
 ### `AndroidDatasetInstaller`
 
@@ -256,9 +275,9 @@ Current dependency families:
 
 ## Tests
 
-- `shared/commonTest` covers geography, deterministic preference scoring/ranking, filter summaries, external links, preference payloads, and restore semantics;
+- `shared/commonTest` covers geography, deterministic preference scoring/ranking, rank-before-limit analysis orchestration, exact-radius analysis semantics, filter summaries, external links, preference payloads, and restore semantics;
 - `shared/desktopTest` covers Desktop MapLibre host capability resolution;
-- `desktopApp/jvmTest` covers dynamic metric SQL and preferences SQLite round trips;
+- `desktopApp/jvmTest` covers legacy dynamic metric SQL, batch scoring-metric retrieval/unknown handling, and preferences/settings SQLite round trips;
 - Android compilation/host tests are separate Gradle tasks.
 
 See [`../docs/TESTS.md`](../docs/TESTS.md) for current commands and real-package acceptance checks.

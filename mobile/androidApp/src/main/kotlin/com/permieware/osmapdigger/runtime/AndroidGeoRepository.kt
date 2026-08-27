@@ -121,9 +121,10 @@ class AndroidGeoRepository(
         )
 
     /**
-     * Apply generic metric ranges and optional coordinate bounds using Android SQLite.
-     * The SQL mirrors the Desktop EXISTS semantics so missing metric rows are unknown,
-     * not zero, and shared SearchService can behave consistently on both platforms.
+     * Apply the current hard-filter query through Android SQLite.
+     *
+     * This legacy path retains its name ordering and repository-side pre-limit for the
+     * existing UI. Ranked analysis uses [analysisCandidates] instead.
      */
     override suspend fun searchCandidates(
         conditions: List<SearchCondition>,
@@ -141,7 +142,66 @@ class AndroidGeoRepository(
                 """.trimIndent(),
             )
         val args = mutableListOf<String>()
+        appendCandidatePredicates(sql, args, conditions, latitudeRange, longitudeRange)
 
+        sql.append("\nORDER BY s.name LIMIT ?")
+        args += limit.toString()
+        return database.rawQuery(sql.toString(), args.toTypedArray()).use(::readSettlements)
+    }
+
+    /**
+     * Return every hard-filter-eligible settlement with requested scoring metrics in one query.
+     * Missing scoring rows remain absent from the candidate metric map rather than becoming zero.
+     */
+    override suspend fun analysisCandidates(
+        conditions: List<SearchCondition>,
+        latitudeRange: ClosedFloatingPointRange<Double>?,
+        longitudeRange: ClosedFloatingPointRange<Double>?,
+        scoringMetricIds: Set<String>,
+    ): List<SettlementAnalysisCandidate> {
+        require(scoringMetricIds.none { it.isBlank() }) { "Scoring metric IDs must not be blank" }
+        val metricIds = scoringMetricIds.sorted()
+        val args = mutableListOf<String>()
+        val sql =
+            if (metricIds.isEmpty()) {
+                StringBuilder(
+                    """
+                    SELECT s.settlement_id, s.name, s.name_local, s.name_en, s.place_type,
+                           s.population, s.latitude, s.longitude,
+                           NULL AS scoring_metric_id, NULL AS scoring_metric_value
+                    FROM settlement s
+                    WHERE 1 = 1
+                    """.trimIndent(),
+                )
+            } else {
+                args.addAll(metricIds)
+                StringBuilder(
+                    """
+                    SELECT s.settlement_id, s.name, s.name_local, s.name_en, s.place_type,
+                           s.population, s.latitude, s.longitude,
+                           sm_score.metric_id AS scoring_metric_id,
+                           sm_score.value AS scoring_metric_value
+                    FROM settlement s
+                    LEFT JOIN settlement_metric sm_score
+                      ON sm_score.settlement_id = s.settlement_id
+                     AND sm_score.metric_id IN (${metricIds.joinToString(",") { "?" }})
+                    WHERE 1 = 1
+                    """.trimIndent(),
+                )
+            }
+
+        appendCandidatePredicates(sql, args, conditions, latitudeRange, longitudeRange)
+        sql.append("\nORDER BY s.settlement_id, scoring_metric_id")
+        return database.rawQuery(sql.toString(), args.toTypedArray()).use(::readAnalysisCandidates)
+    }
+
+    private fun appendCandidatePredicates(
+        sql: StringBuilder,
+        args: MutableList<String>,
+        conditions: List<SearchCondition>,
+        latitudeRange: ClosedFloatingPointRange<Double>?,
+        longitudeRange: ClosedFloatingPointRange<Double>?,
+    ) {
         latitudeRange?.let {
             sql.append("\nAND s.latitude BETWEEN ? AND ?")
             args += it.start.toString()
@@ -174,10 +234,6 @@ class AndroidGeoRepository(
             }
             sql.append("\n)")
         }
-
-        sql.append("\nORDER BY s.name LIMIT ?")
-        args += limit.toString()
-        return database.rawQuery(sql.toString(), args.toTypedArray()).use(::readSettlements)
     }
 
     /** Hydrate the selected settlement and its complete persisted metric set. */
@@ -215,6 +271,24 @@ class AndroidGeoRepository(
             }
 
         return SettlementDetails(settlement, metrics)
+    }
+
+    private fun readAnalysisCandidates(cursor: Cursor): List<SettlementAnalysisCandidate> {
+        val candidates =
+            linkedMapOf<String, Pair<Settlement, MutableMap<String, Double>>>()
+        while (cursor.moveToNext()) {
+            val settlement = readSettlement(cursor)
+            val candidate =
+                candidates.getOrPut(settlement.id) {
+                    settlement to linkedMapOf()
+                }
+            cursor.stringOrNull(8)?.let { metricId ->
+                candidate.second[metricId] = cursor.getDouble(9)
+            }
+        }
+        return candidates.values.map { (settlement, metricValues) ->
+            SettlementAnalysisCandidate(settlement, metricValues.toMap())
+        }
     }
 
     private fun readMetricDefinition(cursor: Cursor): MetricDefinition =

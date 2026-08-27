@@ -75,13 +75,23 @@ A scoring implementation must not call `GeoRepository.details()` once per candid
 ranking requires a batch repository contract that returns the active scoring metric values for all
 eligible candidates without an N+1 query pattern.
 
-The first implementation increment is now complete: shared `analysis/PreferenceModels.kt`,
+The first two implementation increments are now complete. Shared `analysis/PreferenceModels.kt`,
 `analysis/PreferenceScorer.kt`, and `analysis/SettlementRanker.kt` define validated immutable
-preference/contribution/score models, pure deterministic `LOWER`/`HIGHER`
-scoring with explicit unknown-data coverage, and stable score/coverage/name/ID ranking. Focused
-`commonTest` coverage verifies saturation, interpolation, weighting, missing data, invalid contracts,
-and deterministic tie-breaking. This core is intentionally not wired to repository queries, persisted
-defaults, user settings, or Compose yet.
+preference/contribution/score models, pure deterministic `LOWER`/`HIGHER` scoring with explicit
+unknown-data coverage, and stable score/coverage/name/ID ranking.
+
+`SettlementAnalysisRequest`, domain `SettlementAnalysisCandidate`, and `SettlementAnalysisService` now add
+ranked-analysis orchestration without changing the current UI workflow. Desktop and Android
+`GeoRepository` implementations expose `analysisCandidates()` which applies hard SQL conditions and
+coarse coordinate bounds while batch-loading only requested scoring metrics through one query. Shared
+analysis then applies exact radius filtering, scoring, deterministic ranking, and the final result
+limit. The existing `SearchService`/`searchCandidates()` path remains available unchanged for the
+current hard-filter UI until the later analysis-state/UI increment switches workflows deliberately.
+
+Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, and Desktop JDBC
+tests cover batch active-metric retrieval, hard-filter preservation, unknown metric values, and the
+no-scoring-metric branch. Preference defaults, user-customized scoring persistence, shared analysis
+state, and Compose integration are still pending.
 
 ## Requirements
 
@@ -615,13 +625,17 @@ Suggested implementation order:
 1. Commit and tag the repository baseline before implementation begins.
 2. **Implemented:** define immutable shared preference, score, coverage, and contribution models.
 3. **Implemented:** add pure deterministic scoring/ranking and focused shared tests.
-4. Define the batch repository input contract needed for scoring without N+1 details queries.
-5. Implement Desktop/Android repository support and tests for batch active-metric retrieval.
+4. **Implemented:** define the batch repository input contract needed for scoring without N+1
+   details queries.
+5. **Implemented:** implement Desktop/Android repository support and Desktop regression tests for
+   batch active-metric retrieval; Android adapter compile/device validation remains part of configured
+   validation.
 6. Decide and implement generic preference-default persistence/configuration with explicit package
    compatibility.
 7. Extend application-owned preference persistence for user-customized target/limit/weight state.
-8. Refactor search orchestration so hard filtering and exact radius precede scoring and final result
-   limiting follows ranking.
+8. **Implemented:** add parallel ranked-analysis orchestration so hard filtering and exact radius
+   precede scoring and final result limiting follows ranking, while retaining the legacy hard-filter
+   search path until UI migration.
 9. Separate shared analysis/application state from the current monolithic `SearchPane` presentation.
 10. Implement the wide Desktop map-first workspace and resizable left panel.
 11. Implement compact Required/Preferences sections with single-row progressive editing.
