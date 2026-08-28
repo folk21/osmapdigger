@@ -1,22 +1,54 @@
 package com.permieware.osmapdigger.preferences
 
+import com.permieware.osmapdigger.analysis.MetricPreference
 import com.permieware.osmapdigger.domain.MetricDefinition
+import com.permieware.osmapdigger.domain.MetricPreferenceDefault
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.domain.Settlement
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 
-/** Current dataset-scoped search context persisted by a platform-owned store. */
+/** Current dataset-scoped analysis context persisted by a platform-owned store. */
 data class UserPreferences(
     val datasetId: String,
     val centerSettlementId: String? = null,
     val centerSettlementName: String? = null,
     val radiusKm: Double? = null,
     val conditions: List<SearchCondition> = emptyList(),
+    val preferenceOverrides: List<MetricPreferenceOverride> = emptyList(),
 )
 
-/** Platform persistence boundary for the current restorable user search context. */
+/** User-owned changes layered over one dataset-provided preference default. */
+data class MetricPreferenceOverride(
+    val metricId: String,
+    val enabled: Boolean? = null,
+    val targetValue: Double? = null,
+    val limitValue: Double? = null,
+    val weight: Int? = null,
+) {
+    init {
+        require(metricId.isNotBlank()) { "Preference override metric ID must not be blank" }
+        require(targetValue == null || targetValue.isFinite()) {
+            "Preference override target must be finite when provided"
+        }
+        require(limitValue == null || limitValue.isFinite()) {
+            "Preference override limit must be finite when provided"
+        }
+        require(weight == null || weight in MetricPreference.WEIGHT_RANGE) {
+            "Preference override weight must be in ${MetricPreference.WEIGHT_RANGE} when provided"
+        }
+    }
+}
+
+/** Effective preference state after applying user overrides to dataset defaults. */
+data class EffectiveMetricPreference(
+    val metricId: String,
+    val enabled: Boolean,
+    val preference: MetricPreference,
+)
+
+/** Platform persistence boundary for the current restorable user analysis context. */
 interface UserPreferencesRepository {
     suspend fun load(): UserPreferences?
 
@@ -77,7 +109,48 @@ object UserPreferencesRestorer {
     }
 }
 
-/** Versioned JSON representation used inside the platform settings database. */
+/** Merge dataset defaults with dataset-scoped user overrides by stable metric ID. */
+object MetricPreferenceOverrideResolver {
+    /** Resolve saved overrides only when they belong to the currently opened dataset. */
+    fun restore(
+        preferences: UserPreferences?,
+        datasetId: String,
+        defaults: List<MetricPreferenceDefault>,
+    ): List<EffectiveMetricPreference>? {
+        if (preferences == null || preferences.datasetId != datasetId) {
+            return null
+        }
+        return resolve(defaults, preferences.preferenceOverrides)
+    }
+
+    fun resolve(
+        defaults: List<MetricPreferenceDefault>,
+        overrides: List<MetricPreferenceOverride>,
+    ): List<EffectiveMetricPreference> {
+        require(overrides.map { it.metricId }.distinct().size == overrides.size) {
+            "Preference overrides must contain unique metric IDs"
+        }
+        val overrideByMetricId = overrides.associateBy { it.metricId }
+        return defaults.map { default ->
+            val override = overrideByMetricId[default.metricId]
+            val preference =
+                MetricPreference(
+                    metricId = default.metricId,
+                    direction = default.direction,
+                    targetValue = override?.targetValue ?: default.targetValue,
+                    limitValue = override?.limitValue ?: default.limitValue,
+                    weight = override?.weight ?: default.weight,
+                )
+            EffectiveMetricPreference(
+                metricId = default.metricId,
+                enabled = override?.enabled ?: default.defaultEnabled,
+                preference = preference,
+            )
+        }
+    }
+}
+
+/** Versioned JSON representation used for dynamic hard-filter state. */
 object SearchConditionPayloadCodec {
     private const val CURRENT_VERSION = 1
 
@@ -133,5 +206,72 @@ object SearchConditionPayloadCodec {
         val metricId: String,
         val minValue: Double? = null,
         val maxValue: Double? = null,
+    )
+}
+
+/** Versioned JSON representation for dataset-scoped preference overrides. */
+object MetricPreferenceOverridePayloadCodec {
+    private const val CURRENT_VERSION = 1
+
+    const val EMPTY_PAYLOAD: String = "{\"version\":1,\"preferences\":[]}"
+
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
+
+    fun encode(overrides: List<MetricPreferenceOverride>): String =
+        json.encodeToString(
+            PreferencePayload(
+                version = CURRENT_VERSION,
+                preferences =
+                    overrides.map {
+                        PreferenceEntry(
+                            metricId = it.metricId,
+                            enabled = it.enabled,
+                            targetValue = it.targetValue,
+                            limitValue = it.limitValue,
+                            weight = it.weight,
+                        )
+                    },
+            ),
+        )
+
+    /** Return null for malformed, unsupported, or semantically invalid payloads. */
+    fun decode(payload: String): List<MetricPreferenceOverride>? =
+        try {
+            val decoded = json.decodeFromString<PreferencePayload>(payload)
+            if (decoded.version != CURRENT_VERSION) {
+                null
+            } else {
+                decoded.preferences.map {
+                    MetricPreferenceOverride(
+                        metricId = it.metricId,
+                        enabled = it.enabled,
+                        targetValue = it.targetValue,
+                        limitValue = it.limitValue,
+                        weight = it.weight,
+                    )
+                }
+            }
+        } catch (_: SerializationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+
+    @Serializable
+    private data class PreferencePayload(
+        val version: Int,
+        val preferences: List<PreferenceEntry>,
+    )
+
+    @Serializable
+    private data class PreferenceEntry(
+        val metricId: String,
+        val enabled: Boolean? = null,
+        val targetValue: Double? = null,
+        val limitValue: Double? = null,
+        val weight: Int? = null,
     )
 }

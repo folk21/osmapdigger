@@ -1,6 +1,7 @@
 package com.permieware.osmapdigger.desktop.preferences
 
 import com.permieware.osmapdigger.desktop.settings.DesktopSettingsDatabase
+import com.permieware.osmapdigger.preferences.MetricPreferenceOverridePayloadCodec
 import com.permieware.osmapdigger.preferences.SearchConditionPayloadCodec
 import com.permieware.osmapdigger.preferences.UserPreferences
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
@@ -21,7 +22,7 @@ class SqliteUserPreferencesRepository(
             database.openConnection().use { connection ->
                 connection.prepareStatement(
                     """
-                    SELECT dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json
+                    SELECT dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json, preferences_json
                     FROM user_preferences
                     WHERE id = 1
                     """.trimIndent(),
@@ -33,6 +34,9 @@ class SqliteUserPreferencesRepository(
 
                         val conditions = SearchConditionPayloadCodec.decode(result.getString("filters_json"))
                             ?: return@withContext null
+                        val preferenceOverrides =
+                            MetricPreferenceOverridePayloadCodec.decode(result.getString("preferences_json"))
+                                ?: return@withContext null
                         val radius = result.getDouble("radius_km").let { if (result.wasNull()) null else it }
 
                         UserPreferences(
@@ -41,6 +45,7 @@ class SqliteUserPreferencesRepository(
                             centerSettlementName = result.getString("center_settlement_name"),
                             radiusKm = radius,
                             conditions = conditions,
+                            preferenceOverrides = preferenceOverrides,
                         )
                     }
                 }
@@ -54,8 +59,8 @@ class SqliteUserPreferencesRepository(
                 connection.prepareStatement(
                     """
                     INSERT OR REPLACE INTO user_preferences(
-                        id, dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json
-                    ) VALUES (1, ?, ?, ?, ?, ?)
+                        id, dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json, preferences_json
+                    ) VALUES (1, ?, ?, ?, ?, ?, ?)
                     """.trimIndent(),
                 ).use { statement ->
                     statement.setString(1, preferences.datasetId)
@@ -68,6 +73,7 @@ class SqliteUserPreferencesRepository(
                         statement.setDouble(4, radiusKm)
                     }
                     statement.setString(5, SearchConditionPayloadCodec.encode(preferences.conditions))
+                    statement.setString(6, MetricPreferenceOverridePayloadCodec.encode(preferences.preferenceOverrides))
                     statement.executeUpdate()
                 }
             }

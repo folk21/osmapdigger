@@ -5,16 +5,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.permieware.osmapdigger.analysis.AnalysisWorkspaceController
 import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
-import com.permieware.osmapdigger.preferences.UserPreferences
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
-import com.permieware.osmapdigger.preferences.UserPreferencesRestorer
 import com.permieware.osmapdigger.runtime.OsmapDiggerRuntime
 import com.permieware.osmapdigger.search.FilterSummaryBuilder
 import com.permieware.osmapdigger.search.SearchInputParser
-import com.permieware.osmapdigger.search.SearchService
 import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
 
@@ -81,96 +79,51 @@ private fun LoadedDatasetApp(
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
-    var datasetInfo by remember { mutableStateOf<DatasetInfo?>(null) }
-    var definitions by remember { mutableStateOf<List<MetricDefinition>>(emptyList()) }
-    var conditions by remember { mutableStateOf<List<SearchCondition>>(emptyList()) }
-    var results by remember { mutableStateOf<List<Settlement>>(emptyList()) }
+    val analysisController =
+        remember(runtime.repository, userPreferences, scope) {
+            AnalysisWorkspaceController(
+                repository = runtime.repository,
+                userPreferences = userPreferences,
+                scope = scope,
+            )
+        }
+    val analysisState by analysisController.state.collectAsState()
+
     var selected by remember { mutableStateOf<SettlementDetails?>(null) }
-    var center by remember { mutableStateOf<Settlement?>(null) }
     var radiusText by remember { mutableStateOf("") }
-    var error by remember { mutableStateOf<String?>(null) }
-    var running by remember { mutableStateOf(false) }
-    var preferencesReady by remember { mutableStateOf(false) }
+    var radiusInitializedForDataset by remember { mutableStateOf<String?>(null) }
+    var uiError by remember { mutableStateOf<String?>(null) }
     var searchProviders by remember { mutableStateOf<List<ExternalSearchProvider>>(emptyList()) }
 
-    LaunchedEffect(runtime) {
-        preferencesReady = false
-        datasetInfo = null
-        definitions = emptyList()
-        conditions = emptyList()
-        results = emptyList()
+    LaunchedEffect(analysisController) {
+        radiusInitializedForDataset = null
         selected = null
-        center = null
         radiusText = ""
-        error = null
+        uiError = null
         searchProviders = emptyList()
+        analysisController.initialize()
+    }
 
-        runCatching {
-            val info = runtime.repository.datasetInfo()
-            val metricDefinitions = runtime.repository.metricDefinitions()
-            val defaults =
-                metricDefinitions
-                    .filter { it.defaultEnabled }
-                    .map { SearchCondition(metricId = it.id) }
-            val savedPreferences = runCatching { userPreferences.load() }.getOrNull()
-            val restored =
-                UserPreferencesRestorer.restore(
-                    preferences = savedPreferences,
-                    datasetId = info.id,
-                    definitions = metricDefinitions,
-                    resolveSettlement = { settlementId ->
-                        runCatching { runtime.repository.details(settlementId).settlement }.getOrNull()
-                    },
-                )
-
-            datasetInfo = info
-            definitions = metricDefinitions
-            conditions = restored?.conditions ?: defaults
-            center = restored?.center
-            radiusText = restored?.radiusKm?.toString() ?: ""
-            preferencesReady = true
-        }.onFailure {
-            error = it.message ?: it.toString()
+    LaunchedEffect(analysisState.initialized, analysisState.datasetInfo?.id) {
+        val info = analysisState.datasetInfo ?: return@LaunchedEffect
+        if (analysisState.initialized && radiusInitializedForDataset != info.id) {
+            radiusText = analysisState.radiusKm?.toString() ?: ""
+            radiusInitializedForDataset = info.id
         }
     }
 
-    LaunchedEffect(datasetInfo?.id, datasetInfo?.countryCode, externalSearchProviders) {
-        val info = datasetInfo ?: return@LaunchedEffect
+    LaunchedEffect(analysisState.datasetInfo?.id, analysisState.datasetInfo?.countryCode, externalSearchProviders) {
+        val info = analysisState.datasetInfo ?: return@LaunchedEffect
         runCatching { externalSearchProviders.providersFor(info.countryCode) }
             .onSuccess { searchProviders = it }
-            .onFailure { error = "Could not load external search providers: ${it.message ?: it}" }
+            .onFailure { uiError = "Could not load external search providers: ${it.message ?: it}" }
     }
 
-    LaunchedEffect(
-        runtime,
-        userPreferences,
-        preferencesReady,
-        datasetInfo?.id,
-        center?.id,
-        center?.name,
-        radiusText,
-        conditions,
-    ) {
-        val info = datasetInfo
-        if (!preferencesReady || info == null) {
-            return@LaunchedEffect
-        }
-
-        runCatching {
-            userPreferences.save(
-                UserPreferences(
-                    datasetId = info.id,
-                    centerSettlementId = center?.id,
-                    centerSettlementName = center?.name,
-                    radiusKm = center?.let { SearchInputParser.positiveRadiusKm(radiusText) },
-                    conditions = conditions,
-                ),
-            )
-        }.onFailure {
-            error = "Could not save user preferences: ${it.message ?: it}"
-        }
-    }
-
+    val datasetInfo = analysisState.datasetInfo
+    val definitions = analysisState.definitions
+    val conditions = analysisState.conditions
+    val center = analysisState.center
+    val results = analysisState.rankedResults.map { it.settlement }
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     val parsedRadius = SearchInputParser.positiveRadiusKm(radiusText)
     val radiusError =
@@ -187,22 +140,21 @@ private fun LoadedDatasetApp(
             conditions = conditions,
         )
     val summary = FilterSummaryBuilder.build(request, definitionMap)
+    val error = uiError ?: analysisState.errorMessage
+
+    LaunchedEffect(results.map { it.id }) {
+        val selectedId = selected?.settlement?.id ?: return@LaunchedEffect
+        if (results.none { it.id == selectedId }) {
+            selected = null
+        }
+    }
 
     val performSearch: () -> Unit = {
         if (radiusError != null) {
-            error = radiusError
+            uiError = radiusError
         } else {
-            scope.launch {
-                running = true
-                error = null
-                runCatching { SearchService(runtime.repository).search(request) }
-                    .onSuccess {
-                        results = it
-                        selected = null
-                    }
-                    .onFailure { error = it.message ?: it.toString() }
-                running = false
-            }
+            uiError = null
+            analysisController.refreshNow()
         }
     }
 
@@ -210,7 +162,7 @@ private fun LoadedDatasetApp(
         scope.launch {
             runCatching { runtime.repository.details(settlement.id) }
                 .onSuccess { selected = it }
-                .onFailure { error = it.message ?: it.toString() }
+                .onFailure { uiError = it.message ?: it.toString() }
         }
     }
 
@@ -219,36 +171,51 @@ private fun LoadedDatasetApp(
     BoxWithConstraints(modifier.fillMaxSize()) {
         val wide = maxWidth >= 900.dp
 
+        val searchPane: @Composable (Modifier) -> Unit = { paneModifier ->
+            SearchPane(
+                modifier = paneModifier,
+                datasetInfo = datasetInfo,
+                definitions = definitions,
+                conditions = conditions,
+                onConditionsChanged = { analysisController.updateConditions(it) },
+                center = center,
+                onCenterChanged = {
+                    analysisController.updateCenter(it)
+                    if (it == null) {
+                        radiusText = ""
+                    }
+                },
+                radiusText = radiusText,
+                onRadiusChanged = { value ->
+                    radiusText = value
+                    uiError = null
+                    when {
+                        value.isBlank() -> analysisController.updateRadiusKm(null)
+                        center == null -> Unit
+                        else -> {
+                            val radius = SearchInputParser.positiveRadiusKm(value)
+                            analysisController.updateRadiusKm(radius)
+                        }
+                    }
+                },
+                radiusError = radiusError,
+                results = results,
+                selected = selected,
+                summary = summary,
+                running = analysisState.analyzing,
+                error = error,
+                settlementSearch = settlementSearch,
+                onSearch = performSearch,
+                onSelect = selectSettlement,
+                onImportDataset = onImportDataset,
+                externalLinks = runtime.externalLinks,
+                searchProviders = searchProviders,
+            )
+        }
+
         if (wide) {
             Row(Modifier.fillMaxSize()) {
-                SearchPane(
-                    modifier = Modifier.width(430.dp).fillMaxHeight(),
-                    datasetInfo = datasetInfo,
-                    definitions = definitions,
-                    conditions = conditions,
-                    onConditionsChanged = { conditions = it },
-                    center = center,
-                    onCenterChanged = {
-                        center = it
-                        if (it == null) {
-                            radiusText = ""
-                        }
-                    },
-                    radiusText = radiusText,
-                    onRadiusChanged = { radiusText = it },
-                    radiusError = radiusError,
-                    results = results,
-                    selected = selected,
-                    summary = summary,
-                    running = running,
-                    error = error,
-                    settlementSearch = settlementSearch,
-                    onSearch = performSearch,
-                    onSelect = selectSettlement,
-                    onImportDataset = onImportDataset,
-                    externalLinks = runtime.externalLinks,
-                    searchProviders = searchProviders,
-                )
+                searchPane(Modifier.width(430.dp).fillMaxHeight())
                 RuntimeMapPanel(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     datasetInfo = datasetInfo,
@@ -266,34 +233,7 @@ private fun LoadedDatasetApp(
                     Tab(selected = page == 1, onClick = { page = 1 }, text = { Text("Map") })
                 }
                 if (page == 0) {
-                    SearchPane(
-                        modifier = Modifier.fillMaxSize(),
-                        datasetInfo = datasetInfo,
-                        definitions = definitions,
-                        conditions = conditions,
-                        onConditionsChanged = { conditions = it },
-                        center = center,
-                        onCenterChanged = {
-                            center = it
-                            if (it == null) {
-                                radiusText = ""
-                            }
-                        },
-                        radiusText = radiusText,
-                        onRadiusChanged = { radiusText = it },
-                        radiusError = radiusError,
-                        results = results,
-                        selected = selected,
-                        summary = summary,
-                        running = running,
-                        error = error,
-                        settlementSearch = settlementSearch,
-                        onSearch = performSearch,
-                        onSelect = selectSettlement,
-                        onImportDataset = onImportDataset,
-                        externalLinks = runtime.externalLinks,
-                        searchProviders = searchProviders,
-                    )
+                    searchPane(Modifier.fillMaxSize())
                 } else {
                     RuntimeMapPanel(
                         modifier = Modifier.fillMaxSize(),
@@ -308,7 +248,6 @@ private fun LoadedDatasetApp(
         }
     }
 }
-
 
 @Composable
 private fun RuntimeMapPanel(

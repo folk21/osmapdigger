@@ -20,7 +20,7 @@ class AndroidUserPreferencesRepository(
             database.openDatabase().use { sqlite ->
                 sqlite.rawQuery(
                     """
-                    SELECT dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json
+                    SELECT dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json, preferences_json
                     FROM user_preferences
                     WHERE id = 1
                     """.trimIndent(),
@@ -32,6 +32,8 @@ class AndroidUserPreferencesRepository(
 
                     val conditions = SearchConditionPayloadCodec.decode(cursor.getString(4))
                         ?: return@withContext null
+                    val preferenceOverrides = MetricPreferenceOverridePayloadCodec.decode(cursor.getString(5))
+                        ?: return@withContext null
 
                     UserPreferences(
                         datasetId = cursor.getString(0),
@@ -39,6 +41,7 @@ class AndroidUserPreferencesRepository(
                         centerSettlementName = cursor.takeString(2),
                         radiusKm = if (cursor.isNull(3)) null else cursor.getDouble(3),
                         conditions = conditions,
+                        preferenceOverrides = preferenceOverrides,
                     )
                 }
             }
@@ -51,8 +54,8 @@ class AndroidUserPreferencesRepository(
                 sqlite.execSQL(
                     """
                     INSERT OR REPLACE INTO user_preferences(
-                        id, dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json
-                    ) VALUES (1, ?, ?, ?, ?, ?)
+                        id, dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json, preferences_json
+                    ) VALUES (1, ?, ?, ?, ?, ?, ?)
                     """.trimIndent(),
                     arrayOf(
                         preferences.datasetId,
@@ -60,6 +63,7 @@ class AndroidUserPreferencesRepository(
                         preferences.centerSettlementName,
                         preferences.radiusKm,
                         SearchConditionPayloadCodec.encode(preferences.conditions),
+                        MetricPreferenceOverridePayloadCodec.encode(preferences.preferenceOverrides),
                     ),
                 )
             }

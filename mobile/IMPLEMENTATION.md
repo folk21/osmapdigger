@@ -51,7 +51,7 @@ Platform implementations provide:
 - batch hard-filter-eligible analysis candidates with only requested scoring metric values;
 - detailed single-settlement hydration.
 
-`OsmapDiggerRuntime` bundles dataset-scoped repository/map/browser dependencies. The platform host separately creates one application-scoped `UserPreferencesRepository` and injects it into `OsmapDiggerApp`.
+`OsmapDiggerRuntime` bundles dataset-scoped repository/map/browser dependencies. The platform host separately creates one application-scoped `UserPreferencesRepository` and injects it into `OsmapDiggerApp`. Shared `AnalysisWorkspaceController` now owns restored hard constraints, effective preference defaults/overrides, center/radius, automatic ranked-analysis results, and persistence orchestration; Compose observes that state instead of independently owning those analytical fields.
 
 ## User preferences
 
@@ -59,7 +59,7 @@ Platform implementations provide:
 
 Restore is dataset-scoped. Metric conditions are retained only when their stable IDs still exist in the opened metric catalog. The saved center is resolved only by stable settlement ID; no display-name fallback is used.
 
-`OsmapDiggerApp` loads preferences after dataset metadata and metric definitions, then enables persistence only after restore completes so default filters cannot overwrite saved state during startup. Changes to center, radius, or filter state are saved through the repository rather than directly by individual controls.
+`AnalysisWorkspaceController.initialize()` loads dataset metadata, metric definitions, dataset preference defaults, and persisted user state in one shared lifecycle. It validates restored center/hard-filter references, merges sparse user preference overrides over dataset defaults, persists only after initialization, and immediately schedules ranked analysis. `OsmapDiggerApp` keeps only presentation-local text/selection/provider state and delegates analytical mutations back to the controller.
 
 ## Search orchestration
 
@@ -118,7 +118,7 @@ The repository path intentionally has no unrelated name-based final limit and ne
 `search/SearchRequestSemantics.kt` centralizes radius validation, coarse bounds, exact radius matching,
 and effective-condition selection so legacy `SearchService` and ranked analysis cannot drift.
 
-The current Compose UI still calls the legacy `SearchService`; ranked analysis is not user-visible yet. Generated datasets may now expose `MetricPreferenceDefault` values through `GeoRepository.preferenceDefaults()`, but the application does not initialize UI analysis state from them yet. Application settings for customized weights/targets and analysis-state/UI integration remain later sub-spec increments.
+`AnalysisWorkspaceController` now connects `MetricPreferenceDefault`, saved overrides, `SettlementAnalysisService`, and `UserPreferencesRepository` into the active application flow. The current `SearchPane` presentation is retained temporarily, but its displayed settlements come from ranked analysis and input changes schedule a 250 ms debounced recalculation. The existing Search button remains as a manual `refreshNow()` compatibility affordance until the Desktop workspace redesign removes the legacy form-oriented interaction. Legacy packages with no enabled preference defaults and no effective hard/radius constraint do not trigger an automatic unbounded candidate scan; explicit refresh remains available.
 
 ## Filter summaries
 
@@ -184,6 +184,14 @@ subquery per effective metric condition, deterministic name ordering, and a repo
 excluding the settlement or becoming zero.
 
 `preferenceDefaults()` reads `metric_preference_default` ordered by the owning metric's `sort_order`. It first probes `sqlite_master`; a legacy format-v1 database without the additive table returns an empty list. Persisted rows are converted into validated shared `MetricPreferenceDefault` values, so unsupported direction or invalid numeric contracts fail instead of being silently reinterpreted.
+
+### Shared preference override persistence
+
+`UserPreferences` carries `preferenceOverrides` keyed by stable metric ID. An override is intentionally sparse and may replace only `enabled`, `targetValue`, `limitValue`, or `weight`; scoring direction remains owned by the dataset's `MetricPreferenceDefault`. Untouched fields therefore follow new dataset defaults after a compatible dataset rebuild instead of being duplicated into mutable application state.
+
+`MetricPreferenceOverridePayloadCodec` stores overrides as an independently versioned JSON payload. `MetricPreferenceOverrideResolver` applies them to the currently opened dataset defaults, ignores valid stale overrides whose metric ID is no longer present, rejects duplicate IDs, and reconstructs `MetricPreference` so invalid effective target/limit combinations fail deterministically before scoring. Dataset mismatch produces no restored preference state.
+
+The platform settings schema advances from version 2 to version 3 by adding `user_preferences.preferences_json`. Existing rows receive an empty version-1 override payload, preserving center/radius/hard-filter state while making effective preferences equal to dataset defaults after migration. This schema belongs only to application-owned settings and does not change `geo-format/VERSION`.
 
 ### `SqliteUserPreferencesRepository`
 
@@ -277,7 +285,7 @@ Current dependency families:
 
 ## Tests
 
-- `shared/commonTest` covers geography, deterministic preference scoring/ranking, rank-before-limit analysis orchestration, exact-radius analysis semantics, filter summaries, external links, preference payloads, and restore semantics;
+- `shared/commonTest` covers geography, deterministic preference scoring/ranking, rank-before-limit analysis orchestration, exact-radius analysis semantics, debounced shared analysis-state orchestration, filter summaries, external links, preference payloads, and restore semantics;
 - `shared/desktopTest` covers Desktop MapLibre host capability resolution;
 - `desktopApp/jvmTest` covers legacy dynamic metric SQL, batch scoring-metric retrieval/unknown handling, and preferences/settings SQLite round trips;
 - Android compilation/host tests are separate Gradle tasks.

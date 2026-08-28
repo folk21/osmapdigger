@@ -16,7 +16,11 @@ class DesktopSettingsDatabase(
         openConnection().use { connection ->
             when (val version = userVersion(connection)) {
                 0 -> createSchema(connection)
-                1 -> migrateFrom1To2(connection)
+                1 -> {
+                    migrateFrom1To2(connection)
+                    migrateFrom2To3(connection)
+                }
+                2 -> migrateFrom2To3(connection)
                 SCHEMA_VERSION -> Unit
                 else -> error(
                     "Unsupported settings database schema version $version; expected <= $SCHEMA_VERSION",
@@ -39,6 +43,13 @@ class DesktopSettingsDatabase(
     private fun migrateFrom1To2(connection: Connection) {
         connection.createStatement().use { statement ->
             statement.executeUpdate(EXTERNAL_SEARCH_PROVIDER_SCHEMA)
+            statement.execute("PRAGMA user_version = 2")
+        }
+    }
+
+    private fun migrateFrom2To3(connection: Connection) {
+        connection.createStatement().use { statement ->
+            statement.executeUpdate(ADD_PREFERENCE_OVERRIDES_COLUMN)
             statement.execute("PRAGMA user_version = $SCHEMA_VERSION")
         }
     }
@@ -52,7 +63,7 @@ class DesktopSettingsDatabase(
         }
 
     companion object {
-        const val SCHEMA_VERSION = 2
+        const val SCHEMA_VERSION = 3
         const val GLOBAL_COUNTRY_CODE = "*"
 
         private val USER_PREFERENCES_SCHEMA =
@@ -63,8 +74,16 @@ class DesktopSettingsDatabase(
                 center_settlement_id TEXT,
                 center_settlement_name TEXT,
                 radius_km REAL,
-                filters_json TEXT NOT NULL
+                filters_json TEXT NOT NULL,
+                preferences_json TEXT NOT NULL DEFAULT '{"version":1,"preferences":[]}'
             )
+            """.trimIndent()
+
+
+        private val ADD_PREFERENCE_OVERRIDES_COLUMN =
+            """
+            ALTER TABLE user_preferences
+            ADD COLUMN preferences_json TEXT NOT NULL DEFAULT '{"version":1,"preferences":[]}'
             """.trimIndent()
 
         private val EXTERNAL_SEARCH_PROVIDER_SCHEMA =

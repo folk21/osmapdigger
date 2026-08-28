@@ -12,7 +12,11 @@ class AndroidSettingsDatabase(
         openDatabase().use { database ->
             when (database.version) {
                 0 -> createSchema(database)
-                1 -> migrateFrom1To2(database)
+                1 -> {
+                    migrateFrom1To2(database)
+                    migrateFrom2To3(database)
+                }
+                2 -> migrateFrom2To3(database)
                 SCHEMA_VERSION -> Unit
                 else -> error(
                     "Unsupported settings database schema version ${database.version}; " +
@@ -33,11 +37,16 @@ class AndroidSettingsDatabase(
 
     private fun migrateFrom1To2(database: SQLiteDatabase) {
         database.execSQL(EXTERNAL_SEARCH_PROVIDER_SCHEMA)
+        database.version = 2
+    }
+
+    private fun migrateFrom2To3(database: SQLiteDatabase) {
+        database.execSQL(ADD_PREFERENCE_OVERRIDES_COLUMN)
         database.version = SCHEMA_VERSION
     }
 
     companion object {
-        const val SCHEMA_VERSION = 2
+        const val SCHEMA_VERSION = 3
         const val GLOBAL_COUNTRY_CODE = "*"
 
         private const val USER_PREFERENCES_SCHEMA = """
@@ -47,8 +56,14 @@ class AndroidSettingsDatabase(
                 center_settlement_id TEXT,
                 center_settlement_name TEXT,
                 radius_km REAL,
-                filters_json TEXT NOT NULL
+                filters_json TEXT NOT NULL,
+                preferences_json TEXT NOT NULL DEFAULT '{"version":1,"preferences":[]}'
             )
+        """
+
+        private const val ADD_PREFERENCE_OVERRIDES_COLUMN = """
+            ALTER TABLE user_preferences
+            ADD COLUMN preferences_json TEXT NOT NULL DEFAULT '{"version":1,"preferences":[]}'
         """
 
         private const val EXTERNAL_SEARCH_PROVIDER_SCHEMA = """

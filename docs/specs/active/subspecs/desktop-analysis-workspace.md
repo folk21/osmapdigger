@@ -68,7 +68,7 @@ The current repository already provides most prerequisite boundaries:
 - result and selected-settlement overlays remain transient map presentation data;
 - wide Desktop currently uses a fixed 430 dp search/details pane beside the map;
 - the current result order is not a preference-scoring model;
-- the current primary workflow requires an explicit **Search settlements** action;
+- the current SearchPane still exposes **Search settlements** as a manual refresh affordance, but shared analysis state now recalculates automatically after valid input changes;
 - settlement details currently appear inside the search pane rather than over the map.
 
 A scoring implementation must not call `GeoRepository.details()` once per candidate. Country-scale
@@ -92,7 +92,7 @@ Dataset-provided preference defaults are now implemented independently from hard
 
 `GeoRepository.preferenceDefaults()` exposes the catalog on Desktop and Android. Updated readers probe for the additive table and return an empty list for legacy format-v1 packages that predate it; older readers safely ignore the table in newly generated v1 packages. The current Compose UI does not consume these defaults yet.
 
-Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration and preference-default validation. Desktop JDBC tests cover preference-default loading/legacy fallback, batch active-metric retrieval, hard-filter preservation, unknown metric values, and the no-scoring-metric branch. User-customized scoring persistence, shared analysis state, and Compose integration are still pending.
+Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, preference-default validation, and shared analysis-workspace state behavior. User-customized scoring overrides are persisted in the application-owned settings database and deterministically merged with dataset defaults. `AnalysisWorkspaceController` now owns restored hard constraints, effective preferences, center/radius, persistence, debounced ranked recalculation, and stale-result suppression. The existing SearchPane presentation remains temporarily unchanged while consuming ranked settlements from this shared state; the map-first composition and preference editors remain pending.
 
 ## Requirements
 
@@ -632,17 +632,17 @@ Suggested implementation order:
 6. **Implemented:** add independent preference-profile configuration, additive format-v1
    `metric_preference_default` persistence, Desktop/Android readers with legacy empty fallback, and
    cross-boundary validation/tests.
-7. Extend application-owned preference persistence for user-customized target/limit/weight state.
+7. **Implemented:** extend application-owned preference persistence with sparse dataset-scoped enabled/target/limit/weight overrides, shared default/override resolution, and Desktop/Android settings schema version 3 migration.
 8. **Implemented:** add parallel ranked-analysis orchestration so hard filtering and exact radius
    precede scoring and final result limiting follows ranking, while retaining the legacy hard-filter
    search path until UI migration.
-9. Separate shared analysis/application state from the current monolithic `SearchPane` presentation.
+9. **Implemented:** separate analytical application state from Compose with `AnalysisWorkspaceController`, including dataset/default/override restore and persistence orchestration.
 10. Implement the wide Desktop map-first workspace and resizable left panel.
 11. Implement compact Required/Preferences sections with single-row progressive editing.
 12. Implement ranked results and shared list/map selection state.
 13. Implement the right-side map-overlay settlement details card and deterministic contribution
     breakdown.
-14. Implement debounced/cancellable automatic recalculation.
+14. **Implemented:** add 250 ms debounced/cancellable automatic ranked recalculation with generation-based stale-result suppression; keep the existing Search button temporarily as manual refresh compatibility UI.
 15. Implement bounded map-driven center selection without leaking renderer contracts into shared
     domain/search code.
 16. Run parent-workflow regression checks plus this sub-spec's scoring, compatibility, persistence,
