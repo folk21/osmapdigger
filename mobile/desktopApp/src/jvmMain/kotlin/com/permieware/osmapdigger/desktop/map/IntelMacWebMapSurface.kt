@@ -11,6 +11,7 @@ import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
+import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.runtime.MapPackage
 import com.permieware.osmapdigger.ui.PlatformMapSurface
@@ -20,9 +21,11 @@ import org.cef.CefApp
 import org.cef.CefClient
 import org.cef.browser.CefBrowser
 import java.awt.BorderLayout
+import java.awt.EventQueue
 import java.io.Closeable
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.util.concurrent.atomic.AtomicReference
 import javax.swing.JPanel
 
 /**
@@ -49,6 +52,8 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
         mapPackage: MapPackage,
         results: List<Settlement>,
         selected: Settlement?,
+        onSettlementActivated: ((String) -> Unit)?,
+        onMapLocationActivated: ((GeoPoint) -> Unit)?,
     ) {
         if (datasetInfo == null || mapPackage.styleJson == null || mapPackage.localMapUri == null) {
             MapUnavailable(
@@ -105,7 +110,12 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
             factory = { session.component },
             modifier = modifier,
             update = {
-                session.update(results = results, selected = selected)
+                session.update(
+                    results = results,
+                    selected = selected,
+                    onSettlementActivated = onSettlementActivated,
+                    onMapLocationActivated = onMapLocationActivated,
+                )
             },
         )
     }
@@ -163,18 +173,37 @@ private class CefRuntime private constructor(
         val mapPath = Paths.get(java.net.URI(localMapUri))
         require(Files.isRegularFile(mapPath)) { "PMTiles file not found: $mapPath" }
 
+        val settlementCallback = AtomicReference<((String) -> Unit)?>(null)
+        val locationCallback = AtomicReference<((GeoPoint) -> Unit)?>(null)
         val server =
             LocalWebMapServer(
                 datasetInfo = datasetInfo,
                 styleJson = requireNotNull(mapPackage.styleJson),
                 pmtilesPath = mapPath,
+                onSettlementActivated = { settlementId ->
+                    DesktopDiagnostics.info("map.interaction", "dispatching settlement id=$settlementId to Compose")
+                    EventQueue.invokeLater { settlementCallback.get()?.invoke(settlementId) }
+                },
+                onMapLocationActivated = { location ->
+                    DesktopDiagnostics.info(
+                        "map.interaction",
+                        "dispatching map location lat=${location.latitude} lon=${location.longitude} to Compose",
+                    )
+                    EventQueue.invokeLater { locationCallback.get()?.invoke(location) }
+                },
             )
         return try {
             DesktopDiagnostics.info("jcef", "Creating browser client dataset=${datasetInfo.id}")
             val client = app.createClient()
             val browser = client.createBrowser(server.indexUrl, false, false)
             DesktopDiagnostics.info("jcef", "Browser created indexUrl=${server.indexUrl}")
-            WebMapSession(server = server, client = client, browser = browser)
+            WebMapSession(
+                server = server,
+                client = client,
+                browser = browser,
+                onSettlementActivated = settlementCallback,
+                onMapLocationActivated = locationCallback,
+            )
         } catch (failure: Throwable) {
             server.close()
             throw failure
@@ -216,6 +245,8 @@ private class WebMapSession(
     private val server: LocalWebMapServer,
     private val client: CefClient,
     private val browser: CefBrowser,
+    private val onSettlementActivated: AtomicReference<((String) -> Unit)?>,
+    private val onMapLocationActivated: AtomicReference<((GeoPoint) -> Unit)?>,
 ) : Closeable {
     val component =
         JPanel(BorderLayout()).apply {
@@ -228,8 +259,17 @@ private class WebMapSession(
     fun update(
         results: List<Settlement>,
         selected: Settlement?,
+        onSettlementActivated: ((String) -> Unit)?,
+        onMapLocationActivated: ((GeoPoint) -> Unit)?,
     ) {
-        val stateJson = server.updateState(results = results, selected = selected)
+        this.onMapLocationActivated.set(onMapLocationActivated)
+        this.onSettlementActivated.set(onSettlementActivated.takeIf { onMapLocationActivated == null })
+        val stateJson =
+            server.updateState(
+                results = results,
+                selected = selected,
+                mapLocationPickingEnabled = onMapLocationActivated != null,
+            )
         val selectedId = selected?.id
         if (stateJson == lastStateJson && selectedId == lastSelectedId) {
             return

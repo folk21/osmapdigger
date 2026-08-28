@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.*
+import com.permieware.osmapdigger.presentation.MetricFilterPresentationBuilder
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchUrlBuilder
 import com.permieware.osmapdigger.presentation.NumberFormatter
@@ -144,6 +145,9 @@ internal fun CenterSelector(
     settlementSearch: SettlementSearchService,
     center: Settlement?,
     onCenterChanged: (Settlement?) -> Unit,
+    mapPickerActive: Boolean = false,
+    onMapPickerToggle: (() -> Unit)? = null,
+    mapPickerEnabled: Boolean = false,
     radiusText: String,
     onRadiusChanged: (String) -> Unit,
     radiusError: String?,
@@ -186,25 +190,49 @@ internal fun CenterSelector(
                 singleLine = true,
             )
 
-            Button(
-                onClick = {
-                    scope.launch {
-                        val found =
-                            if (query.isBlank()) emptyList() else settlementSearch.find(query)
-                        val exactMatches = found.filter { it.kind == SettlementMatchKind.EXACT }
-                        if (exactMatches.size == 1) {
-                            val exact = exactMatches.single().settlement
-                            onCenterChanged(exact)
-                            query = exact.name
-                            suggestions = emptyList()
-                        } else {
-                            suggestions = found
-                        }
-                    }
-                },
-                enabled = query.isNotBlank(),
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Text("Find center")
+                Button(
+                    onClick = {
+                        scope.launch {
+                            val found =
+                                if (query.isBlank()) emptyList() else settlementSearch.find(query)
+                            val exactMatches = found.filter { it.kind == SettlementMatchKind.EXACT }
+                            if (exactMatches.size == 1) {
+                                val exact = exactMatches.single().settlement
+                                onCenterChanged(exact)
+                                query = exact.name
+                                suggestions = emptyList()
+                            } else {
+                                suggestions = found
+                            }
+                        }
+                    },
+                    enabled = query.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text("Find center")
+                }
+
+                if (onMapPickerToggle != null) {
+                    OutlinedButton(
+                        onClick = onMapPickerToggle,
+                        enabled = mapPickerEnabled || mapPickerActive,
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(if (mapPickerActive) "Cancel center pick" else "Pick center on map")
+                    }
+                }
+            }
+
+            if (mapPickerActive) {
+                Text(
+                    "Click anywhere on the map. The nearest settlement will become the search center; result selection will not change.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
             }
 
             suggestions.take(6).forEach { match ->
@@ -313,7 +341,16 @@ internal fun DynamicFilters(
                         ) {
                             available.forEach { definition ->
                                 DropdownMenuItem(
-                                    text = { Text("${definition.group} · ${definition.title}") },
+                                    text = {
+                                        val presentation = MetricFilterPresentationBuilder.build(definition)
+                                        Column {
+                                            Text(presentation.title)
+                                            Text(
+                                                presentation.chooserDescription,
+                                                style = MaterialTheme.typography.labelSmall,
+                                            )
+                                        }
+                                    },
                                     onClick = {
                                         onConditionsChanged(conditions + SearchCondition(metricId = definition.id))
                                         menuExpanded = false
@@ -359,14 +396,19 @@ private fun MetricRangeRow(
         mutableStateOf(condition.maxValue?.toString() ?: "")
     }
 
+    val presentation = remember(definition) { MetricFilterPresentationBuilder.build(definition) }
+
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(Modifier.weight(1f)) {
-                Text(definition.title, style = MaterialTheme.typography.bodyMedium)
-                Text(definition.group, style = MaterialTheme.typography.labelSmall)
+                Text(presentation.title, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    "${definition.group} · ${presentation.chooserDescription}",
+                    style = MaterialTheme.typography.labelSmall,
+                )
             }
             TextButton(onClick = onRemove) { Text("Remove") }
         }
@@ -377,8 +419,8 @@ private fun MetricRangeRow(
                     minText = it
                     onChange(condition.copy(minValue = it.toDoubleOrNull()))
                 },
-                label = { Text("From") },
-                suffix = { Text(definition.unit) },
+                label = { Text(presentation.minLabel) },
+                suffix = { presentation.fieldUnit?.let { Text(it) } },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
             )
@@ -388,8 +430,8 @@ private fun MetricRangeRow(
                     maxText = it
                     onChange(condition.copy(maxValue = it.toDoubleOrNull()))
                 },
-                label = { Text("To") },
-                suffix = { Text(definition.unit) },
+                label = { Text(presentation.maxLabel) },
+                suffix = { presentation.fieldUnit?.let { Text(it) } },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
             )

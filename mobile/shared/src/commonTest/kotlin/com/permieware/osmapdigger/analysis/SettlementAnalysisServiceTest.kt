@@ -142,6 +142,35 @@ class SettlementAnalysisServiceTest {
         assertEquals(0, repository.analysisCalls)
     }
 
+    @Test
+    fun diagnosticsReportCandidateVolumeAndNonNegativeTimings() = runTest {
+        val repository =
+            FakeRepository(
+                candidates =
+                    listOf(
+                        candidate("near", "Near", latitude = 0.01, forestDistance = 2.0),
+                        candidate("far", "Far", latitude = 0.20, forestDistance = 1.0),
+                    ),
+            )
+
+        val outcome =
+            SettlementAnalysisService(repository).analyzeWithDiagnostics(
+                SettlementAnalysisRequest(
+                    search = SearchRequest(center = settlement("center", "Center"), radiusKm = 5.0, limit = 10),
+                    preferences = listOf(forestPreference()),
+                ),
+            )
+
+        assertEquals(2, outcome.diagnostics.candidateCount)
+        assertEquals(1, outcome.diagnostics.exactEligibleCandidateCount)
+        assertEquals(1, outcome.diagnostics.enabledScoringMetricCount)
+        assertEquals(1, outcome.diagnostics.resultCount)
+        assertTrue(outcome.diagnostics.batchRetrievalMillis >= 0.0)
+        assertTrue(outcome.diagnostics.sharedScoringSortMillis >= 0.0)
+        assertTrue(outcome.diagnostics.totalMillis >= 0.0)
+        assertTrue(outcome.diagnostics.totalMillis >= outcome.diagnostics.batchRetrievalMillis)
+    }
+
     private fun forestPreference() =
         MetricPreference(
             metricId = "forest.distance_km",

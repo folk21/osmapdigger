@@ -10,6 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.DatasetInfo
+import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.map.MapOverlayGeoJson
 import org.maplibre.compose.camera.CameraPosition
@@ -20,6 +21,8 @@ import org.maplibre.compose.map.MaplibreMap
 import org.maplibre.compose.sources.GeoJsonData
 import org.maplibre.compose.sources.rememberGeoJsonSource
 import org.maplibre.compose.style.BaseStyle
+import org.maplibre.compose.util.ClickResult
+import org.maplibre.compose.util.FeaturesClickHandler
 import org.maplibre.spatialk.geojson.Position
 
 /** Android MapLibre implementation backed by the package's local PMTiles style. */
@@ -30,8 +33,37 @@ internal actual fun MapPanel(
     styleJson: String?,
     results: List<Settlement>,
     selected: Settlement?,
+    onSettlementActivated: ((String) -> Unit)?,
+    onMapLocationActivated: ((GeoPoint) -> Unit)?,
 ) {
-    RenderMapLibrePanel(modifier, datasetInfo, styleJson, results, selected)
+    RenderMapLibrePanel(
+        modifier,
+        datasetInfo,
+        styleJson,
+        results,
+        selected,
+        onSettlementActivated,
+        onMapLocationActivated,
+    )
+}
+
+private fun settlementClickHandler(
+    onSettlementActivated: ((String) -> Unit)?,
+): FeaturesClickHandler? {
+    if (onSettlementActivated == null) return null
+    return { features ->
+        val settlementId = features.firstNotNullOfOrNull { feature ->
+            feature.properties?.get("id")?.let { value ->
+                (value as? kotlinx.serialization.json.JsonPrimitive)?.content
+            }
+        }
+        if (settlementId == null) {
+            ClickResult.Pass
+        } else {
+            onSettlementActivated(settlementId)
+            ClickResult.Consume
+        }
+    }
 }
 
 /**
@@ -45,6 +77,8 @@ private fun RenderMapLibrePanel(
     styleJson: String?,
     results: List<Settlement>,
     selected: Settlement?,
+    onSettlementActivated: ((String) -> Unit)?,
+    onMapLocationActivated: ((GeoPoint) -> Unit)?,
 ) {
     if (datasetInfo == null || styleJson == null) {
         Box(modifier.padding(24.dp)) {
@@ -89,6 +123,13 @@ private fun RenderMapLibrePanel(
             modifier = Modifier.fillMaxSize(),
             baseStyle = BaseStyle.Json(styleJson),
             cameraState = camera,
+            onMapClick =
+                onMapLocationActivated?.let { callback ->
+                    { position, _ ->
+                        callback(GeoPoint(position.latitude, position.longitude))
+                        ClickResult.Consume
+                    }
+                },
         ) {
             val resultSource = rememberGeoJsonSource(GeoJsonData.JsonString(resultJson))
             LaunchedEffect(resultJson) {
@@ -101,6 +142,7 @@ private fun RenderMapLibrePanel(
                 radius = const(5.dp),
                 strokeColor = const(Color.White),
                 strokeWidth = const(1.dp),
+                onClick = settlementClickHandler(onSettlementActivated),
             )
 
             if (selected != null) {
@@ -115,6 +157,7 @@ private fun RenderMapLibrePanel(
                     radius = const(8.dp),
                     strokeColor = const(Color.White),
                     strokeWidth = const(2.dp),
+                    onClick = settlementClickHandler(onSettlementActivated),
                 )
             }
         }

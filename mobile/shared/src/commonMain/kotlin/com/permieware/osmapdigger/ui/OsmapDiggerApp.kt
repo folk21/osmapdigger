@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.analysis.AnalysisWorkspaceController
+import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
@@ -26,6 +27,7 @@ fun OsmapDiggerApp(
     onImportDataset: () -> Unit,
     platformMapSurface: PlatformMapSurface? = null,
     presentationMode: AppPresentationMode = AppPresentationMode.RESPONSIVE,
+    onAnalysisDiagnostics: (SettlementAnalysisDiagnostics) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     MaterialTheme {
@@ -39,6 +41,7 @@ fun OsmapDiggerApp(
                 onImportDataset = onImportDataset,
                 platformMapSurface = platformMapSurface,
                 presentationMode = presentationMode,
+                onAnalysisDiagnostics = onAnalysisDiagnostics,
                 modifier = modifier,
             )
         }
@@ -80,6 +83,7 @@ private fun LoadedDatasetApp(
     onImportDataset: () -> Unit,
     platformMapSurface: PlatformMapSurface?,
     presentationMode: AppPresentationMode,
+    onAnalysisDiagnostics: (SettlementAnalysisDiagnostics) -> Unit,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -89,6 +93,7 @@ private fun LoadedDatasetApp(
                 repository = runtime.repository,
                 userPreferences = userPreferences,
                 scope = scope,
+                onAnalysisDiagnostics = onAnalysisDiagnostics,
             )
         }
     val analysisState by analysisController.state.collectAsState()
@@ -259,7 +264,7 @@ private fun LoadedDatasetApp(
                 onImportDataset = onImportDataset,
                 externalLinks = runtime.externalLinks,
                 searchProviders = searchProviders,
-                mapContent = { mapModifier ->
+                mapContent = { mapModifier, onSettlementActivated, onMapLocationActivated ->
                     RuntimeMapPanel(
                         modifier = mapModifier,
                         datasetInfo = datasetInfo,
@@ -267,6 +272,8 @@ private fun LoadedDatasetApp(
                         results = results,
                         selected = selected?.settlement,
                         platformMapSurface = platformMapSurface,
+                        onSettlementActivated = onSettlementActivated,
+                        onMapLocationActivated = onMapLocationActivated,
                     )
                 },
             )
@@ -314,6 +321,8 @@ private fun RuntimeMapPanel(
     results: List<Settlement>,
     selected: Settlement?,
     platformMapSurface: PlatformMapSurface?,
+    onSettlementActivated: ((String) -> Unit)? = null,
+    onMapLocationActivated: ((GeoPoint) -> Unit)? = null,
 ) {
     if (platformMapSurface != null) {
         platformMapSurface.Render(
@@ -322,6 +331,8 @@ private fun RuntimeMapPanel(
             mapPackage = mapPackage,
             results = results,
             selected = selected,
+            onSettlementActivated = onSettlementActivated,
+            onMapLocationActivated = onMapLocationActivated,
         )
     } else {
         MapPanel(
@@ -330,6 +341,8 @@ private fun RuntimeMapPanel(
             styleJson = mapPackage.styleJson,
             results = results,
             selected = selected,
+            onSettlementActivated = onSettlementActivated,
+            onMapLocationActivated = onMapLocationActivated,
         )
     }
 }

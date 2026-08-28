@@ -51,6 +51,7 @@ class AnalysisWorkspaceController(
     private val userPreferences: UserPreferencesRepository,
     private val scope: CoroutineScope,
     private val debounceMillis: Long = DEFAULT_DEBOUNCE_MILLIS,
+    private val onAnalysisDiagnostics: (SettlementAnalysisDiagnostics) -> Unit = {},
 ) {
     private val mutableState = MutableStateFlow(AnalysisWorkspaceState())
     val state: StateFlow<AnalysisWorkspaceState> = mutableState.asStateFlow()
@@ -340,8 +341,8 @@ class AnalysisWorkspaceController(
                             .filter { it.enabled }
                             .map { it.preference }
                             .toList()
-                    val results =
-                        analysisService.analyze(
+                    val outcome =
+                        analysisService.analyzeWithDiagnostics(
                             SettlementAnalysisRequest(
                                 search =
                                     SearchRequest(
@@ -353,9 +354,10 @@ class AnalysisWorkspaceController(
                             ),
                         )
                     if (generation == analysisGeneration) {
+                        runCatching { onAnalysisDiagnostics(outcome.diagnostics) }
                         mutableState.value =
                             mutableState.value.copy(
-                                rankedResults = results,
+                                rankedResults = outcome.results,
                                 analyzing = false,
                                 errorMessage = null,
                             )

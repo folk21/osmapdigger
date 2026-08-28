@@ -77,7 +77,21 @@ make test-desktop
 make test-mobile
 ```
 
-Shared tests cover Haversine distance, search-input parsing, deterministic preference scoring/ranking, dataset preference-default contract validation, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, analysis-workspace initialization/restore, debounced input coalescing, stale-analysis suppression, preference override recalculation, generic preference editor mutations/reset, legacy no-default manual fallback, deterministic score-explanation grouping, Desktop workspace layout geometry, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, hard-filter and preference-override payload round trips, dataset scoping, removed metrics, dataset-default/override merging, invalid effective preference contracts, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, unknown scoring values, the no-scoring-metric branch, settings SQLite search/preference round trips, version-2-to-3 preference migration, provider seeding/custom-row preservation, malformed hard-filter/preference payload behavior, and Intel-macOS renderer selection.
+Shared tests cover Haversine distance, search-input parsing, semantic distance/count/coverage filter presentation, deterministic preference scoring/ranking, dataset preference-default contract validation, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, analysis-workspace initialization/restore, debounced input coalescing, stale-analysis suppression, preference override recalculation, generic preference editor mutations/reset, legacy no-default manual fallback, deterministic score-explanation grouping, Desktop workspace layout geometry, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, hard-filter and preference-override payload round trips, dataset scoping, removed metrics, dataset-default/override merging, invalid effective preference contracts, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, unknown scoring values, the no-scoring-metric branch, settings SQLite search/preference round trips, version-2-to-3 preference migration, provider seeding/custom-row preservation, malformed hard-filter/preference payload behavior, and Intel-macOS renderer selection.
+
+## Ranked-analysis performance measurement
+
+Desktop records one `analysis.performance` line for each completed current analysis generation. Use a realistic country-scale package, perform representative Required/Preferences/radius edits, then inspect `~/.osmapdigger/logs/desktop.log`, for example with `grep "analysis.performance" ~/.osmapdigger/logs/desktop.log`. Each line records:
+
+- `candidates`: rows returned by the batch repository query after SQL hard/coarse reduction;
+- `exactEligible`: candidates remaining after shared exact-radius filtering;
+- `scoringMetrics`: enabled scoring metric count requested from SQLite;
+- `results`: final visible ranked result count;
+- `retrievalMs`: batch SQLite retrieval time;
+- `sharedMs`: shared exact-radius filtering, scoring, deterministic sort, and final limit time;
+- `totalMs`: end-to-end `SettlementAnalysisService` execution time.
+
+Record at least one representative line for sub-spec acceptance. Rapid edits should produce diagnostics only for the latest completed generation; superseded work must not be reported as the accepted measurement. These timings are diagnostic only and must never affect deterministic ranking.
 
 ## Desktop analysis workspace acceptance
 
@@ -96,7 +110,7 @@ With a dataset that contains preference defaults, verify on a wide Desktop windo
 - on Intel macOS/JCEF, both filter selection and settlement details remain outside the Swing map rectangle, so no map freeze/hide/occlusion workaround is required;
 - Android continues to use the existing responsive Search/Map workflow.
 
-Map-marker-originated selection and map-driven center selection remain separate pending acceptance items in the active sub-spec.
+Also verify bidirectional interaction: clicking a ranked result marker selects the same settlement and opens the same lower summary. Then enable **Pick center on map** and click an arbitrary map location that is not necessarily on a marker. The geographically nearest dataset settlement must become the shared center, its name must appear in Search area, pick mode must exit, the ranked-result selection and sidebar scroll position must remain unchanged, and the same debounced radius/search semantics as name-based center selection must run. Verify that a settlement excluded from current ranked results can still be selected as the nearest center. Run these checks on both a native MapLibre Desktop host and Intel macOS/JCEF when available.
 
 ## Desktop offline map acceptance
 
@@ -150,3 +164,6 @@ The original generated repository environment could not complete network-depende
 ### Optional Desktop radius and compact settlement pane
 
 Shared input parsing tests verify that blank and numeric zero mean an unset optional radius, finite positive values remain valid, and negative/non-numeric/non-finite values remain invalid. Shared presentation tests also verify deterministic compact settlement metric selection: effective Required metrics first, then enabled Preferences, with de-duplication, a three-item default limit, and explicit unknown values. Desktop manual acceptance should verify automatic recalculation without pressing Search, the radius Clear action, the result-count status pane, the compact metric summary, scrollable Details navigation, and the separate External search provider view.
+
+
+JCEF settlement-ID and WGS84 map-location payload decoding plus the minimum normal-marker click hit tolerance are covered without starting JCEF or a display server. Shared settlement lookup tests cover nearest-center selection against the complete dataset index using Haversine distance.

@@ -37,7 +37,7 @@ The primary wide-Desktop interaction should combine:
 - required constraints that determine eligibility;
 - weighted preferences that determine ranking;
 - a ranked result list linked to map selection;
-- a settlement detail card overlaid on the right side of the map;
+- a compact settlement information pane beneath the map with explicit Details/External-search secondary views;
 - deterministic score contribution and data-coverage explanations.
 
 ## Relationship to the umbrella specification
@@ -72,7 +72,7 @@ The current repository already provides most prerequisite boundaries:
 - ranked results expose score and incomplete data coverage in the left panel and select/focus the corresponding map marker;
 - selected settlement details now appear in a dedicated lower pane beneath the map with deterministic score explanation and complete raw metrics;
 - Desktop filter/detail surfaces are constrained outside the platform map rectangle, so Intel macOS JCEF does not require z-order, occlusion, or freeze-frame workarounds;
-- map-originated result selection and map-driven center selection remain pending.
+- map-originated result selection now shares the same selected-settlement state as the ranked list, and map-driven center selection resolves the nearest settlement from the complete dataset for any clicked map location.
 
 A scoring implementation must not call `GeoRepository.details()` once per candidate. Country-scale
 ranking requires a batch repository contract that returns the active scoring metric values for all
@@ -390,9 +390,12 @@ multilingual settlement-name picker.
 Map-driven center selection must produce the same shared center/radius semantics as name-based
 selection and must not leak MapLibre/JCEF types into shared domain/search contracts.
 
-The first implementation may constrain map-driven center selection to an existing mapped settlement
-result or settlement feature if arbitrary-coordinate center semantics would expand the shared search
-contract beyond this sub-spec.
+In Desktop **Pick center on map** mode, a click anywhere on the map must select the geographically nearest
+settlement from the complete current dataset settlement index. The selected settlement becomes the
+shared center, so its canonical display name appears in Search area and existing radius/persistence
+semantics remain unchanged. Center picking must not change the currently selected ranked settlement,
+open settlement details, or move the ranked-results scroll position. Current hard filters, ranking
+preferences, and ranked-result visibility must not constrain which settlement can be chosen as center.
 
 ### DA-R18 — preference persistence extends application-owned state
 
@@ -650,13 +653,14 @@ Suggested implementation order:
    search path until UI migration.
 9. **Implemented:** separate analytical application state from Compose with `AnalysisWorkspaceController`, including dataset/default/override restore and persistence orchestration.
 10. **Implemented:** add the explicit Desktop-host map-first presentation with a resizable left panel and map occupying the remaining workspace; revised to default the left pane to roughly one third of the window.
-11. **Implemented:** add compact generic Required/Preferences sections with one expanded preference editor at a time, target/limit editing, weight slider, enable state, and reset-to-dataset-default behavior.
-12. **Partially implemented:** ranked results now live in the left panel with score/coverage and list selection drives the existing selected map marker/camera behavior; map-originated selection and scroll-to-result remain pending.
+11. **Implemented:** add compact generic Required/Preferences sections with one expanded preference editor at a time, target/limit editing, weight slider, enable state, and reset-to-dataset-default behavior. Required-filter controls and chooser descriptions are derived from persisted `measure_type`: distance, count, and coverage use distinct human-facing labels/units so fixed-radius counts cannot be mistaken for nearest-feature distances.
+12. **Implemented:** ranked results live in the left panel with score/coverage; list selection drives the selected marker/camera, and activating a ranked marker on native MapLibre or Intel macOS JCEF selects the same settlement, scrolls the ranked list to reveal it, and opens the same lower pane.
 13. **Implemented for list-originated selection:** without a selection, a shallow lower pane shows ranked-result count/recalculation state; selected settlement state renders a compact non-scrolling summary beneath the map with score/coverage and up to three participating Required/Preference metrics. An explicit Details action opens scrollable complete details in the same lower pane, and a separate External search action opens configured provider buttons there. **Add filter** opens a full-pane chooser inside the left analysis column. None of these surfaces overlaps the platform map rectangle, so the Intel macOS JCEF renderer uses its original stable windowed rendering path.
 14. **Implemented:** add 250 ms debounced/cancellable automatic ranked recalculation with generation-based stale-result suppression. The Desktop analysis workspace uses this as its primary workflow; explicit Search remains only in compatibility/narrow UI paths.
-15. Implement bounded map-driven center selection without leaking renderer contracts into shared
-    domain/search code.
-16. Run parent-workflow regression checks plus this sub-spec's scoring, compatibility, persistence,
-    Desktop, and Android validation.
+15. **Implemented:** map-driven center selection now uses map coordinates rather than marker activation and does not change ranked-result selection or sidebar scroll position. Native MapLibre reports the clicked WGS84 coordinate directly; Intel macOS JCEF sends a bounded same-origin coordinate payload through the loopback server. Shared lookup selects the nearest settlement from the complete dataset settlement index using Haversine distance, then reuses the existing `Settlement` center/radius/persistence path and fills the Search area center name.
+16. **Implementation support complete; local acceptance pending:** ranked-analysis performance diagnostics now record candidate/scoring volumes plus batch retrieval, shared scoring/sort, and end-to-end latency for completed current generations. Run parent-workflow regression checks, capture at least one realistic country-scale measurement, and complete Desktop/Android validation.
 17. After acceptance, update owning current-state documentation and archive this sub-spec according to
     [`../../README.md`](../../README.md).
+
+
+Implementation note: normal Intel macOS ranked-marker selection still uses a practical screen-space hit tolerance. **Pick center on map** does not depend on marker hit testing: it reports the clicked map coordinate and resolves the nearest dataset settlement in shared Kotlin.

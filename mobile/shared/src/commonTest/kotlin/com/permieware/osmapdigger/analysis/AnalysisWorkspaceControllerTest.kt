@@ -14,6 +14,7 @@ import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.preferences.UserPreferences
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
 import com.permieware.osmapdigger.runtime.GeoRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
@@ -27,6 +28,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class AnalysisWorkspaceControllerTest {
     @Test
     fun initializeRestoresSearchAndOverridesThenRanksImmediately() = runTest {
@@ -215,6 +217,63 @@ class AnalysisWorkspaceControllerTest {
         advanceUntilIdle()
 
         assertEquals(listOf("new"), controller.state.value.rankedResults.map { it.settlement.id })
+    }
+
+    @Test
+    fun onlyCurrentAnalysisGenerationPublishesDiagnostics() = runTest {
+        val repository = FakeRepository(candidates = listOf(candidate("initial", "Initial", 5.0)))
+        val diagnostics = mutableListOf<SettlementAnalysisDiagnostics>()
+        val controller =
+            AnalysisWorkspaceController(
+                repository = repository,
+                userPreferences = FakePreferencesRepository(null),
+                scope = this,
+                debounceMillis = 250,
+                onAnalysisDiagnostics = diagnostics::add,
+            )
+
+        controller.initialize()
+        advanceUntilIdle()
+        diagnostics.clear()
+        repository.analysisHandler = { conditions ->
+            when (conditions.singleOrNull()?.maxValue) {
+                5.0 -> {
+                    withContext(NonCancellable) { delay(1_000) }
+                    listOf(candidate("stale", "Stale", 5.0))
+                }
+                2.0 -> listOf(candidate("new", "New", 1.0))
+                else -> emptyList()
+            }
+        }
+
+        controller.updateConditions(listOf(SearchCondition("hard", maxValue = 5.0)))
+        advanceTimeBy(250)
+        controller.updateConditions(listOf(SearchCondition("hard", maxValue = 2.0)))
+        advanceTimeBy(250)
+        advanceTimeBy(750)
+        advanceUntilIdle()
+
+        assertEquals(1, diagnostics.size)
+        assertEquals(1, diagnostics.single().candidateCount)
+        assertEquals(listOf("new"), controller.state.value.rankedResults.map { it.settlement.id })
+    }
+
+    @Test
+    fun diagnosticsObserverFailureDoesNotChangeAnalysisResult() = runTest {
+        val controller =
+            AnalysisWorkspaceController(
+                repository = FakeRepository(candidates = listOf(candidate("best", "Best", 1.0))),
+                userPreferences = FakePreferencesRepository(null),
+                scope = this,
+                debounceMillis = 0,
+                onAnalysisDiagnostics = { error("diagnostics sink failed") },
+            )
+
+        controller.initialize()
+        advanceUntilIdle()
+
+        assertEquals(listOf("best"), controller.state.value.rankedResults.map { it.settlement.id })
+        assertNull(controller.state.value.errorMessage)
     }
 
     @Test

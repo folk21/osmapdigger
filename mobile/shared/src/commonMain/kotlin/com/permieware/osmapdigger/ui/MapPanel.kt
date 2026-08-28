@@ -3,6 +3,7 @@ package com.permieware.osmapdigger.ui
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.permieware.osmapdigger.domain.DatasetInfo
+import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.Settlement
 
 /**
@@ -19,4 +20,6 @@ internal expect fun MapPanel(
     styleJson: String?,
     results: List<Settlement>,
     selected: Settlement?,
+    onSettlementActivated: ((String) -> Unit)? = null,
+    onMapLocationActivated: ((GeoPoint) -> Unit)? = null,
 )

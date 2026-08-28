@@ -8,6 +8,9 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Clarified Desktop map interaction: `Pick center on map` changes only the search center, while normal marker clicks select ranked settlements; center recalculation no longer scrolls the sidebar to a previously selected result.
+
+- Add bidirectional Desktop map marker selection and `Pick center on map` nearest-settlement center selection for native MapLibre and Intel macOS JCEF renderers.
 
 - Treat Desktop radius zero as unset and add an explicit radius Clear action.
 - Keep selected-settlement content compact below the map, with search-result count, key participating metrics, and explicit Details and External search views.

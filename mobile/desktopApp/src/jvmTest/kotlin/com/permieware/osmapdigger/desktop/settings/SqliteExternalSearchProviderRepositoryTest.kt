@@ -100,7 +100,7 @@ class SqliteExternalSearchProviderRepositoryTest {
     }
 
     @Test
-    fun versionOnePreferencesDatabaseMigratesWithoutLosingPreferencesTable() = runTest {
+    fun versionOnePreferencesDatabaseMigratesToCurrentSchemaWithoutLosingPreferences() = runTest {
         val path = Files.createTempDirectory("osmapdigger-providers-").resolve("settings.sqlite")
         try {
             Class.forName("org.sqlite.JDBC")
@@ -129,7 +129,7 @@ class SqliteExternalSearchProviderRepositoryTest {
 
             DriverManager.getConnection("jdbc:sqlite:${path.toAbsolutePath()}").use { connection ->
                 assertEquals(
-                    2,
+                    DesktopSettingsDatabase.SCHEMA_VERSION,
                     connection.createStatement().use { statement ->
                         statement.executeQuery("PRAGMA user_version").use { result ->
                             result.next()
@@ -146,6 +146,17 @@ class SqliteExternalSearchProviderRepositoryTest {
                         }
                     },
                 )
+                val columns =
+                    connection.createStatement().use { statement ->
+                        statement.executeQuery("PRAGMA table_info(user_preferences)").use { result ->
+                            buildSet {
+                                while (result.next()) {
+                                    add(result.getString("name"))
+                                }
+                            }
+                        }
+                    }
+                assertTrue("preferences_json" in columns)
             }
         } finally {
             path.parent.toFile().deleteRecursively()

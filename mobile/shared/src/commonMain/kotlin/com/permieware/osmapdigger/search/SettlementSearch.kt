@@ -1,9 +1,12 @@
 package com.permieware.osmapdigger.search
 
+import com.permieware.osmapdigger.domain.GeoPoint
+import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.domain.SettlementMatchKind
 import com.permieware.osmapdigger.domain.SettlementName
 import com.permieware.osmapdigger.domain.SettlementSearchEntry
 import com.permieware.osmapdigger.domain.SettlementSearchMatch
+import com.permieware.osmapdigger.geo.GeoMath
 import com.permieware.osmapdigger.runtime.GeoRepository
 
 /** Shared normalization rules mirrored by the Geo Builder settlement-name writer. */
@@ -41,7 +44,7 @@ class SettlementSearchService(
         val normalizedQuery = SettlementNameNormalizer.normalize(query)
         if (normalizedQuery.isBlank() || limit <= 0) return emptyList()
 
-        val entries = cachedEntries ?: repository.settlementSearchEntries().also { cachedEntries = it }
+        val entries = entries()
         return entries
             .mapNotNull { entry -> bestMatch(entry, normalizedQuery) }
             .sortedWith(matchComparator)
@@ -59,6 +62,20 @@ class SettlementSearchService(
                 )
             }
     }
+
+
+    /** Return the geographically nearest settlement from the complete dataset settlement index. */
+    suspend fun nearestTo(location: GeoPoint): Settlement? =
+        entries()
+            .asSequence()
+            .map { entry -> entry.settlement to GeoMath.distanceKm(location, entry.settlement.location) }
+            .minWithOrNull(
+                compareBy<Pair<Settlement, Double>>({ it.second }, { it.first.id }),
+            )
+            ?.first
+
+    private suspend fun entries(): List<SettlementSearchEntry> =
+        cachedEntries ?: repository.settlementSearchEntries().also { cachedEntries = it }
 
     private fun bestMatch(entry: SettlementSearchEntry, query: String): RankedMatch? =
         entry.names

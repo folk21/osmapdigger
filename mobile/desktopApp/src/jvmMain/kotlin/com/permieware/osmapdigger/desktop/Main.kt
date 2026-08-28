@@ -114,6 +114,27 @@ fun main() {
                 externalSearchProviders = externalSearchProviders,
                 platformMapSurface = platformMapSurface,
                 presentationMode = AppPresentationMode.DESKTOP_ANALYSIS,
+                onAnalysisDiagnostics = { diagnostics ->
+                    DesktopDiagnostics.info(
+                        "analysis.performance",
+                        buildString {
+                            append("candidates=")
+                            append(diagnostics.candidateCount)
+                            append(" exactEligible=")
+                            append(diagnostics.exactEligibleCandidateCount)
+                            append(" scoringMetrics=")
+                            append(diagnostics.enabledScoringMetricCount)
+                            append(" results=")
+                            append(diagnostics.resultCount)
+                            append(" retrievalMs=")
+                            append("%.3f".format(java.util.Locale.ROOT, diagnostics.batchRetrievalMillis))
+                            append(" sharedMs=")
+                            append("%.3f".format(java.util.Locale.ROOT, diagnostics.sharedScoringSortMillis))
+                            append(" totalMs=")
+                            append("%.3f".format(java.util.Locale.ROOT, diagnostics.totalMillis))
+                        },
+                    )
+                },
                 onImportDataset = {
                     DesktopDatasetChooser.chooseAndOpen()?.let { opened ->
                         val previous = datasetState.value

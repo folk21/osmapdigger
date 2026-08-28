@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -30,7 +31,9 @@ import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
 import com.permieware.osmapdigger.presentation.SettlementCriteriaSummaryBuilder
 import com.permieware.osmapdigger.runtime.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.permieware.osmapdigger.presentation.MetricFilterPresentationBuilder
 
 /** Map-first wide Desktop workspace for required constraints, preferences, and ranked results. */
 @Composable
@@ -62,9 +65,12 @@ internal fun DesktopAnalysisWorkspace(
     onImportDataset: () -> Unit,
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
-    mapContent: @Composable (Modifier) -> Unit,
+    mapContent: @Composable (Modifier, (String) -> Unit, ((GeoPoint) -> Unit)?) -> Unit,
 ) {
     var filterPickerOpen by remember { mutableStateOf(false) }
+    var mapCenterPickerActive by remember { mutableStateOf(false) }
+    var mapCenterPickerResolving by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     val selectedScore =
@@ -75,6 +81,31 @@ internal fun DesktopAnalysisWorkspace(
     LaunchedEffect(selected?.settlement?.id) {
         settlementPaneMode = DesktopSettlementPaneMode.SUMMARY
     }
+
+    val onMapSettlementActivated: (String) -> Unit = mapSettlement@{ settlementId ->
+        if (mapCenterPickerActive) return@mapSettlement
+        val settlement = rankedResults.firstOrNull { it.settlement.id == settlementId }?.settlement
+            ?: return@mapSettlement
+        onSelect(settlement)
+    }
+    val onMapLocationActivated: ((GeoPoint) -> Unit)? =
+        if (!mapCenterPickerActive || mapCenterPickerResolving) {
+            null
+        } else {
+            { location ->
+                mapCenterPickerResolving = true
+                scope.launch {
+                    try {
+                        settlementSearch.nearestTo(location)?.let { nearest ->
+                            mapCenterPickerActive = false
+                            onCenterChanged(nearest)
+                        }
+                    } finally {
+                        mapCenterPickerResolving = false
+                    }
+                }
+            }
+        }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
         var panelWidthDp by remember(maxWidth) {
@@ -104,7 +135,13 @@ internal fun DesktopAnalysisWorkspace(
                     onPreferenceThresholdsChanged = onPreferenceThresholdsChanged,
                     onPreferenceReset = onPreferenceReset,
                     center = center,
-                    onCenterChanged = onCenterChanged,
+                    onCenterChanged = { nextCenter ->
+                        mapCenterPickerActive = false
+                        onCenterChanged(nextCenter)
+                    },
+                    mapCenterPickerActive = mapCenterPickerActive,
+                    onMapCenterPickerToggle = { mapCenterPickerActive = !mapCenterPickerActive },
+                    mapCenterPickerEnabled = datasetInfo != null && !mapCenterPickerResolving,
                     radiusText = radiusText,
                     onRadiusChanged = onRadiusChanged,
                     radiusError = radiusError,
@@ -116,7 +153,10 @@ internal fun DesktopAnalysisWorkspace(
                     settlementSearch = settlementSearch,
                     onSelect = onSelect,
                     onImportDataset = onImportDataset,
-                    onAddFilterRequested = { filterPickerOpen = true },
+                    onAddFilterRequested = {
+                        mapCenterPickerActive = false
+                        filterPickerOpen = true
+                    },
                 )
 
                 if (filterPickerOpen) {
@@ -153,56 +193,67 @@ internal fun DesktopAnalysisWorkspace(
                 )
             }
 
-            Column(Modifier.weight(1f).fillMaxHeight()) {
-                if (selected == null) {
-                    Box(Modifier.weight(1f).fillMaxWidth()) {
-                        mapContent(Modifier.fillMaxSize())
+            BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
+                val dividerHeight = 1.dp
+                val lowerPaneHeight =
+                    if (selected == null) {
+                        76.dp
+                    } else {
+                        maxHeight / (
+                            DesktopWorkspaceLayoutPolicy.MAP_HEIGHT_WEIGHT +
+                                DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT
+                        )
                     }
-                    HorizontalDivider()
-                    ResultsStatusPanel(
-                        modifier = Modifier.fillMaxWidth().height(76.dp),
-                        resultCount = rankedResults.size,
-                        running = running,
-                    )
-                } else {
-                    Box(Modifier.weight(DesktopWorkspaceLayoutPolicy.MAP_HEIGHT_WEIGHT).fillMaxWidth()) {
-                        mapContent(Modifier.fillMaxSize())
+                val mapHeight = (maxHeight - lowerPaneHeight - dividerHeight).coerceAtLeast(0.dp)
+
+                Column(Modifier.fillMaxSize()) {
+                    Box(Modifier.fillMaxWidth().height(mapHeight)) {
+                        mapContent(Modifier.fillMaxSize(), onMapSettlementActivated, onMapLocationActivated)
                     }
 
-                    HorizontalDivider()
-                    when (settlementPaneMode) {
-                        DesktopSettlementPaneMode.SUMMARY ->
-                            SettlementSummaryPanel(
-                                modifier = Modifier.weight(DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT).fillMaxWidth(),
-                                details = selected,
-                                score = selectedScore,
-                                definitions = definitionMap,
-                                conditions = conditions,
-                                effectivePreferences = effectivePreferences,
-                                resultCount = rankedResults.size,
-                                running = running,
-                                hasExternalSearch = searchProviders.isNotEmpty(),
-                                onDetails = { settlementPaneMode = DesktopSettlementPaneMode.DETAILS },
-                                onExternalSearch = { settlementPaneMode = DesktopSettlementPaneMode.EXTERNAL_SEARCH },
-                                onClose = onCloseSelected,
-                            )
-                        DesktopSettlementPaneMode.DETAILS ->
-                            SettlementDetailedInfoPanel(
-                                modifier = Modifier.weight(DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT).fillMaxWidth(),
-                                details = selected,
-                                score = selectedScore,
-                                definitions = definitionMap,
-                                onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
-                            )
-                        DesktopSettlementPaneMode.EXTERNAL_SEARCH ->
-                            SettlementExternalSearchPanel(
-                                modifier = Modifier.weight(DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT).fillMaxWidth(),
-                                details = selected,
-                                datasetInfo = datasetInfo,
-                                externalLinks = externalLinks,
-                                searchProviders = searchProviders,
-                                onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
-                            )
+                    HorizontalDivider(Modifier.height(dividerHeight))
+
+                    if (selected == null) {
+                        ResultsStatusPanel(
+                            modifier = Modifier.fillMaxWidth().height(lowerPaneHeight),
+                            resultCount = rankedResults.size,
+                            running = running,
+                        )
+                    } else {
+                        when (settlementPaneMode) {
+                            DesktopSettlementPaneMode.SUMMARY ->
+                                SettlementSummaryPanel(
+                                    modifier = Modifier.fillMaxWidth().height(lowerPaneHeight),
+                                    details = selected,
+                                    score = selectedScore,
+                                    definitions = definitionMap,
+                                    conditions = conditions,
+                                    effectivePreferences = effectivePreferences,
+                                    resultCount = rankedResults.size,
+                                    running = running,
+                                    hasExternalSearch = searchProviders.isNotEmpty(),
+                                    onDetails = { settlementPaneMode = DesktopSettlementPaneMode.DETAILS },
+                                    onExternalSearch = { settlementPaneMode = DesktopSettlementPaneMode.EXTERNAL_SEARCH },
+                                    onClose = onCloseSelected,
+                                )
+                            DesktopSettlementPaneMode.DETAILS ->
+                                SettlementDetailedInfoPanel(
+                                    modifier = Modifier.fillMaxWidth().height(lowerPaneHeight),
+                                    details = selected,
+                                    score = selectedScore,
+                                    definitions = definitionMap,
+                                    onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
+                                )
+                            DesktopSettlementPaneMode.EXTERNAL_SEARCH ->
+                                SettlementExternalSearchPanel(
+                                    modifier = Modifier.fillMaxWidth().height(lowerPaneHeight),
+                                    details = selected,
+                                    datasetInfo = datasetInfo,
+                                    externalLinks = externalLinks,
+                                    searchProviders = searchProviders,
+                                    onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
+                                )
+                        }
                     }
                 }
             }
@@ -225,6 +276,9 @@ private fun DesktopAnalysisSidebar(
     onPreferenceReset: (String) -> Unit,
     center: Settlement?,
     onCenterChanged: (Settlement?) -> Unit,
+    mapCenterPickerActive: Boolean,
+    onMapCenterPickerToggle: () -> Unit,
+    mapCenterPickerEnabled: Boolean,
     radiusText: String,
     onRadiusChanged: (String) -> Unit,
     radiusError: String?,
@@ -238,7 +292,17 @@ private fun DesktopAnalysisSidebar(
     onImportDataset: () -> Unit,
     onAddFilterRequested: () -> Unit,
 ) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(selectedId) {
+        val resultIndex = rankedResults.indexOfFirst { it.settlement.id == selectedId }
+        if (resultIndex >= 0) {
+            val firstResultItemIndex = 6 + (if (running) 1 else 0) + (if (error != null) 1 else 0)
+            listState.animateScrollToItem(firstResultItemIndex + resultIndex)
+        }
+    }
+
     LazyColumn(
+        state = listState,
         modifier = modifier.padding(horizontal = 12.dp, vertical = 10.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
@@ -261,6 +325,9 @@ private fun DesktopAnalysisSidebar(
                 settlementSearch = settlementSearch,
                 center = center,
                 onCenterChanged = onCenterChanged,
+                mapPickerActive = mapCenterPickerActive,
+                onMapPickerToggle = onMapCenterPickerToggle,
+                mapPickerEnabled = mapCenterPickerEnabled,
                 radiusText = radiusText,
                 onRadiusChanged = onRadiusChanged,
                 radiusError = radiusError,
@@ -374,13 +441,16 @@ private fun DesktopFilterPicker(
                             onClick = { onAdd(definition) },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
+                            val presentation = MetricFilterPresentationBuilder.build(definition)
                             Column(Modifier.padding(12.dp)) {
-                                Text(definition.title, style = MaterialTheme.typography.titleSmall)
+                                Text(presentation.title, style = MaterialTheme.typography.titleSmall)
                                 Text(
-                                    listOf(definition.group, definition.unit)
-                                        .filter { it.isNotBlank() }
-                                        .joinToString(" · "),
+                                    presentation.chooserDescription,
                                     style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    definition.group,
+                                    style = MaterialTheme.typography.labelSmall,
                                 )
                             }
                         }

@@ -149,7 +149,7 @@ Imported ZIPs are installed under `~/.osmapdigger/datasets/`.
 
 1. Open a dataset.
 2. Optionally select a center settlement and radius in **Search area**.
-3. Use **Required** for hard min/max eligibility constraints.
+3. Use **Required** for hard eligibility constraints. Controls are labeled by persisted metric semantics: distance metrics use **Min/Max distance** with their distance unit, count metrics use **Min/Max number** for the number of mapped features inside the metric's fixed radius, and coverage metrics use **Min/Max coverage** with `%`. The **Add filter** chooser explains the measurement type so a nearest-feature distance is not confused with a fixed-radius feature count.
 4. Use **Preferences** to enable ranking criteria, expand one row at a time, and adjust target/limit/weight when needed.
 5. Results recalculate automatically after valid analytical changes and appear in ranked order with score and data coverage; the Desktop analysis workflow does not require pressing Search after each change.
 6. Radius is optional: blank or `0` means no radius limit, and **Clear** removes the current radius value.
@@ -160,7 +160,7 @@ Imported ZIPs are installed under `~/.osmapdigger/datasets/`.
 
 The analysis sidebar is resizable on wide Desktop windows and defaults to roughly one third of the window. **Add filter** opens a chooser that fills the left analysis pane only; it never covers the map. With no selected settlement, only a shallow search-status pane is reserved below the map. When a settlement is selected, the right side is split vertically so the map remains above and settlement information appears below it. Closing the settlement returns to the shallow result-count pane. An empty visible Required range has no filtering effect. Dataset-scoped center, radius, hard constraints, and sparse preference overrides are saved locally and restored for the same dataset.
 
-Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback. Map-marker-originated result selection and map-driven center selection are still pending.
+Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback. Clicking a ranked settlement marker selects the same result shown in the left list and opens its lower summary. **Pick center on map** is different: click anywhere on the map and OsmapDigger selects the geographically nearest settlement from the complete dataset as the search center. The chosen settlement name appears in Search area, and existing radius, persistence, and automatic recalculation semantics are reused.
 
 ## Android package workflow
 

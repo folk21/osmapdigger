@@ -5,6 +5,7 @@ import com.permieware.osmapdigger.runtime.GeoRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class SettlementSearchServiceTest {
     @Test
@@ -55,12 +56,38 @@ class SettlementSearchServiceTest {
         assertEquals(listOf("large", "small", "typo"), service.find("Дубровка").map { it.settlement.id })
     }
 
+
+    @Test
+    fun nearestLookupUsesCompleteDatasetIndexAndExactGeographicDistance() = runTest {
+        val west = settlement("west", "West", 10, GeoPoint(50.0, 10.0))
+        val east = settlement("east", "East", 20, GeoPoint(50.0, 10.2))
+        val service =
+            SettlementSearchService(
+                FakeRepository(
+                    listOf(entry(west, "West"), entry(east, "East")),
+                ),
+            )
+
+        assertEquals("east", service.nearestTo(GeoPoint(50.0, 10.18))?.id)
+        assertEquals("west", service.nearestTo(GeoPoint(50.0, 10.01))?.id)
+    }
+
+    @Test
+    fun nearestLookupReturnsNullForEmptyDatasetIndex() = runTest {
+        assertNull(SettlementSearchService(FakeRepository(emptyList())).nearestTo(GeoPoint(0.0, 0.0)))
+    }
+
     @Test
     fun normalizerIsStableForCasePunctuationAndYo() {
         assertEquals("витебск район", SettlementNameNormalizer.normalize("  ВИТЁБСК, район! "))
     }
 
-    private fun settlement(id: String, name: String, population: Long?) =
+    private fun settlement(
+        id: String,
+        name: String,
+        population: Long?,
+        location: GeoPoint = GeoPoint(0.0, 0.0),
+    ) =
         Settlement(
             id = id,
             name = name,
@@ -68,7 +95,7 @@ class SettlementSearchServiceTest {
             englishName = null,
             placeType = "city",
             population = population,
-            location = GeoPoint(0.0, 0.0),
+            location = location,
         )
 
     private fun entry(settlement: Settlement, vararg names: String) =

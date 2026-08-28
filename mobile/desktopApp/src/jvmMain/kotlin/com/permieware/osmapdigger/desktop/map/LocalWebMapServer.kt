@@ -3,6 +3,7 @@ package com.permieware.osmapdigger.desktop.map
 import ch.poole.geo.pmtiles.Reader
 import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
+import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.map.MapOverlayGeoJson
 import com.sun.net.httpserver.HttpExchange
@@ -37,6 +38,8 @@ internal class LocalWebMapServer(
     private val datasetInfo: DatasetInfo,
     styleJson: String,
     pmtilesPath: Path,
+    private val onSettlementActivated: (String) -> Unit = {},
+    private val onMapLocationActivated: (GeoPoint) -> Unit = {},
 ) : Closeable {
     private val reader = Reader(pmtilesPath.toFile())
     private val stateJson = AtomicReference(emptyStateJson())
@@ -80,11 +83,13 @@ internal class LocalWebMapServer(
     fun updateState(
         results: List<Settlement>,
         selected: Settlement?,
+        mapLocationPickingEnabled: Boolean = false,
     ): String {
         val next =
             buildJsonObject {
                 put("results", Json.parseToJsonElement(MapOverlayGeoJson.build(results)))
                 put("selected", Json.parseToJsonElement(MapOverlayGeoJson.build(listOfNotNull(selected))))
+                put("mapLocationPickingEnabled", mapLocationPickingEnabled)
             }.toString()
         stateJson.set(next)
         return next
@@ -105,12 +110,21 @@ internal class LocalWebMapServer(
     private fun handle(exchange: HttpExchange) {
         requestCount.incrementAndGet()
         try {
+            val path = exchange.requestURI.path
+            if (path == SETTLEMENT_INTERACTION_PATH) {
+                handleSettlementInteraction(exchange)
+                return
+            }
+            if (path == MAP_LOCATION_INTERACTION_PATH) {
+                handleMapLocationInteraction(exchange)
+                return
+            }
             if (exchange.requestMethod != "GET") {
                 send(exchange, 405, "text/plain; charset=utf-8", "Method not allowed".toByteArray())
                 return
             }
 
-            when (val path = exchange.requestURI.path) {
+            when (path) {
                 "/", "/index.html" -> sendText(exchange, "text/html; charset=utf-8", indexHtml())
                 "/style.json" -> sendText(exchange, "application/json; charset=utf-8", rewrittenStyle)
                 "/state.json" -> {
@@ -159,6 +173,55 @@ internal class LocalWebMapServer(
         } finally {
             exchange.close()
         }
+    }
+
+    private fun handleSettlementInteraction(exchange: HttpExchange) {
+        if (exchange.requestMethod != "POST") {
+            send(exchange, 405, "text/plain; charset=utf-8", "Method not allowed".toByteArray())
+            return
+        }
+
+        val body = exchange.requestBody.readNBytes(MAX_INTERACTION_BODY_BYTES + 1)
+        if (body.size > MAX_INTERACTION_BODY_BYTES) {
+            send(exchange, 413, "text/plain; charset=utf-8", "Interaction payload too large".toByteArray())
+            return
+        }
+        val settlementId = decodeSettlementInteraction(body.toString(StandardCharsets.UTF_8))
+        if (settlementId == null) {
+            send(exchange, 400, "text/plain; charset=utf-8", "Invalid settlement interaction".toByteArray())
+            return
+        }
+
+        DesktopDiagnostics.info("map.interaction", "settlement activated id=$settlementId")
+        onSettlementActivated(settlementId)
+        exchange.responseHeaders.set("Cache-Control", "no-store")
+        exchange.sendResponseHeaders(204, -1)
+    }
+
+    private fun handleMapLocationInteraction(exchange: HttpExchange) {
+        if (exchange.requestMethod != "POST") {
+            send(exchange, 405, "text/plain; charset=utf-8", "Method not allowed".toByteArray())
+            return
+        }
+
+        val body = exchange.requestBody.readNBytes(MAX_INTERACTION_BODY_BYTES + 1)
+        if (body.size > MAX_INTERACTION_BODY_BYTES) {
+            send(exchange, 413, "text/plain; charset=utf-8", "Interaction payload too large".toByteArray())
+            return
+        }
+        val location = decodeMapLocationInteraction(body.toString(StandardCharsets.UTF_8))
+        if (location == null) {
+            send(exchange, 400, "text/plain; charset=utf-8", "Invalid map location interaction".toByteArray())
+            return
+        }
+
+        DesktopDiagnostics.info(
+            "map.interaction",
+            "map location activated lat=${location.latitude} lon=${location.longitude}",
+        )
+        onMapLocationActivated(location)
+        exchange.responseHeaders.set("Cache-Control", "no-store")
+        exchange.sendResponseHeaders(204, -1)
     }
 
     private fun sendTile(
@@ -289,7 +352,10 @@ internal class LocalWebMapServer(
               }
             }
 
+            let mapLocationPickingEnabled = false;
+
             function applyState(state, focusSelected) {
+              mapLocationPickingEnabled = !!state.mapLocationPickingEnabled;
               if (!map.loaded()) return;
               const results = state.results || emptyCollection;
               const selected = state.selected || emptyCollection;
@@ -314,7 +380,50 @@ internal class LocalWebMapServer(
               }
             }
 
+            async function notifySettlementActivated(settlementId) {
+              try {
+                await fetch('${SETTLEMENT_INTERACTION_PATH}', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ id: settlementId })
+                });
+              } catch (error) {
+                console.error('Could not report OsmapDigger map interaction', error);
+              }
+            }
+
+            async function notifyMapLocationActivated(lngLat) {
+              try {
+                await fetch('${MAP_LOCATION_INTERACTION_PATH}', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ latitude: lngLat.lat, longitude: lngLat.lng })
+                });
+              } catch (error) {
+                console.error('Could not report OsmapDigger map location interaction', error);
+              }
+            }
+
             window.osmapdiggerApplyState = applyState;
+            map.on('click', (event) => {
+              if (mapLocationPickingEnabled) {
+                notifyMapLocationActivated(event.lngLat);
+                return;
+              }
+              const layers = ['osmapdigger-selected', 'osmapdigger-results'].filter(id => map.getLayer(id));
+              if (layers.length === 0) return;
+              const hitRadius = ${SETTLEMENT_INTERACTION_HIT_RADIUS_PX};
+              const hitBox = [
+                [event.point.x - hitRadius, event.point.y - hitRadius],
+                [event.point.x + hitRadius, event.point.y + hitRadius]
+              ];
+              const features = map.queryRenderedFeatures(hitBox, { layers });
+              const settlementId = features[0] && features[0].properties && features[0].properties.id;
+              if (settlementId) {
+                console.debug('OsmapDigger settlement marker activated', settlementId);
+                notifySettlementActivated(String(settlementId));
+              }
+            });
             map.on('load', async () => {
               try {
                 const state = await fetch('/state.json', { cache: 'no-store' }).then(r => r.json());
@@ -335,13 +444,44 @@ internal class LocalWebMapServer(
             "META-INF/resources/webjars/maplibre-gl/$MAPLIBRE_VERSION/dist/maplibre-gl.js"
         private const val MAPLIBRE_CSS_RESOURCE =
             "META-INF/resources/webjars/maplibre-gl/$MAPLIBRE_VERSION/dist/maplibre-gl.css"
+        internal const val SETTLEMENT_INTERACTION_PATH = "/interaction/settlement"
+        internal const val MAP_LOCATION_INTERACTION_PATH = "/interaction/location"
+        internal const val MAX_INTERACTION_BODY_BYTES = 4096
+        internal const val SETTLEMENT_INTERACTION_HIT_RADIUS_PX = 12
         private const val TILE_TYPE_MVT = 1
         private const val COMPRESSION_NONE = 1
         private const val COMPRESSION_GZIP = 2
         private val TILE_PATH = Regex("^/tiles/(\\d+)/(\\d+)/(\\d+)\\.pbf$")
 
         private fun emptyStateJson(): String =
-            """{"results":{"type":"FeatureCollection","features":[]},"selected":{"type":"FeatureCollection","features":[]}}"""
+            """{"results":{"type":"FeatureCollection","features":[]},"selected":{"type":"FeatureCollection","features":[]},"mapLocationPickingEnabled":false}"""
 
     }
 }
+
+
+internal fun decodeSettlementInteraction(body: String): String? =
+    runCatching {
+        Json.parseToJsonElement(body)
+            .jsonObject["id"]
+            ?.jsonPrimitive
+            ?.content
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+    }.getOrNull()
+
+internal fun decodeMapLocationInteraction(body: String): GeoPoint? =
+    runCatching {
+        val objectValue = Json.parseToJsonElement(body).jsonObject
+        val latitude = objectValue["latitude"]?.jsonPrimitive?.content?.toDoubleOrNull()
+        val longitude = objectValue["longitude"]?.jsonPrimitive?.content?.toDoubleOrNull()
+        if (
+            latitude == null || longitude == null ||
+            !latitude.isFinite() || !longitude.isFinite() ||
+            latitude !in -90.0..90.0 || longitude !in -180.0..180.0
+        ) {
+            null
+        } else {
+            GeoPoint(latitude = latitude, longitude = longitude)
+        }
+    }.getOrNull()
