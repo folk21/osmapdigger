@@ -91,7 +91,7 @@ Dataset-provided preference defaults are now implemented independently from hard
 
 `GeoRepository.preferenceDefaults()` exposes the catalog on Desktop and Android. Updated readers probe for the additive table and return an empty list for legacy format-v1 packages that predate it; older readers safely ignore the table in newly generated v1 packages. `AnalysisWorkspaceController` consumes these defaults generically, and the Desktop workspace exposes them through progressive preference editing without reading builder configuration directly.
 
-Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, preference-default validation, shared analysis-workspace state behavior, preference editor mutations, and deterministic score-explanation grouping. User-customized scoring overrides are persisted in the application-owned settings database and deterministically merged with dataset defaults. `AnalysisWorkspaceController` owns restored hard constraints, effective preferences, center/radius, persistence, debounced ranked recalculation, and stale-result suppression. The Desktop host now renders the map-first workspace with generic preference editors, ranked result scores/coverage, and a map-overlay details card; Android continues to use the existing responsive Search/Map presentation.
+Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, preference-default validation, shared analysis-workspace state behavior, preference editor mutations, and deterministic score-explanation grouping. User-customized scoring overrides are persisted in the application-owned settings database and deterministically merged with dataset defaults. `AnalysisWorkspaceController` owns restored hard constraints, effective preferences, center/radius, persistence, debounced ranked recalculation, and stale-result suppression. The Desktop host now renders the map-first workspace with generic preference editors, ranked result scores/coverage, a compact lower settlement summary, and explicit lower-pane Details/External-search views; Android continues to use the existing responsive Search/Map presentation.
 
 ## Requirements
 
@@ -104,13 +104,13 @@ The default composition should use approximately:
 - one third of the wide Desktop window for the persistent left analysis panel, with practical minimum
   and maximum width bounds;
 - the remaining two thirds for the right map/details column;
-- the full right-side height for the map when no settlement is selected;
+- most of the right-side height for the map when no settlement is selected, reserving only a shallow lower status pane for ranked-result count and recalculation state;
 - approximately the upper two thirds of the right-side height for the map and the lower third for
-  settlement details while a settlement is selected.
+  settlement information while a settlement is selected.
 
 The left panel should remain horizontally resizable. Desktop Compose controls that need transient or
 expanded space must stay outside the platform map rectangle rather than depending on z-order above a
-native/Swing renderer. Closing settlement details must return the full right-side height to the map.
+native/Swing renderer. Closing a settlement must collapse the lower area back to the shallow result-status pane.
 
 Narrow Android composition is not redesigned by this sub-spec.
 
@@ -329,17 +329,25 @@ On wide Desktop, selected settlement details must appear in a dedicated lower pa
 instead of overlapping the map or being appended inside the left search list. The map/details split
 must preserve the selected marker and map session while the lower pane is visible.
 
-The pane must expose:
+When no settlement is selected, a shallow lower pane must expose the current ranked-result count and whether automatic recalculation is still running, so search feedback is visible without inspecting the left results list.
+
+When a settlement is selected, the default lower pane must remain compact enough to fit without scrolling and expose:
 
 - settlement name;
 - place type and population when available;
+- coordinates;
+- current ranked-result count;
 - score when available;
 - weighted data coverage;
-- a concise deterministic explanation of strongest/weakest preference contributions;
-- unknown preference metrics when relevant;
-- grouped complete raw metric details;
-- configured external property-search actions;
+- up to three metrics participating in the current analysis, prioritizing effective Required constraints before enabled Preferences, with missing values shown as unknown;
+- an explicit **Details** action;
+- a separate external-search action when providers are configured;
 - a close action.
+
+Complete grouped raw metrics and the full deterministic contribution explanation must be available only
+after the user explicitly opens **Details**. Configured external property-search
+provider buttons must likewise be shown only after the separate **External search** action. Both views
+remain in the lower pane beneath the map; neither may overlap the platform map rectangle.
 
 The existing `GeoRepository.details()` result remains the source for complete selected-settlement
 measurements. Score explanation is additional derived presentation data.
@@ -644,8 +652,8 @@ Suggested implementation order:
 10. **Implemented:** add the explicit Desktop-host map-first presentation with a resizable left panel and map occupying the remaining workspace; revised to default the left pane to roughly one third of the window.
 11. **Implemented:** add compact generic Required/Preferences sections with one expanded preference editor at a time, target/limit editing, weight slider, enable state, and reset-to-dataset-default behavior.
 12. **Partially implemented:** ranked results now live in the left panel with score/coverage and list selection drives the existing selected map marker/camera behavior; map-originated selection and scroll-to-result remain pending.
-13. **Implemented for list-originated selection:** selected settlement details render in a dedicated lower pane beneath the map with score/coverage, deterministic strongest/weakest/unknown contribution summary, complete grouped raw metrics, external search actions, and close action. **Add filter** opens a full-pane chooser inside the left analysis column. Neither surface overlaps the platform map rectangle, so the Intel macOS JCEF renderer uses its original stable windowed rendering path without occlusion/freeze-frame behavior.
-14. **Implemented:** add 250 ms debounced/cancellable automatic ranked recalculation with generation-based stale-result suppression; keep the existing Search button temporarily as manual refresh compatibility UI.
+13. **Implemented for list-originated selection:** without a selection, a shallow lower pane shows ranked-result count/recalculation state; selected settlement state renders a compact non-scrolling summary beneath the map with score/coverage and up to three participating Required/Preference metrics. An explicit Details action opens scrollable complete details in the same lower pane, and a separate External search action opens configured provider buttons there. **Add filter** opens a full-pane chooser inside the left analysis column. None of these surfaces overlaps the platform map rectangle, so the Intel macOS JCEF renderer uses its original stable windowed rendering path.
+14. **Implemented:** add 250 ms debounced/cancellable automatic ranked recalculation with generation-based stale-result suppression. The Desktop analysis workspace uses this as its primary workflow; explicit Search remains only in compatibility/narrow UI paths.
 15. Implement bounded map-driven center selection without leaking renderer contracts into shared
     domain/search code.
 16. Run parent-workflow regression checks plus this sub-spec's scoring, compatibility, persistence,

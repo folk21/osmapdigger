@@ -89,8 +89,10 @@ With a dataset that contains preference defaults, verify on a wide Desktop windo
 - ranked result cards show score plus incomplete data coverage when applicable;
 - the Desktop analysis sidebar starts at roughly one third of a normal wide window and remains resizable within bounded limits;
 - **Add filter** opens a full-height chooser inside the left analysis pane and never overlaps the map rectangle;
-- selecting a ranked result highlights/focuses the existing map marker and opens the lower details pane beneath the map;
-- the details pane shows score/coverage, deterministic strongest/weakest/unknown preference explanation, complete grouped metrics, external search actions, and closes by returning the full right-side height to the map;
+- with no selected settlement, the shallow pane beneath the map shows the current ranked-result count and updating state without requiring the user to inspect the left results list;
+- selecting a ranked result highlights/focuses the existing map marker and opens the compact lower settlement pane beneath the map;
+- the compact settlement pane shows score/coverage and up to three active search metrics, prioritizing effective Required constraints before enabled Preferences;
+- **Details** opens a scrollable lower-pane view with deterministic strongest/weakest/unknown preference explanation and complete grouped metrics, while External search remains a separate view;
 - on Intel macOS/JCEF, both filter selection and settlement details remain outside the Swing map rectangle, so no map freeze/hide/occlusion workaround is required;
 - Android continues to use the existing responsive Search/Map workflow.
 
@@ -144,3 +146,7 @@ Requirements and scenarios in [`specs/active/spec-initial-functional-product.md`
 ## Current environment limitations inherited from generation
 
 The original generated repository environment could not complete network-dependent Gradle dependency resolution or install/run Pyrosm/tilemaker. The current code therefore still requires those full integration checks on a normal development workstation before the initial spec can be archived.
+
+### Optional Desktop radius and compact settlement pane
+
+Shared input parsing tests verify that blank and numeric zero mean an unset optional radius, finite positive values remain valid, and negative/non-numeric/non-finite values remain invalid. Shared presentation tests also verify deterministic compact settlement metric selection: effective Required metrics first, then enabled Preferences, with de-duplication, a three-item default limit, and explicit unknown values. Desktop manual acceptance should verify automatic recalculation without pressing Search, the radius Clear action, the result-count status pane, the compact metric summary, scrollable Details navigation, and the separate External search provider view.

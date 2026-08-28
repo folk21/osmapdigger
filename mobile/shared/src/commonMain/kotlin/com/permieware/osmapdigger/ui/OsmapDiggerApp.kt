@@ -12,6 +12,7 @@ import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
 import com.permieware.osmapdigger.runtime.OsmapDiggerRuntime
 import com.permieware.osmapdigger.search.FilterSummaryBuilder
+import com.permieware.osmapdigger.search.OptionalRadiusInput
 import com.permieware.osmapdigger.search.SearchInputParser
 import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
@@ -129,18 +130,18 @@ private fun LoadedDatasetApp(
     val rankedResults = analysisState.rankedResults
     val results = rankedResults.map { it.settlement }
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
-    val parsedRadius = SearchInputParser.positiveRadiusKm(radiusText)
+    val radiusInput = SearchInputParser.optionalRadiusKm(radiusText)
     val radiusError =
         when {
-            radiusText.isBlank() -> null
+            radiusInput is OptionalRadiusInput.Unset -> null
             center == null -> "Select a center settlement before setting a radius."
-            parsedRadius == null -> "Radius must be a positive number."
+            radiusInput is OptionalRadiusInput.Invalid -> "Radius must be zero or a positive number."
             else -> null
         }
     val request =
         SearchRequest(
             center = center,
-            radiusKm = if (radiusError == null) parsedRadius else null,
+            radiusKm = (radiusInput as? OptionalRadiusInput.Value)?.kilometers,
             conditions = conditions,
         )
     val summary = FilterSummaryBuilder.build(request, definitionMap)
@@ -193,13 +194,11 @@ private fun LoadedDatasetApp(
                 onRadiusChanged = { value ->
                     radiusText = value
                     uiError = null
-                    when {
-                        value.isBlank() -> analysisController.updateRadiusKm(null)
-                        center == null -> Unit
-                        else -> {
-                            val radius = SearchInputParser.positiveRadiusKm(value)
-                            analysisController.updateRadiusKm(radius)
-                        }
+                    when (val parsed = SearchInputParser.optionalRadiusKm(value)) {
+                        OptionalRadiusInput.Unset -> analysisController.updateRadiusKm(null)
+                        OptionalRadiusInput.Invalid -> Unit
+                        is OptionalRadiusInput.Value ->
+                            if (center != null) analysisController.updateRadiusKm(parsed.kilometers)
                     }
                 },
                 radiusError = radiusError,
@@ -241,13 +240,11 @@ private fun LoadedDatasetApp(
                 onRadiusChanged = { value ->
                     radiusText = value
                     uiError = null
-                    when {
-                        value.isBlank() -> analysisController.updateRadiusKm(null)
-                        center == null -> Unit
-                        else ->
-                            SearchInputParser.positiveRadiusKm(value)?.let {
-                                analysisController.updateRadiusKm(it)
-                            }
+                    when (val parsed = SearchInputParser.optionalRadiusKm(value)) {
+                        OptionalRadiusInput.Unset -> analysisController.updateRadiusKm(null)
+                        OptionalRadiusInput.Invalid -> Unit
+                        is OptionalRadiusInput.Value ->
+                            if (center != null) analysisController.updateRadiusKm(parsed.kilometers)
                     }
                 },
                 radiusError = radiusError,

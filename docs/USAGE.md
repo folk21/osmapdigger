@@ -151,12 +151,14 @@ Imported ZIPs are installed under `~/.osmapdigger/datasets/`.
 2. Optionally select a center settlement and radius in **Search area**.
 3. Use **Required** for hard min/max eligibility constraints.
 4. Use **Preferences** to enable ranking criteria, expand one row at a time, and adjust target/limit/weight when needed.
-5. Results recalculate automatically after valid analytical changes and appear in ranked order with score and data coverage.
-6. Select a ranked result to highlight/focus it on the map and open its details pane below the map.
-7. Inspect the deterministic score explanation and complete grouped raw metrics in the lower details pane.
-8. Use configured external property-search actions when relevant.
+5. Results recalculate automatically after valid analytical changes and appear in ranked order with score and data coverage; the Desktop analysis workflow does not require pressing Search after each change.
+6. Radius is optional: blank or `0` means no radius limit, and **Clear** removes the current radius value.
+7. When no settlement is selected, the compact pane below the map shows the current number of ranked settlements and whether recalculation is still running.
+8. Select a ranked result to highlight/focus it on the map and replace that status pane with a compact settlement summary. The summary includes score/coverage plus up to three active search metrics, prioritizing effective Required constraints and then enabled Preferences.
+9. Use **Details** to open complete deterministic score explanation and grouped raw metrics in a scrollable view in the same lower pane.
+10. Use the separate **External search** action to open configured Google/Yandex/other provider buttons when relevant.
 
-The analysis sidebar is resizable on wide Desktop windows and defaults to roughly one third of the window. **Add filter** opens a chooser that fills the left analysis pane only; it never covers the map. When a settlement is selected, the right side is split vertically so the map remains above and settlement details appear below it. Closing details returns the full right-side height to the map. An empty visible Required range has no filtering effect. Dataset-scoped center, radius, hard constraints, and sparse preference overrides are saved locally and restored for the same dataset.
+The analysis sidebar is resizable on wide Desktop windows and defaults to roughly one third of the window. **Add filter** opens a chooser that fills the left analysis pane only; it never covers the map. With no selected settlement, only a shallow search-status pane is reserved below the map. When a settlement is selected, the right side is split vertically so the map remains above and settlement information appears below it. Closing the settlement returns to the shallow result-count pane. An empty visible Required range has no filtering effect. Dataset-scoped center, radius, hard constraints, and sparse preference overrides are saved locally and restored for the same dataset.
 
 Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback. Map-marker-originated result selection and map-driven center selection are still pending.
 

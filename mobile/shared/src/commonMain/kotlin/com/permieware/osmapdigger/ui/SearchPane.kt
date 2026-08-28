@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.*
@@ -230,25 +231,40 @@ internal fun CenterSelector(
                 }
             }
 
-            OutlinedTextField(
-                value = radiusText,
-                onValueChange = onRadiusChanged,
-                label = { Text("Radius from center, km (optional)") },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                enabled = center != null,
-                isError = radiusError != null,
-                supportingText = {
-                    val message = radiusError ?: if (center == null) {
-                        "Select a center settlement first."
-                    } else {
-                        null
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                OutlinedTextField(
+                    value = radiusText,
+                    onValueChange = onRadiusChanged,
+                    label = { Text("Radius from center, km (optional)") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    enabled = center != null,
+                    isError = radiusError != null,
+                    supportingText = {
+                        val message = radiusError ?: when {
+                            center == null -> "Select a center settlement first."
+                            radiusText.trim().toDoubleOrNull() == 0.0 -> "0 means no radius limit."
+                            else -> null
+                        }
+                        if (message != null) {
+                            Text(message)
+                        }
+                    },
+                )
+                if (radiusText.isNotBlank()) {
+                    TextButton(
+                        onClick = { onRadiusChanged("") },
+                        enabled = center != null,
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) {
+                        Text("Clear")
                     }
-                    if (message != null) {
-                        Text(message)
-                    }
-                },
-            )
+                }
+            }
         }
     }
 }

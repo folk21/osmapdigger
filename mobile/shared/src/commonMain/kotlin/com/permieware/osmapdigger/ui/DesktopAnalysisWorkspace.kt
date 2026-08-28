@@ -27,6 +27,7 @@ import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.presentation.DesktopWorkspaceLayoutPolicy
 import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
+import com.permieware.osmapdigger.presentation.SettlementCriteriaSummaryBuilder
 import com.permieware.osmapdigger.runtime.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlin.math.roundToInt
@@ -70,6 +71,10 @@ internal fun DesktopAnalysisWorkspace(
         selected?.settlement?.id?.let { selectedId ->
             rankedResults.firstOrNull { it.settlement.id == selectedId }?.score
         }
+    var settlementPaneMode by remember { mutableStateOf(DesktopSettlementPaneMode.SUMMARY) }
+    LaunchedEffect(selected?.settlement?.id) {
+        settlementPaneMode = DesktopSettlementPaneMode.SUMMARY
+    }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
         var panelWidthDp by remember(maxWidth) {
@@ -149,22 +154,56 @@ internal fun DesktopAnalysisWorkspace(
             }
 
             Column(Modifier.weight(1f).fillMaxHeight()) {
-                Box(Modifier.weight(DesktopWorkspaceLayoutPolicy.MAP_HEIGHT_WEIGHT).fillMaxWidth()) {
-                    mapContent(Modifier.fillMaxSize())
-                }
-
-                selected?.let { details ->
+                if (selected == null) {
+                    Box(Modifier.weight(1f).fillMaxWidth()) {
+                        mapContent(Modifier.fillMaxSize())
+                    }
                     HorizontalDivider()
-                    SettlementDetailsPanel(
-                        modifier = Modifier.weight(DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT).fillMaxWidth(),
-                        details = details,
-                        score = selectedScore,
-                        definitions = definitionMap,
-                        datasetInfo = datasetInfo,
-                        externalLinks = externalLinks,
-                        searchProviders = searchProviders,
-                        onClose = onCloseSelected,
+                    ResultsStatusPanel(
+                        modifier = Modifier.fillMaxWidth().height(76.dp),
+                        resultCount = rankedResults.size,
+                        running = running,
                     )
+                } else {
+                    Box(Modifier.weight(DesktopWorkspaceLayoutPolicy.MAP_HEIGHT_WEIGHT).fillMaxWidth()) {
+                        mapContent(Modifier.fillMaxSize())
+                    }
+
+                    HorizontalDivider()
+                    when (settlementPaneMode) {
+                        DesktopSettlementPaneMode.SUMMARY ->
+                            SettlementSummaryPanel(
+                                modifier = Modifier.weight(DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT).fillMaxWidth(),
+                                details = selected,
+                                score = selectedScore,
+                                definitions = definitionMap,
+                                conditions = conditions,
+                                effectivePreferences = effectivePreferences,
+                                resultCount = rankedResults.size,
+                                running = running,
+                                hasExternalSearch = searchProviders.isNotEmpty(),
+                                onDetails = { settlementPaneMode = DesktopSettlementPaneMode.DETAILS },
+                                onExternalSearch = { settlementPaneMode = DesktopSettlementPaneMode.EXTERNAL_SEARCH },
+                                onClose = onCloseSelected,
+                            )
+                        DesktopSettlementPaneMode.DETAILS ->
+                            SettlementDetailedInfoPanel(
+                                modifier = Modifier.weight(DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT).fillMaxWidth(),
+                                details = selected,
+                                score = selectedScore,
+                                definitions = definitionMap,
+                                onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
+                            )
+                        DesktopSettlementPaneMode.EXTERNAL_SEARCH ->
+                            SettlementExternalSearchPanel(
+                                modifier = Modifier.weight(DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT).fillMaxWidth(),
+                                details = selected,
+                                datasetInfo = datasetInfo,
+                                externalLinks = externalLinks,
+                                searchProviders = searchProviders,
+                                onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
+                            )
+                    }
                 }
             }
         }
@@ -569,43 +608,166 @@ private fun RankedSettlementCard(
 }
 
 @Composable
-private fun SettlementDetailsPanel(
+private fun ResultsStatusPanel(
+    modifier: Modifier,
+    resultCount: Int,
+    running: Boolean,
+) {
+    Surface(modifier) {
+        Row(
+            Modifier.fillMaxSize().padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column {
+                Text("Search results", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    if (resultCount == 1) "1 settlement found" else "$resultCount settlements found",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+            if (running) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Text("Updating…", style = MaterialTheme.typography.bodySmall)
+                }
+            }
+        }
+    }
+}
+
+private enum class DesktopSettlementPaneMode {
+    SUMMARY,
+    DETAILS,
+    EXTERNAL_SEARCH,
+}
+
+@Composable
+private fun SettlementSummaryPanel(
     modifier: Modifier,
     details: SettlementDetails,
     score: SettlementScore?,
     definitions: Map<String, MetricDefinition>,
-    datasetInfo: DatasetInfo?,
-    externalLinks: ExternalLinkOpener,
-    searchProviders: List<ExternalSearchProvider>,
+    conditions: List<SearchCondition>,
+    effectivePreferences: List<EffectiveMetricPreference>,
+    resultCount: Int,
+    running: Boolean,
+    hasExternalSearch: Boolean,
+    onDetails: () -> Unit,
+    onExternalSearch: () -> Unit,
     onClose: () -> Unit,
 ) {
     Card(modifier) {
         Column(
-            Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+            Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(details.settlement.name, style = MaterialTheme.typography.titleLarge)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onDetails) { Text("Details") }
+                    if (hasExternalSearch) {
+                        TextButton(onClick = onExternalSearch) { Text("External search") }
+                    }
+                    TextButton(onClick = onClose) { Text("Close") }
+                }
+            }
+
+            val context =
+                listOfNotNull(
+                    details.settlement.placeType,
+                    details.settlement.population?.let { "population $it" },
+                ).joinToString(" · ")
+            val coordinates =
+                "${NumberFormatter.compact(details.settlement.location.latitude)}, " +
+                    NumberFormatter.compact(details.settlement.location.longitude)
+            Text(
+                listOf(context, coordinates).filter { it.isNotBlank() }.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+            )
+
+            Text(
+                buildString {
+                    append(if (resultCount == 1) "1 settlement found" else "$resultCount settlements found")
+                    if (running) append(" · updating…")
+                },
+                style = MaterialTheme.typography.labelMedium,
+            )
+
+            score?.let { settlementScore ->
+                Text(
+                    "${scoreLabel(settlementScore)} · coverage ${settlementScore.coverage.roundToInt()}%",
+                    style = MaterialTheme.typography.titleSmall,
+                )
+            }
+
+            val criteriaSummary = remember(details, definitions, conditions, effectivePreferences) {
+                SettlementCriteriaSummaryBuilder.build(
+                    details = details,
+                    definitions = definitions,
+                    conditions = conditions,
+                    preferences = effectivePreferences,
+                )
+            }
+            if (criteriaSummary.isNotEmpty()) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    criteriaSummary.forEach { metric ->
+                        Column(Modifier.weight(1f)) {
+                            Text(metric.title, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                            Text(
+                                formatCompactMetric(metric.value, metric.unit),
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettlementDetailedInfoPanel(
+    modifier: Modifier,
+    details: SettlementDetails,
+    score: SettlementScore?,
+    definitions: Map<String, MetricDefinition>,
+    onBack: () -> Unit,
+) {
+    Card(modifier) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(Modifier.weight(1f)) {
-                    Text(details.settlement.name, style = MaterialTheme.typography.headlineSmall)
-                    val context =
-                        listOfNotNull(
-                            details.settlement.placeType,
-                            details.settlement.population?.let { "population $it" },
-                        ).joinToString(" · ")
-                    if (context.isNotBlank()) {
-                        Text(context, style = MaterialTheme.typography.bodySmall)
-                    }
-                }
-                TextButton(onClick = onClose) { Text("Close") }
+                Text(details.settlement.name, style = MaterialTheme.typography.headlineSmall)
+                TextButton(onClick = onBack) { Text("Summary") }
             }
 
+            val context =
+                listOfNotNull(
+                    details.settlement.placeType,
+                    details.settlement.population?.let { "population $it" },
+                ).joinToString(" · ")
+            if (context.isNotBlank()) {
+                Text(context, style = MaterialTheme.typography.bodySmall)
+            }
             Text(
                 "${details.settlement.location.latitude}, ${details.settlement.location.longitude}",
                 style = MaterialTheme.typography.bodySmall,
@@ -651,9 +813,39 @@ private fun SettlementDetailsPanel(
                         )
                     }
                 }
+        }
+    }
+}
 
-            if (searchProviders.isNotEmpty()) {
-                Text("External property search", style = MaterialTheme.typography.labelLarge)
+@Composable
+private fun SettlementExternalSearchPanel(
+    modifier: Modifier,
+    details: SettlementDetails,
+    datasetInfo: DatasetInfo?,
+    externalLinks: ExternalLinkOpener,
+    searchProviders: List<ExternalSearchProvider>,
+    onBack: () -> Unit,
+) {
+    Card(modifier) {
+        Column(
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("External search", style = MaterialTheme.typography.headlineSmall)
+                    Text(details.settlement.name, style = MaterialTheme.typography.bodyMedium)
+                }
+                TextButton(onClick = onBack) { Text("Summary") }
+            }
+
+            if (searchProviders.isEmpty()) {
+                Text("No external search providers are configured for this dataset.")
+            } else {
                 searchProviders.forEach { provider ->
                     OutlinedButton(
                         onClick = {
@@ -673,6 +865,11 @@ private fun SettlementDetailsPanel(
             }
         }
     }
+}
+
+private fun formatCompactMetric(value: Double?, unit: String): String {
+    val formatted = value?.let(NumberFormatter::compact) ?: "unknown"
+    return if (value == null || unit.isBlank() || unit == "count") formatted else "$formatted $unit"
 }
 
 private fun scoreLabel(score: SettlementScore): String =
