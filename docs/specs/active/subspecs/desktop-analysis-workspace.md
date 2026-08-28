@@ -1,7 +1,7 @@
 ---
 type: Specification
 title: Desktop analysis workspace and explainable ranking
-description: Current-focus sub-spec for a map-first Desktop workspace with hard constraints, weighted preferences, deterministic ranking, and map-overlay settlement details.
+description: Current-focus sub-spec for a map-first Desktop workspace with hard constraints, weighted preferences, deterministic ranking, and non-overlapping settlement details.
 document_role: subspec
 spec_status: active
 parent: ../spec-initial-functional-product.md
@@ -66,33 +66,32 @@ The current repository already provides most prerequisite boundaries:
 - generated dataset SQLite remains read-only;
 - current search context is persisted separately through the application settings database;
 - result and selected-settlement overlays remain transient map presentation data;
-- wide Desktop currently uses a fixed 430 dp search/details pane beside the map;
-- the current result order is not a preference-scoring model;
-- the current SearchPane still exposes **Search settlements** as a manual refresh affordance, but shared analysis state now recalculates automatically after valid input changes;
-- settlement details currently appear inside the search pane rather than over the map.
+- Desktop host now explicitly enables the map-first analysis presentation while Android keeps the existing responsive Search/Map workflow;
+- the wide Desktop workspace uses a resizable left analysis panel beside the primary map surface;
+- Required hard constraints and weighted Preferences are visually separate and remain generic over persisted metric IDs;
+- ranked results expose score and incomplete data coverage in the left panel and select/focus the corresponding map marker;
+- selected settlement details now appear in a dedicated lower pane beneath the map with deterministic score explanation and complete raw metrics;
+- Desktop filter/detail surfaces are constrained outside the platform map rectangle, so Intel macOS JCEF does not require z-order, occlusion, or freeze-frame workarounds;
+- map-originated result selection and map-driven center selection remain pending.
 
 A scoring implementation must not call `GeoRepository.details()` once per candidate. Country-scale
 ranking requires a batch repository contract that returns the active scoring metric values for all
 eligible candidates without an N+1 query pattern.
 
-The first three implementation increments are now complete. Shared `analysis/PreferenceModels.kt`,
-`analysis/PreferenceScorer.kt`, and `analysis/SettlementRanker.kt` define validated immutable
-preference/contribution/score models, pure deterministic `LOWER`/`HIGHER` scoring with explicit
-unknown-data coverage, and stable score/coverage/name/ID ranking.
+The scoring, repository, dataset-default, user-override, analysis-state, and first Desktop-presentation increments are now implemented. Shared `analysis/PreferenceModels.kt`, `analysis/PreferenceScorer.kt`, and `analysis/SettlementRanker.kt` define validated immutable preference/contribution/score models, pure deterministic `LOWER`/`HIGHER` scoring with explicit unknown-data coverage, and stable score/coverage/name/ID ranking.
 
 `SettlementAnalysisRequest`, domain `SettlementAnalysisCandidate`, and `SettlementAnalysisService` now add
 ranked-analysis orchestration without changing the current UI workflow. Desktop and Android
 `GeoRepository` implementations expose `analysisCandidates()` which applies hard SQL conditions and
 coarse coordinate bounds while batch-loading only requested scoring metrics through one query. Shared
 analysis then applies exact radius filtering, scoring, deterministic ranking, and the final result
-limit. The existing `SearchService`/`searchCandidates()` path remains available unchanged for the
-current hard-filter UI until the later analysis-state/UI increment switches workflows deliberately.
+limit. The existing `SearchService`/`searchCandidates()` path remains available unchanged for the responsive compatibility workflow while the Desktop analysis workspace consumes the ranked-analysis path.
 
 Dataset-provided preference defaults are now implemented independently from hard-filter visibility. `geo-builder/config/preference-profiles.toml` defines named defaults over stable generated metric IDs, `datasets.toml` selects a profile, and the builder validates/resolves it only against the metrics physically produced by the selected metric profile. Resolved rows are persisted in additive format-v1 table `metric_preference_default` with explicit direction, target, limit, weight, and enabled state.
 
-`GeoRepository.preferenceDefaults()` exposes the catalog on Desktop and Android. Updated readers probe for the additive table and return an empty list for legacy format-v1 packages that predate it; older readers safely ignore the table in newly generated v1 packages. The current Compose UI does not consume these defaults yet.
+`GeoRepository.preferenceDefaults()` exposes the catalog on Desktop and Android. Updated readers probe for the additive table and return an empty list for legacy format-v1 packages that predate it; older readers safely ignore the table in newly generated v1 packages. `AnalysisWorkspaceController` consumes these defaults generically, and the Desktop workspace exposes them through progressive preference editing without reading builder configuration directly.
 
-Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, preference-default validation, and shared analysis-workspace state behavior. User-customized scoring overrides are persisted in the application-owned settings database and deterministically merged with dataset defaults. `AnalysisWorkspaceController` now owns restored hard constraints, effective preferences, center/radius, persistence, debounced ranked recalculation, and stale-result suppression. The existing SearchPane presentation remains temporarily unchanged while consuming ranked settlements from this shared state; the map-first composition and preference editors remain pending.
+Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, preference-default validation, shared analysis-workspace state behavior, preference editor mutations, and deterministic score-explanation grouping. User-customized scoring overrides are persisted in the application-owned settings database and deterministically merged with dataset defaults. `AnalysisWorkspaceController` owns restored hard constraints, effective preferences, center/radius, persistence, debounced ranked recalculation, and stale-result suppression. The Desktop host now renders the map-first workspace with generic preference editors, ranked result scores/coverage, and a map-overlay details card; Android continues to use the existing responsive Search/Map presentation.
 
 ## Requirements
 
@@ -102,13 +101,16 @@ The map must be the primary visual workspace on wide Desktop layouts.
 
 The default composition should use approximately:
 
-- 360–420 dp for the persistent left analysis panel;
-- the remaining majority of the window for the map;
-- a 360–420 dp settlement details card overlaid on the right side of the map only while a settlement
-  is selected.
+- one third of the wide Desktop window for the persistent left analysis panel, with practical minimum
+  and maximum width bounds;
+- the remaining two thirds for the right map/details column;
+- the full right-side height for the map when no settlement is selected;
+- approximately the upper two thirds of the right-side height for the map and the lower third for
+  settlement details while a settlement is selected.
 
-The left panel should be resizable within practical minimum and maximum bounds. Closing the selected
-settlement card must restore the map area instead of leaving an empty permanent details column.
+The left panel should remain horizontally resizable. Desktop Compose controls that need transient or
+expanded space must stay outside the platform map rectangle rather than depending on z-order above a
+native/Swing renderer. Closing settlement details must return the full right-side height to the map.
 
 Narrow Android composition is not redesigned by this sub-spec.
 
@@ -311,22 +313,23 @@ Selecting a ranked result in the list must:
 
 - select and visually distinguish the corresponding map marker;
 - move or adjust the map camera when necessary;
-- open the settlement details overlay.
+- open the settlement details pane beneath the map.
 
 Selecting a result marker on the map must:
 
 - select the same settlement in shared application state;
 - reveal or scroll to the corresponding result when practical;
-- open the same details overlay.
+- open the same details pane beneath the map.
 
 Desktop hover linkage is optional. Selection linkage is required.
 
-### DA-R14 — settlement details overlay
+### DA-R14 — settlement details pane
 
-On wide Desktop, selected settlement details must appear in a non-modal card over the right side of
-the map instead of being appended inside the left search list.
+On wide Desktop, selected settlement details must appear in a dedicated lower pane beneath the map
+instead of overlapping the map or being appended inside the left search list. The map/details split
+must preserve the selected marker and map session while the lower pane is visible.
 
-The card must expose:
+The pane must expose:
 
 - settlement name;
 - place type and population when available;
@@ -477,7 +480,7 @@ Exercises: DA-R11, DA-R16, DA-R18.
 ### DA-S4 — inspect a ranked settlement
 
 The user selects a result in the left list. The corresponding marker is highlighted, the map moves if
-needed, and the right-side overlay explains score, coverage, key contributions, unknown metrics, and
+needed, and the lower details pane explains score, coverage, key contributions, unknown metrics, and
 complete grouped measurements.
 
 Exercises: DA-R12, DA-R13, DA-R14, DA-R15.
@@ -485,7 +488,7 @@ Exercises: DA-R12, DA-R13, DA-R14, DA-R15.
 ### DA-S5 — select from the map
 
 The user clicks a result marker. The same settlement becomes selected in application state, the result
-list follows the selection when practical, and the same detail overlay opens.
+list follows the selection when practical, and the same lower details pane opens.
 
 Exercises: DA-R13, DA-R14, DA-R19.
 
@@ -599,9 +602,10 @@ Acceptance requires all of the following:
 8. Application-settings tests cover preference save/restore, payload/schema migration, dataset
    scoping, and removed metrics.
 9. Desktop with a real package shows the map-first layout, compact criteria, ranked result list,
-   linked map markers, and right-side details overlay.
+   linked map markers, a left-contained Add filter chooser, and lower details pane.
 10. List-to-map and map-to-list selection select the same settlement and show the same details.
-11. The details overlay explains contribution structure and visibly reports incomplete coverage.
+11. The details pane explains contribution structure and visibly reports incomplete coverage without
+    overlapping the map rectangle.
 12. Rapid preference changes do not freeze the Desktop UI and stale calculations cannot replace newer
     results.
 13. Map-driven center selection produces the same shared center/radius semantics as name-based center
@@ -637,11 +641,10 @@ Suggested implementation order:
    precede scoring and final result limiting follows ranking, while retaining the legacy hard-filter
    search path until UI migration.
 9. **Implemented:** separate analytical application state from Compose with `AnalysisWorkspaceController`, including dataset/default/override restore and persistence orchestration.
-10. Implement the wide Desktop map-first workspace and resizable left panel.
-11. Implement compact Required/Preferences sections with single-row progressive editing.
-12. Implement ranked results and shared list/map selection state.
-13. Implement the right-side map-overlay settlement details card and deterministic contribution
-    breakdown.
+10. **Implemented:** add the explicit Desktop-host map-first presentation with a resizable left panel and map occupying the remaining workspace; revised to default the left pane to roughly one third of the window.
+11. **Implemented:** add compact generic Required/Preferences sections with one expanded preference editor at a time, target/limit editing, weight slider, enable state, and reset-to-dataset-default behavior.
+12. **Partially implemented:** ranked results now live in the left panel with score/coverage and list selection drives the existing selected map marker/camera behavior; map-originated selection and scroll-to-result remain pending.
+13. **Implemented for list-originated selection:** selected settlement details render in a dedicated lower pane beneath the map with score/coverage, deterministic strongest/weakest/unknown contribution summary, complete grouped raw metrics, external search actions, and close action. **Add filter** opens a full-pane chooser inside the left analysis column. Neither surface overlaps the platform map rectangle, so the Intel macOS JCEF renderer uses its original stable windowed rendering path without occlusion/freeze-frame behavior.
 14. **Implemented:** add 250 ms debounced/cancellable automatic ranked recalculation with generation-based stale-result suppression; keep the existing Search button temporarily as manual refresh compatibility UI.
 15. Implement bounded map-driven center selection without leaking renderer contracts into shared
     domain/search code.

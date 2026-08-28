@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -120,6 +121,65 @@ class AnalysisWorkspaceControllerTest {
     }
 
 
+
+
+    @Test
+    fun preferenceEditorMethodsPersistSparseOverridesAndResetToDatasetDefaults() = runTest {
+        val repository = FakeRepository(candidates = emptyList())
+        val preferences = FakePreferencesRepository(null)
+        val controller = AnalysisWorkspaceController(repository, preferences, this, debounceMillis = 0)
+
+        controller.initialize()
+        advanceUntilIdle()
+
+        controller.updatePreferenceEnabled("forest.distance_km", false)
+        controller.updatePreferenceWeight("forest.distance_km", 9)
+        controller.updatePreferenceThresholds("forest.distance_km", targetValue = 1.0, limitValue = 12.0)
+        advanceUntilIdle()
+
+        val effective = controller.state.value.effectivePreferences.single()
+        val override = controller.state.value.preferenceOverrides.single()
+        assertFalse(effective.enabled)
+        assertEquals(9, effective.preference.weight)
+        assertEquals(1.0, effective.preference.targetValue)
+        assertEquals(12.0, effective.preference.limitValue)
+        assertEquals(false, override.enabled)
+        assertEquals(9, override.weight)
+        assertEquals(1.0, override.targetValue)
+        assertEquals(12.0, override.limitValue)
+
+        controller.resetPreference("forest.distance_km")
+        advanceUntilIdle()
+
+        val reset = controller.state.value.effectivePreferences.single()
+        assertTrue(reset.enabled)
+        assertEquals(5, reset.preference.weight)
+        assertEquals(2.0, reset.preference.targetValue)
+        assertEquals(10.0, reset.preference.limitValue)
+        assertTrue(controller.state.value.preferenceOverrides.isEmpty())
+        assertTrue(preferences.saved.last().preferenceOverrides.isEmpty())
+    }
+
+    @Test
+    fun preferenceEditorRejectsInvalidThresholdOrdering() = runTest {
+        val controller =
+            AnalysisWorkspaceController(
+                repository = FakeRepository(candidates = emptyList()),
+                userPreferences = FakePreferencesRepository(null),
+                scope = this,
+                debounceMillis = 0,
+            )
+        controller.initialize()
+        advanceUntilIdle()
+
+        assertFailsWith<IllegalArgumentException> {
+            controller.updatePreferenceThresholds(
+                metricId = "forest.distance_km",
+                targetValue = 12.0,
+                limitValue = 2.0,
+            )
+        }
+    }
 
     @Test
     fun staleAnalysisCompletionCannotOverwriteNewerResults() = runTest {

@@ -139,7 +139,7 @@ internal fun SearchPane(
 }
 
 @Composable
-private fun CenterSelector(
+internal fun CenterSelector(
     settlementSearch: SettlementSearchService,
     center: Settlement?,
     onCenterChanged: (Settlement?) -> Unit,
@@ -259,10 +259,12 @@ private fun CenterSelector(
  * through the same UI contract after rebuilding a dataset.
  */
 @Composable
-private fun DynamicFilters(
+internal fun DynamicFilters(
     definitions: List<MetricDefinition>,
     conditions: List<SearchCondition>,
     onConditionsChanged: (List<SearchCondition>) -> Unit,
+    title: String = "Filters",
+    onAddFilterRequested: (() -> Unit)? = null,
 ) {
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -275,21 +277,33 @@ private fun DynamicFilters(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text("Filters", style = MaterialTheme.typography.titleSmall)
+                Text(title, style = MaterialTheme.typography.titleSmall)
                 Box {
-                    TextButton(onClick = { menuExpanded = true }) { Text("Add filter") }
-                    DropdownMenu(
-                        expanded = menuExpanded,
-                        onDismissRequest = { menuExpanded = false },
+                    TextButton(
+                        onClick = {
+                            if (onAddFilterRequested != null) {
+                                onAddFilterRequested()
+                            } else {
+                                menuExpanded = true
+                            }
+                        },
                     ) {
-                        available.forEach { definition ->
-                            DropdownMenuItem(
-                                text = { Text("${definition.group} · ${definition.title}") },
-                                onClick = {
-                                    onConditionsChanged(conditions + SearchCondition(metricId = definition.id))
-                                    menuExpanded = false
-                                },
-                            )
+                        Text("Add filter")
+                    }
+                    if (onAddFilterRequested == null) {
+                        DropdownMenu(
+                            expanded = menuExpanded,
+                            onDismissRequest = { menuExpanded = false },
+                        ) {
+                            available.forEach { definition ->
+                                DropdownMenuItem(
+                                    text = { Text("${definition.group} · ${definition.title}") },
+                                    onClick = {
+                                        onConditionsChanged(conditions + SearchCondition(metricId = definition.id))
+                                        menuExpanded = false
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -420,7 +434,7 @@ private fun SettlementDetailsCard(
     }
 }
 
-private fun formatMetric(value: Double, unit: String): String {
+internal fun formatMetric(value: Double, unit: String): String {
     val formatted = NumberFormatter.compact(value)
     return if (unit == "count") formatted else "$formatted $unit"
 }

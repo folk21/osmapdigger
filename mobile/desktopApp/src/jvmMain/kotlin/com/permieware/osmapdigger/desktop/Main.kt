@@ -14,6 +14,7 @@ import com.permieware.osmapdigger.desktop.runtime.DesktopDataset
 import com.permieware.osmapdigger.desktop.settings.SqliteExternalSearchProviderRepository
 import com.permieware.osmapdigger.desktop.runtime.DesktopDatasetChooser
 import com.permieware.osmapdigger.desktop.runtime.DesktopConfigLoader
+import com.permieware.osmapdigger.ui.AppPresentationMode
 import com.permieware.osmapdigger.ui.OsmapDiggerApp
 import java.nio.file.Paths
 
@@ -112,6 +113,7 @@ fun main() {
                 userPreferences = userPreferences,
                 externalSearchProviders = externalSearchProviders,
                 platformMapSurface = platformMapSurface,
+                presentationMode = AppPresentationMode.DESKTOP_ANALYSIS,
                 onImportDataset = {
                     DesktopDatasetChooser.chooseAndOpen()?.let { opened ->
                         val previous = datasetState.value

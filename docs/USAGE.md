@@ -145,22 +145,20 @@ Use **Import dataset** / **Change** to choose either:
 
 Imported ZIPs are installed under `~/.osmapdigger/datasets/`.
 
-## Desktop search workflow
+## Desktop analysis workflow
 
 1. Open a dataset.
-2. Optionally search for a center settlement and select it.
-3. Enter a radius if the center should constrain the search.
-4. Fill any visible **From** / **To** values.
-5. Add additional filters from the generated metric catalog when needed.
-6. Review the human-readable filter description.
-7. Run **Search settlements**.
-8. Select a result to inspect all available metrics.
-9. Use the Google/Yandex property-search actions when relevant.
-10. Inspect the map to see the result overlay. Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback.
+2. Optionally select a center settlement and radius in **Search area**.
+3. Use **Required** for hard min/max eligibility constraints.
+4. Use **Preferences** to enable ranking criteria, expand one row at a time, and adjust target/limit/weight when needed.
+5. Results recalculate automatically after valid analytical changes and appear in ranked order with score and data coverage.
+6. Select a ranked result to highlight/focus it on the map and open its details pane below the map.
+7. Inspect the deterministic score explanation and complete grouped raw metrics in the lower details pane.
+8. Use configured external property-search actions when relevant.
 
-An empty visible filter row has no effect until at least one bound is supplied.
+The analysis sidebar is resizable on wide Desktop windows and defaults to roughly one third of the window. **Add filter** opens a chooser that fills the left analysis pane only; it never covers the map. When a settlement is selected, the right side is split vertically so the map remains above and settlement details appear below it. Closing details returns the full right-side height to the map. An empty visible Required range has no filtering effect. Dataset-scoped center, radius, hard constraints, and sparse preference overrides are saved locally and restored for the same dataset.
 
-The current dataset-scoped center, radius, and dynamic filter rows/ranges are saved locally and restored on the next launch when the same dataset is opened. State from a different dataset is not applied.
+Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback. Map-marker-originated result selection and map-driven center selection are still pending.
 
 ## Android package workflow
 

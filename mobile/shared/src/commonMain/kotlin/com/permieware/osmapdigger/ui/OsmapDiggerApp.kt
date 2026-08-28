@@ -24,6 +24,7 @@ fun OsmapDiggerApp(
     externalSearchProviders: ExternalSearchProviderRepository,
     onImportDataset: () -> Unit,
     platformMapSurface: PlatformMapSurface? = null,
+    presentationMode: AppPresentationMode = AppPresentationMode.RESPONSIVE,
     modifier: Modifier = Modifier,
 ) {
     MaterialTheme {
@@ -36,6 +37,7 @@ fun OsmapDiggerApp(
                 externalSearchProviders = externalSearchProviders,
                 onImportDataset = onImportDataset,
                 platformMapSurface = platformMapSurface,
+                presentationMode = presentationMode,
                 modifier = modifier,
             )
         }
@@ -76,6 +78,7 @@ private fun LoadedDatasetApp(
     externalSearchProviders: ExternalSearchProviderRepository,
     onImportDataset: () -> Unit,
     platformMapSurface: PlatformMapSurface?,
+    presentationMode: AppPresentationMode,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -123,7 +126,8 @@ private fun LoadedDatasetApp(
     val definitions = analysisState.definitions
     val conditions = analysisState.conditions
     val center = analysisState.center
-    val results = analysisState.rankedResults.map { it.settlement }
+    val rankedResults = analysisState.rankedResults
+    val results = rankedResults.map { it.settlement }
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     val parsedRadius = SearchInputParser.positiveRadiusKm(radiusText)
     val radiusError =
@@ -213,7 +217,63 @@ private fun LoadedDatasetApp(
             )
         }
 
-        if (wide) {
+        if (wide && presentationMode == AppPresentationMode.DESKTOP_ANALYSIS) {
+            DesktopAnalysisWorkspace(
+                modifier = Modifier.fillMaxSize(),
+                datasetInfo = datasetInfo,
+                definitions = definitions,
+                conditions = conditions,
+                onConditionsChanged = { analysisController.updateConditions(it) },
+                effectivePreferences = analysisState.effectivePreferences,
+                preferenceOverrides = analysisState.preferenceOverrides,
+                onPreferenceEnabledChanged = analysisController::updatePreferenceEnabled,
+                onPreferenceWeightChanged = analysisController::updatePreferenceWeight,
+                onPreferenceThresholdsChanged = analysisController::updatePreferenceThresholds,
+                onPreferenceReset = analysisController::resetPreference,
+                center = center,
+                onCenterChanged = {
+                    analysisController.updateCenter(it)
+                    if (it == null) {
+                        radiusText = ""
+                    }
+                },
+                radiusText = radiusText,
+                onRadiusChanged = { value ->
+                    radiusText = value
+                    uiError = null
+                    when {
+                        value.isBlank() -> analysisController.updateRadiusKm(null)
+                        center == null -> Unit
+                        else ->
+                            SearchInputParser.positiveRadiusKm(value)?.let {
+                                analysisController.updateRadiusKm(it)
+                            }
+                    }
+                },
+                radiusError = radiusError,
+                summary = summary,
+                rankedResults = rankedResults,
+                selected = selected,
+                running = analysisState.analyzing,
+                error = error,
+                settlementSearch = settlementSearch,
+                onSelect = selectSettlement,
+                onCloseSelected = { selected = null },
+                onImportDataset = onImportDataset,
+                externalLinks = runtime.externalLinks,
+                searchProviders = searchProviders,
+                mapContent = { mapModifier ->
+                    RuntimeMapPanel(
+                        modifier = mapModifier,
+                        datasetInfo = datasetInfo,
+                        mapPackage = runtime.mapPackage,
+                        results = results,
+                        selected = selected?.settlement,
+                        platformMapSurface = platformMapSurface,
+                    )
+                },
+            )
+        } else if (wide) {
             Row(Modifier.fillMaxSize()) {
                 searchPane(Modifier.width(430.dp).fillMaxHeight())
                 RuntimeMapPanel(

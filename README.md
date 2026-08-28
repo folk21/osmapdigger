@@ -146,6 +146,8 @@ A user can select a center settlement and radius, then combine any number of num
 
 The app also renders the current visual filter state as deterministic human-readable text. No LLM is required.
 
+On wide Desktop, hard filters define eligibility while dataset-provided/user-adjusted Preferences rank eligible settlements with deterministic score and data coverage. The map remains the primary workspace; ranked results stay in a resizable left analysis panel that defaults to roughly one third of the window, **Add filter** stays entirely inside that panel, and selected settlement details appear below the map instead of overlapping it.
+
 ## Map and search are deliberately separate
 
 SQLite is the authoritative analytical search source. PMTiles is the offline visual basemap. Search results are converted to a runtime GeoJSON overlay and rendered above the basemap by MapLibre Compose.

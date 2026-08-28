@@ -77,7 +77,24 @@ make test-desktop
 make test-mobile
 ```
 
-Shared tests cover Haversine distance, search-input parsing, deterministic preference scoring/ranking, dataset preference-default contract validation, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, analysis-workspace initialization/restore, debounced input coalescing, stale-analysis suppression, preference override recalculation, legacy no-default manual fallback, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, hard-filter and preference-override payload round trips, dataset scoping, removed metrics, dataset-default/override merging, invalid effective preference contracts, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, unknown scoring values, the no-scoring-metric branch, settings SQLite search/preference round trips, version-2-to-3 preference migration, provider seeding/custom-row preservation, and malformed hard-filter/preference payload behavior.
+Shared tests cover Haversine distance, search-input parsing, deterministic preference scoring/ranking, dataset preference-default contract validation, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, analysis-workspace initialization/restore, debounced input coalescing, stale-analysis suppression, preference override recalculation, generic preference editor mutations/reset, legacy no-default manual fallback, deterministic score-explanation grouping, Desktop workspace layout geometry, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, hard-filter and preference-override payload round trips, dataset scoping, removed metrics, dataset-default/override merging, invalid effective preference contracts, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, unknown scoring values, the no-scoring-metric branch, settings SQLite search/preference round trips, version-2-to-3 preference migration, provider seeding/custom-row preservation, malformed hard-filter/preference payload behavior, and Intel-macOS renderer selection.
+
+## Desktop analysis workspace acceptance
+
+With a dataset that contains preference defaults, verify on a wide Desktop window that:
+
+- the left analysis panel is resizable and the map occupies the remaining majority of the window;
+- Required and Preferences are visually separate and preference rows remain metric-generic;
+- only one preference row expands at a time, weight/target/limit edits recalculate rankings automatically, and reset restores dataset defaults;
+- ranked result cards show score plus incomplete data coverage when applicable;
+- the Desktop analysis sidebar starts at roughly one third of a normal wide window and remains resizable within bounded limits;
+- **Add filter** opens a full-height chooser inside the left analysis pane and never overlaps the map rectangle;
+- selecting a ranked result highlights/focuses the existing map marker and opens the lower details pane beneath the map;
+- the details pane shows score/coverage, deterministic strongest/weakest/unknown preference explanation, complete grouped metrics, external search actions, and closes by returning the full right-side height to the map;
+- on Intel macOS/JCEF, both filter selection and settlement details remain outside the Swing map rectangle, so no map freeze/hide/occlusion workaround is required;
+- Android continues to use the existing responsive Search/Map workflow.
+
+Map-marker-originated selection and map-driven center selection remain separate pending acceptance items in the active sub-spec.
 
 ## Desktop offline map acceptance
 

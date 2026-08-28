@@ -118,7 +118,7 @@ The repository path intentionally has no unrelated name-based final limit and ne
 `search/SearchRequestSemantics.kt` centralizes radius validation, coarse bounds, exact radius matching,
 and effective-condition selection so legacy `SearchService` and ranked analysis cannot drift.
 
-`AnalysisWorkspaceController` now connects `MetricPreferenceDefault`, saved overrides, `SettlementAnalysisService`, and `UserPreferencesRepository` into the active application flow. The current `SearchPane` presentation is retained temporarily, but its displayed settlements come from ranked analysis and input changes schedule a 250 ms debounced recalculation. The existing Search button remains as a manual `refreshNow()` compatibility affordance until the Desktop workspace redesign removes the legacy form-oriented interaction. Legacy packages with no enabled preference defaults and no effective hard/radius constraint do not trigger an automatic unbounded candidate scan; explicit refresh remains available.
+`AnalysisWorkspaceController` connects `MetricPreferenceDefault`, saved overrides, `SettlementAnalysisService`, and `UserPreferencesRepository` into the active application flow. Input changes schedule a 250 ms debounced recalculation and late stale generations cannot replace newer ranked results. It also exposes explicit generic preference-edit operations for enabled state, weight, target/limit thresholds, and reset-to-dataset-default while keeping persisted overrides sparse. Legacy packages with no enabled preference defaults and no effective hard/radius constraint do not trigger an automatic unbounded candidate scan; explicit refresh remains available through the compatibility SearchPane path.
 
 ## Filter summaries
 
@@ -154,9 +154,11 @@ The UI has two top-level states:
 1. no dataset — explain that a generated package is required and offer import;
 2. loaded dataset — load metadata/metric definitions and show search/map UI.
 
-Wide layouts show search/details and map side by side. Narrow layouts use Search/Map tabs.
+The Desktop host explicitly selects `AppPresentationMode.DESKTOP_ANALYSIS`. On wide Desktop windows, `ui/DesktopAnalysisWorkspace.kt` renders a resizable left analysis panel that defaults to roughly 34% of the window and uses the remaining width for a map/details column. The panel contains Search area, generic Required constraints, generic Preferences with single-row progressive editing, and ranked results with score/data coverage. Add filter opens a full-pane chooser inside the left analysis area instead of a window-level dropdown. Selecting a ranked result reuses the existing selected-settlement map focus and allocates the lower third of the right column to settlement details, leaving the upper two thirds to the map. Details include deterministic strongest/weakest/unknown preference explanation above the complete grouped raw metrics and external property-search actions.
 
-`ui/SearchPane.kt` implements:
+Desktop composition intentionally keeps all Compose transient/detail surfaces outside the platform map rectangle. This avoids relying on Compose/Swing z-order behavior for the Intel macOS JCEF renderer. `PlatformMapSurface` therefore remains a simple renderer contract with no popup-occlusion or freeze-frame lifecycle, and `IntelMacWebMapSurface` keeps its original windowed JCEF browser/session behavior.
+
+Android keeps the existing responsive presentation; narrow layouts continue to use Search/Map tabs. `ui/SearchPane.kt` remains the compatibility/shared responsive surface and implements:
 
 - multilingual/fuzzy center settlement lookup with alias-aware suggestions;
 - radius input;

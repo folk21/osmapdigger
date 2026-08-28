@@ -1,0 +1,744 @@
+package com.permieware.osmapdigger.ui
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.draggable
+import androidx.compose.foundation.gestures.rememberDraggableState
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import com.permieware.osmapdigger.analysis.ScoredSettlement
+import com.permieware.osmapdigger.analysis.SettlementScore
+import com.permieware.osmapdigger.domain.*
+import com.permieware.osmapdigger.external.ExternalSearchProvider
+import com.permieware.osmapdigger.external.ExternalSearchUrlBuilder
+import com.permieware.osmapdigger.preferences.EffectiveMetricPreference
+import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
+import com.permieware.osmapdigger.presentation.DesktopWorkspaceLayoutPolicy
+import com.permieware.osmapdigger.presentation.NumberFormatter
+import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
+import com.permieware.osmapdigger.runtime.ExternalLinkOpener
+import com.permieware.osmapdigger.search.SettlementSearchService
+import kotlin.math.roundToInt
+
+/** Map-first wide Desktop workspace for required constraints, preferences, and ranked results. */
+@Composable
+internal fun DesktopAnalysisWorkspace(
+    modifier: Modifier,
+    datasetInfo: DatasetInfo?,
+    definitions: List<MetricDefinition>,
+    conditions: List<SearchCondition>,
+    onConditionsChanged: (List<SearchCondition>) -> Unit,
+    effectivePreferences: List<EffectiveMetricPreference>,
+    preferenceOverrides: List<MetricPreferenceOverride>,
+    onPreferenceEnabledChanged: (String, Boolean) -> Unit,
+    onPreferenceWeightChanged: (String, Int) -> Unit,
+    onPreferenceThresholdsChanged: (String, Double, Double) -> Unit,
+    onPreferenceReset: (String) -> Unit,
+    center: Settlement?,
+    onCenterChanged: (Settlement?) -> Unit,
+    radiusText: String,
+    onRadiusChanged: (String) -> Unit,
+    radiusError: String?,
+    summary: String,
+    rankedResults: List<ScoredSettlement>,
+    selected: SettlementDetails?,
+    running: Boolean,
+    error: String?,
+    settlementSearch: SettlementSearchService,
+    onSelect: (Settlement) -> Unit,
+    onCloseSelected: () -> Unit,
+    onImportDataset: () -> Unit,
+    externalLinks: ExternalLinkOpener,
+    searchProviders: List<ExternalSearchProvider>,
+    mapContent: @Composable (Modifier) -> Unit,
+) {
+    var filterPickerOpen by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
+    val selectedScore =
+        selected?.settlement?.id?.let { selectedId ->
+            rankedResults.firstOrNull { it.settlement.id == selectedId }?.score
+        }
+
+    BoxWithConstraints(modifier.fillMaxSize()) {
+        var panelWidthDp by remember(maxWidth) {
+            mutableStateOf(
+                DesktopWorkspaceLayoutPolicy.initialSidebarWidthDp(maxWidth.value),
+            )
+        }
+        val dragState =
+            rememberDraggableState { deltaPx ->
+                val deltaDp = with(density) { deltaPx.toDp().value }
+                panelWidthDp =
+                    DesktopWorkspaceLayoutPolicy.resizedSidebarWidthDp(panelWidthDp, deltaDp)
+            }
+
+        Row(Modifier.fillMaxSize()) {
+            Box(Modifier.width(panelWidthDp.dp).fillMaxHeight()) {
+                DesktopAnalysisSidebar(
+                    modifier = Modifier.fillMaxSize(),
+                    datasetInfo = datasetInfo,
+                    definitions = definitions,
+                    conditions = conditions,
+                    onConditionsChanged = onConditionsChanged,
+                    effectivePreferences = effectivePreferences,
+                    preferenceOverrides = preferenceOverrides,
+                    onPreferenceEnabledChanged = onPreferenceEnabledChanged,
+                    onPreferenceWeightChanged = onPreferenceWeightChanged,
+                    onPreferenceThresholdsChanged = onPreferenceThresholdsChanged,
+                    onPreferenceReset = onPreferenceReset,
+                    center = center,
+                    onCenterChanged = onCenterChanged,
+                    radiusText = radiusText,
+                    onRadiusChanged = onRadiusChanged,
+                    radiusError = radiusError,
+                    summary = summary,
+                    rankedResults = rankedResults,
+                    selectedId = selected?.settlement?.id,
+                    running = running,
+                    error = error,
+                    settlementSearch = settlementSearch,
+                    onSelect = onSelect,
+                    onImportDataset = onImportDataset,
+                    onAddFilterRequested = { filterPickerOpen = true },
+                )
+
+                if (filterPickerOpen) {
+                    DesktopFilterPicker(
+                        modifier = Modifier.fillMaxSize(),
+                        definitions = definitions,
+                        conditions = conditions,
+                        onAdd = { definition ->
+                            onConditionsChanged(
+                                conditions + SearchCondition(metricId = definition.id),
+                            )
+                            filterPickerOpen = false
+                        },
+                        onClose = { filterPickerOpen = false },
+                    )
+                }
+            }
+
+            Box(
+                Modifier
+                    .width(8.dp)
+                    .fillMaxHeight()
+                    .draggable(
+                        orientation = Orientation.Horizontal,
+                        state = dragState,
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    Modifier
+                        .width(1.dp)
+                        .fillMaxHeight()
+                        .background(MaterialTheme.colorScheme.outlineVariant),
+                )
+            }
+
+            Column(Modifier.weight(1f).fillMaxHeight()) {
+                Box(Modifier.weight(DesktopWorkspaceLayoutPolicy.MAP_HEIGHT_WEIGHT).fillMaxWidth()) {
+                    mapContent(Modifier.fillMaxSize())
+                }
+
+                selected?.let { details ->
+                    HorizontalDivider()
+                    SettlementDetailsPanel(
+                        modifier = Modifier.weight(DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT).fillMaxWidth(),
+                        details = details,
+                        score = selectedScore,
+                        definitions = definitionMap,
+                        datasetInfo = datasetInfo,
+                        externalLinks = externalLinks,
+                        searchProviders = searchProviders,
+                        onClose = onCloseSelected,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DesktopAnalysisSidebar(
+    modifier: Modifier,
+    datasetInfo: DatasetInfo?,
+    definitions: List<MetricDefinition>,
+    conditions: List<SearchCondition>,
+    onConditionsChanged: (List<SearchCondition>) -> Unit,
+    effectivePreferences: List<EffectiveMetricPreference>,
+    preferenceOverrides: List<MetricPreferenceOverride>,
+    onPreferenceEnabledChanged: (String, Boolean) -> Unit,
+    onPreferenceWeightChanged: (String, Int) -> Unit,
+    onPreferenceThresholdsChanged: (String, Double, Double) -> Unit,
+    onPreferenceReset: (String) -> Unit,
+    center: Settlement?,
+    onCenterChanged: (Settlement?) -> Unit,
+    radiusText: String,
+    onRadiusChanged: (String) -> Unit,
+    radiusError: String?,
+    summary: String,
+    rankedResults: List<ScoredSettlement>,
+    selectedId: String?,
+    running: Boolean,
+    error: String?,
+    settlementSearch: SettlementSearchService,
+    onSelect: (Settlement) -> Unit,
+    onImportDataset: () -> Unit,
+    onAddFilterRequested: () -> Unit,
+) {
+    LazyColumn(
+        modifier = modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("OsmapDigger", style = MaterialTheme.typography.headlineSmall)
+                    Text(datasetInfo?.displayName ?: "Loading dataset…")
+                }
+                TextButton(onClick = onImportDataset) { Text("Change") }
+            }
+        }
+
+        item {
+            CenterSelector(
+                settlementSearch = settlementSearch,
+                center = center,
+                onCenterChanged = onCenterChanged,
+                radiusText = radiusText,
+                onRadiusChanged = onRadiusChanged,
+                radiusError = radiusError,
+            )
+        }
+
+        item {
+            DynamicFilters(
+                definitions = definitions,
+                conditions = conditions,
+                onConditionsChanged = onConditionsChanged,
+                title = "Required",
+                onAddFilterRequested = onAddFilterRequested,
+            )
+        }
+
+        item {
+            Text(summary, style = MaterialTheme.typography.bodySmall)
+        }
+
+        item {
+            PreferencesSection(
+                definitions = definitions,
+                effectivePreferences = effectivePreferences,
+                preferenceOverrides = preferenceOverrides,
+                onEnabledChanged = onPreferenceEnabledChanged,
+                onWeightChanged = onPreferenceWeightChanged,
+                onThresholdsChanged = onPreferenceThresholdsChanged,
+                onReset = onPreferenceReset,
+            )
+        }
+
+        if (running) {
+            item { LinearProgressIndicator(Modifier.fillMaxWidth()) }
+        }
+
+        error?.let { message ->
+            item { Text(message, color = MaterialTheme.colorScheme.error) }
+        }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text("Ranked results", style = MaterialTheme.typography.titleMedium)
+                Text(rankedResults.size.toString(), style = MaterialTheme.typography.labelLarge)
+            }
+        }
+
+        itemsIndexed(rankedResults, key = { _, item -> item.settlement.id }) { index, result ->
+            RankedSettlementCard(
+                rank = index + 1,
+                result = result,
+                selected = result.settlement.id == selectedId,
+                onClick = { onSelect(result.settlement) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DesktopFilterPicker(
+    modifier: Modifier,
+    definitions: List<MetricDefinition>,
+    conditions: List<SearchCondition>,
+    onAdd: (MetricDefinition) -> Unit,
+    onClose: () -> Unit,
+) {
+    val activeIds = remember(conditions) { conditions.mapTo(hashSetOf()) { it.metricId } }
+    val available = remember(definitions, activeIds) {
+        definitions.filterNot { it.id in activeIds }
+    }
+
+    Surface(
+        modifier = modifier,
+        tonalElevation = 6.dp,
+        shadowElevation = 6.dp,
+    ) {
+        Column(
+            Modifier.fillMaxSize().padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text("Add required filter", style = MaterialTheme.typography.headlineSmall)
+                    Text(
+                        "Choose a metric to add as a hard eligibility constraint.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                TextButton(onClick = onClose) { Text("Close") }
+            }
+
+            HorizontalDivider()
+
+            if (available.isEmpty()) {
+                Text("All available metrics are already used as required filters.")
+            } else {
+                LazyColumn(
+                    Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    items(available, key = { it.id }) { definition ->
+                        OutlinedCard(
+                            onClick = { onAdd(definition) },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text(definition.title, style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    listOf(definition.group, definition.unit)
+                                        .filter { it.isNotBlank() }
+                                        .joinToString(" · "),
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreferencesSection(
+    definitions: List<MetricDefinition>,
+    effectivePreferences: List<EffectiveMetricPreference>,
+    preferenceOverrides: List<MetricPreferenceOverride>,
+    onEnabledChanged: (String, Boolean) -> Unit,
+    onWeightChanged: (String, Int) -> Unit,
+    onThresholdsChanged: (String, Double, Double) -> Unit,
+    onReset: (String) -> Unit,
+) {
+    val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
+    val overriddenIds = remember(preferenceOverrides) { preferenceOverrides.mapTo(hashSetOf()) { it.metricId } }
+    var expandedMetricId by remember { mutableStateOf<String?>(null) }
+
+    Card {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Preferences", style = MaterialTheme.typography.titleSmall)
+            if (effectivePreferences.isEmpty()) {
+                Text(
+                    "This dataset has no preference defaults. Required constraints remain available.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+
+            effectivePreferences.forEach { effective ->
+                val definition = definitionMap[effective.metricId]
+                PreferenceRow(
+                    title = definition?.title ?: effective.metricId,
+                    unit = definition?.unit.orEmpty(),
+                    effective = effective,
+                    overridden = effective.metricId in overriddenIds,
+                    expanded = expandedMetricId == effective.metricId,
+                    onExpandedChange = { expanded ->
+                        expandedMetricId = if (expanded) effective.metricId else null
+                    },
+                    onEnabledChanged = { onEnabledChanged(effective.metricId, it) },
+                    onWeightChanged = { onWeightChanged(effective.metricId, it) },
+                    onThresholdsChanged = { target, limit ->
+                        onThresholdsChanged(effective.metricId, target, limit)
+                    },
+                    onReset = { onReset(effective.metricId) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun PreferenceRow(
+    title: String,
+    unit: String,
+    effective: EffectiveMetricPreference,
+    overridden: Boolean,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onEnabledChanged: (Boolean) -> Unit,
+    onWeightChanged: (Int) -> Unit,
+    onThresholdsChanged: (Double, Double) -> Unit,
+    onReset: () -> Unit,
+) {
+    val preference = effective.preference
+    var targetText by remember(effective.metricId, preference.targetValue) {
+        mutableStateOf(preference.targetValue.toString())
+    }
+    var limitText by remember(effective.metricId, preference.limitValue) {
+        mutableStateOf(preference.limitValue.toString())
+    }
+    val target = targetText.toDoubleOrNull()
+    val limit = limitText.toDoubleOrNull()
+    val thresholdsValid =
+        target != null && limit != null && target.isFinite() && limit.isFinite() &&
+            when (preference.direction) {
+                PreferredDirection.LOWER -> target < limit
+                PreferredDirection.HIGHER -> target > limit
+                PreferredDirection.NEUTRAL -> false
+            }
+
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(
+                checked = effective.enabled,
+                onCheckedChange = onEnabledChanged,
+            )
+            Column(
+                Modifier
+                    .weight(1f)
+                    .clickable { onExpandedChange(!expanded) }
+                    .padding(vertical = 6.dp),
+            ) {
+                Text(title, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    preferenceTargetSummary(preference.direction, preference.targetValue, preference.limitValue, unit),
+                    style = MaterialTheme.typography.labelSmall,
+                )
+            }
+            Text(
+                "W ${preference.weight}",
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(horizontal = 6.dp),
+            )
+        }
+
+        if (expanded) {
+            Column(
+                Modifier.padding(start = 12.dp, end = 4.dp, bottom = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = targetText,
+                        onValueChange = { value ->
+                            targetText = value
+                            val parsedTarget = value.toDoubleOrNull()
+                            val parsedLimit = limitText.toDoubleOrNull()
+                            if (validThresholds(preference.direction, parsedTarget, parsedLimit)) {
+                                onThresholdsChanged(parsedTarget!!, parsedLimit!!)
+                            }
+                        },
+                        label = { Text(targetLabel(preference.direction)) },
+                        suffix = { if (unit.isNotBlank()) Text(unit) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        isError = !thresholdsValid,
+                    )
+                    OutlinedTextField(
+                        value = limitText,
+                        onValueChange = { value ->
+                            limitText = value
+                            val parsedTarget = targetText.toDoubleOrNull()
+                            val parsedLimit = value.toDoubleOrNull()
+                            if (validThresholds(preference.direction, parsedTarget, parsedLimit)) {
+                                onThresholdsChanged(parsedTarget!!, parsedLimit!!)
+                            }
+                        },
+                        label = { Text(limitLabel(preference.direction)) },
+                        suffix = { if (unit.isNotBlank()) Text(unit) },
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        isError = !thresholdsValid,
+                    )
+                }
+                if (!thresholdsValid) {
+                    Text(
+                        thresholdError(preference.direction),
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+
+                Text("Weight ${preference.weight}", style = MaterialTheme.typography.labelMedium)
+                Slider(
+                    value = preference.weight.toFloat(),
+                    onValueChange = { onWeightChanged(it.roundToInt().coerceIn(1, 10)) },
+                    valueRange = 1f..10f,
+                    steps = 8,
+                )
+
+                if (overridden) {
+                    TextButton(onClick = onReset) { Text("Reset to dataset default") }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RankedSettlementCard(
+    rank: Int,
+    result: ScoredSettlement,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    OutlinedCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            modifier = Modifier.padding(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("#$rank", style = MaterialTheme.typography.labelLarge)
+            Column(Modifier.weight(1f)) {
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(result.settlement.name, style = MaterialTheme.typography.titleSmall)
+                    Text(scoreLabel(result.score), style = MaterialTheme.typography.titleSmall)
+                }
+                val context =
+                    listOfNotNull(
+                        result.settlement.placeType,
+                        result.settlement.population?.let { "population $it" },
+                    ).joinToString(" · ")
+                if (context.isNotBlank()) {
+                    Text(context, style = MaterialTheme.typography.bodySmall)
+                }
+                if (result.score.coverage < 99.5) {
+                    Text(
+                        "Data coverage ${result.score.coverage.roundToInt()}%",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+                if (selected) {
+                    Text("Selected", style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettlementDetailsPanel(
+    modifier: Modifier,
+    details: SettlementDetails,
+    score: SettlementScore?,
+    definitions: Map<String, MetricDefinition>,
+    datasetInfo: DatasetInfo?,
+    externalLinks: ExternalLinkOpener,
+    searchProviders: List<ExternalSearchProvider>,
+    onClose: () -> Unit,
+) {
+    Card(modifier) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(details.settlement.name, style = MaterialTheme.typography.headlineSmall)
+                    val context =
+                        listOfNotNull(
+                            details.settlement.placeType,
+                            details.settlement.population?.let { "population $it" },
+                        ).joinToString(" · ")
+                    if (context.isNotBlank()) {
+                        Text(context, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                TextButton(onClick = onClose) { Text("Close") }
+            }
+
+            Text(
+                "${details.settlement.location.latitude}, ${details.settlement.location.longitude}",
+                style = MaterialTheme.typography.bodySmall,
+            )
+
+            score?.let { settlementScore ->
+                Text("Score", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    "${scoreLabel(settlementScore)} · coverage ${settlementScore.coverage.roundToInt()}%",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                val explanation = remember(settlementScore, definitions) {
+                    ScoreExplanationBuilder.build(settlementScore, definitions)
+                }
+                explanation.strongest?.let { strongest ->
+                    Text(
+                        "Strongest: ${contributionLabel(strongest.title, strongest.unit, strongest.contribution.rawValue, strongest.contribution.scoreContribution)}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                explanation.weakest?.let { weakest ->
+                    Text(
+                        "Weakest: ${contributionLabel(weakest.title, weakest.unit, weakest.contribution.rawValue, weakest.contribution.scoreContribution)}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+                if (explanation.unknown.isNotEmpty()) {
+                    Text(
+                        "Unknown: ${explanation.unknown.joinToString { it.title }}",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+
+            details.metrics
+                .groupBy { it.definition.group }
+                .forEach { (group, values) ->
+                    Text(group, style = MaterialTheme.typography.labelLarge)
+                    values.forEach { metric ->
+                        Text(
+                            "${metric.definition.title}: ${formatMetric(metric.value, metric.definition.unit)}",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+
+            if (searchProviders.isNotEmpty()) {
+                Text("External property search", style = MaterialTheme.typography.labelLarge)
+                searchProviders.forEach { provider ->
+                    OutlinedButton(
+                        onClick = {
+                            externalLinks.open(
+                                ExternalSearchUrlBuilder.build(
+                                    provider = provider,
+                                    settlement = details.settlement,
+                                    terms = datasetInfo?.propertySearchTerms ?: "property",
+                                ),
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(provider.title)
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun scoreLabel(score: SettlementScore): String =
+    score.value?.roundToInt()?.let { "Score $it" } ?: "Score —"
+
+private fun contributionLabel(
+    title: String,
+    unit: String,
+    rawValue: Double?,
+    scoreContribution: Double?,
+): String {
+    val value =
+        rawValue?.let {
+            val formatted = NumberFormatter.compact(it)
+            if (unit.isBlank() || unit == "count") formatted else "$formatted $unit"
+        } ?: "unknown"
+    val points = scoreContribution?.let { "+${NumberFormatter.compact(it)} pts" } ?: "unknown contribution"
+    return "$title · $value · $points"
+}
+
+private fun preferenceTargetSummary(
+    direction: PreferredDirection,
+    target: Double,
+    limit: Double,
+    unit: String,
+): String {
+    val suffix = unit.takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
+    return when (direction) {
+        PreferredDirection.LOWER ->
+            "best ≤ ${NumberFormatter.compact(target)}$suffix · zero ≥ ${NumberFormatter.compact(limit)}$suffix"
+        PreferredDirection.HIGHER ->
+            "best ≥ ${NumberFormatter.compact(target)}$suffix · zero ≤ ${NumberFormatter.compact(limit)}$suffix"
+        PreferredDirection.NEUTRAL -> "not scoreable"
+    }
+}
+
+private fun validThresholds(
+    direction: PreferredDirection,
+    target: Double?,
+    limit: Double?,
+): Boolean =
+    target != null && limit != null && target.isFinite() && limit.isFinite() &&
+        when (direction) {
+            PreferredDirection.LOWER -> target < limit
+            PreferredDirection.HIGHER -> target > limit
+            PreferredDirection.NEUTRAL -> false
+        }
+
+private fun targetLabel(direction: PreferredDirection): String =
+    when (direction) {
+        PreferredDirection.LOWER -> "Best ≤"
+        PreferredDirection.HIGHER -> "Best ≥"
+        PreferredDirection.NEUTRAL -> "Target"
+    }
+
+private fun limitLabel(direction: PreferredDirection): String =
+    when (direction) {
+        PreferredDirection.LOWER -> "Zero ≥"
+        PreferredDirection.HIGHER -> "Zero ≤"
+        PreferredDirection.NEUTRAL -> "Limit"
+    }
+
+private fun thresholdError(direction: PreferredDirection): String =
+    when (direction) {
+        PreferredDirection.LOWER -> "Best threshold must be lower than zero-contribution threshold."
+        PreferredDirection.HIGHER -> "Best threshold must be higher than zero-contribution threshold."
+        PreferredDirection.NEUTRAL -> "Neutral metrics require an explicit scoreable direction."
+    }
+

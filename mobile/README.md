@@ -22,7 +22,7 @@ Shared code is country-agnostic and does not parse OSM files or construct SQL.
 
 ## Modules
 
-- `shared/` — immutable domain models, `GeoRepository` contract, deterministic radius search, filter summary generation, GeoJSON overlays, responsive Compose filter/results/details/map UI.
+- `shared/` — immutable domain/analysis models, `GeoRepository` contract, deterministic radius and preference-ranked analysis, filter summaries, GeoJSON overlays, responsive Android UI, and the host-selected wide Desktop analysis workspace.
 - `desktopApp/` — Desktop window, JDBC repository, directory/ZIP dataset opening, JVM browser integration, MapLibre native binding selection.
 - `androidApp/` — Activity host, Android SQLite repository, Storage Access Framework ZIP import into app-private storage, Android browser intents.
 

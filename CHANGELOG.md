@@ -11,6 +11,7 @@ All notable changes are documented here.
 
 ### Added
 
+- Map-first wide Desktop analysis workspace with a wider resizable criteria/results sidebar, generic preference editors, ranked score/coverage results, a left-contained Add filter chooser, and settlement details below the map without native-map overlap.
 - Application-owned dynamic external-search provider registry with seeded country-specific property-search services.
 - Native offline PMTiles map rendering on supported Desktop hosts with a non-fatal fallback elsewhere.
 - Offline Intel macOS map rendering through JCEF, packaged MapLibre GL JS, and a loopback-only local PMTiles adapter.

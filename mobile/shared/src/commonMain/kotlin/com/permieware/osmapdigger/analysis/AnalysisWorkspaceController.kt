@@ -168,6 +168,64 @@ class AnalysisWorkspaceController(
         persistAndSchedule()
     }
 
+    fun updatePreferenceEnabled(metricId: String, enabled: Boolean) {
+        if (mutableState.value.effectivePreferences.firstOrNull { it.metricId == metricId }?.enabled == enabled) {
+            return
+        }
+        updatePreferenceOverride(metricId) { default, current ->
+            current.copy(enabled = enabled.takeUnless { it == default.defaultEnabled })
+        }
+    }
+
+    fun updatePreferenceWeight(metricId: String, weight: Int) {
+        require(weight in MetricPreference.WEIGHT_RANGE) {
+            "Preference weight must be in ${MetricPreference.WEIGHT_RANGE}"
+        }
+        if (
+            mutableState.value.effectivePreferences
+                .firstOrNull { it.metricId == metricId }
+                ?.preference
+                ?.weight == weight
+        ) {
+            return
+        }
+        updatePreferenceOverride(metricId) { default, current ->
+            current.copy(weight = weight.takeUnless { it == default.weight })
+        }
+    }
+
+    fun updatePreferenceThresholds(
+        metricId: String,
+        targetValue: Double,
+        limitValue: Double,
+    ) {
+        val default = requirePreferenceDefault(metricId)
+        val effective = mutableState.value.effectivePreferences.first { it.metricId == metricId }.preference
+        if (effective.targetValue == targetValue && effective.limitValue == limitValue) return
+        MetricPreference(
+            metricId = metricId,
+            direction = default.direction,
+            targetValue = targetValue,
+            limitValue = limitValue,
+            weight =
+                effective.weight,
+        )
+        updatePreferenceOverride(metricId) { persistedDefault, current ->
+            current.copy(
+                targetValue = targetValue.takeUnless { it == persistedDefault.targetValue },
+                limitValue = limitValue.takeUnless { it == persistedDefault.limitValue },
+            )
+        }
+    }
+
+    fun resetPreference(metricId: String) {
+        requirePreferenceDefault(metricId)
+        if (mutableState.value.preferenceOverrides.none { it.metricId == metricId }) return
+        updatePreferenceOverrides(
+            mutableState.value.preferenceOverrides.filterNot { it.metricId == metricId },
+        )
+    }
+
     fun refreshNow() {
         scheduleAnalysis(immediate = true, force = true)
     }
@@ -175,6 +233,35 @@ class AnalysisWorkspaceController(
     fun clearError() {
         mutableState.value = mutableState.value.copy(errorMessage = null)
     }
+
+    private fun updatePreferenceOverride(
+        metricId: String,
+        transform: (MetricPreferenceDefault, MetricPreferenceOverride) -> MetricPreferenceOverride,
+    ) {
+        val snapshot = mutableState.value
+        val default = requirePreferenceDefault(metricId)
+        val current =
+            snapshot.preferenceOverrides.firstOrNull { it.metricId == metricId }
+                ?: MetricPreferenceOverride(metricId = metricId)
+        val transformed = transform(default, current)
+        val updatedById = snapshot.preferenceOverrides.associateByTo(linkedMapOf()) { it.metricId }
+        if (transformed.isEmptyOverride()) {
+            updatedById.remove(metricId)
+        } else {
+            updatedById[metricId] = transformed
+        }
+        val ordered = snapshot.preferenceDefaults.mapNotNull { updatedById[it.metricId] }
+        updatePreferenceOverrides(ordered)
+    }
+
+    private fun requirePreferenceDefault(metricId: String): MetricPreferenceDefault =
+        mutableState.value.preferenceDefaults.firstOrNull { it.metricId == metricId }
+            ?: throw IllegalArgumentException(
+                "Preference '$metricId' is not defined by the current dataset",
+            )
+
+    private fun MetricPreferenceOverride.isEmptyOverride(): Boolean =
+        enabled == null && targetValue == null && limitValue == null && weight == null
 
     private fun persistAndSchedule() {
         persistCurrentState()
