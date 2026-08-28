@@ -321,6 +321,8 @@ Selecting a result marker on the map must:
 - reveal or scroll to the corresponding result when practical;
 - open the same details pane beneath the map.
 
+Ranked result markers should expose settlement display names at useful zoom levels. Ordinary labels may be collision/zoom suppressed to keep the map readable, but the selected settlement label must remain visually prominent. Labels are transient presentation state and must not alter search semantics.
+
 Desktop hover linkage is optional. Selection linkage is required.
 
 ### DA-R14 — settlement details pane
@@ -331,7 +333,7 @@ must preserve the selected marker and map session while the lower pane is visibl
 
 When no settlement is selected, a shallow lower pane must expose the current ranked-result count and whether automatic recalculation is still running, so search feedback is visible without inspecting the left results list.
 
-When a settlement is selected, the default lower pane must remain compact enough to fit without scrolling and expose:
+When a settlement is selected, the default lower pane must remain compact and expose:
 
 - settlement name;
 - place type and population when available;
@@ -339,7 +341,7 @@ When a settlement is selected, the default lower pane must remain compact enough
 - current ranked-result count;
 - score when available;
 - weighted data coverage;
-- up to three metrics participating in the current analysis, prioritizing effective Required constraints before enabled Preferences, with missing values shown as unknown;
+- every metric participating in the current analysis, prioritizing effective Required constraints before enabled Preferences, with missing values shown as unknown; the criteria strip may scroll horizontally when necessary so no active criterion is silently omitted;
 - an explicit **Details** action;
 - a separate external-search action when providers are configured;
 - a close action.
@@ -654,8 +656,8 @@ Suggested implementation order:
 9. **Implemented:** separate analytical application state from Compose with `AnalysisWorkspaceController`, including dataset/default/override restore and persistence orchestration.
 10. **Implemented:** add the explicit Desktop-host map-first presentation with a resizable left panel and map occupying the remaining workspace; revised to default the left pane to roughly one third of the window.
 11. **Implemented:** add compact generic Required/Preferences sections with one expanded preference editor at a time, target/limit editing, weight slider, enable state, and reset-to-dataset-default behavior. Required-filter controls and chooser descriptions are derived from persisted `measure_type`: distance, count, and coverage use distinct human-facing labels/units so fixed-radius counts cannot be mistaken for nearest-feature distances.
-12. **Implemented:** ranked results live in the left panel with score/coverage; list selection drives the selected marker/camera, and activating a ranked marker on native MapLibre or Intel macOS JCEF selects the same settlement, scrolls the ranked list to reveal it, and opens the same lower pane.
-13. **Implemented for list-originated selection:** without a selection, a shallow lower pane shows ranked-result count/recalculation state; selected settlement state renders a compact non-scrolling summary beneath the map with score/coverage and up to three participating Required/Preference metrics. An explicit Details action opens scrollable complete details in the same lower pane, and a separate External search action opens configured provider buttons there. **Add filter** opens a full-pane chooser inside the left analysis column. None of these surfaces overlaps the platform map rectangle, so the Intel macOS JCEF renderer uses its original stable windowed rendering path.
+12. **Implemented:** ranked results live in the left panel with score/coverage; list selection drives the selected marker/camera, activating a ranked marker on native MapLibre or Intel macOS JCEF selects the same settlement, scrolls the ranked list to reveal it, and opens the same lower pane, and ranked markers expose runtime settlement-name labels with selected-label emphasis.
+13. **Implemented for list-originated selection:** without a selection, a shallow lower pane shows ranked-result count/recalculation state; selected settlement state renders a compact summary beneath the map with score/coverage and all participating Required/Preference metrics in a horizontally scrollable criteria strip. An explicit Details action opens scrollable complete details in the same lower pane, and a separate External search action opens configured provider buttons there. **Add filter** opens a full-pane chooser inside the left analysis column. None of these surfaces overlaps the platform map rectangle, so the Intel macOS JCEF renderer uses its original stable windowed rendering path.
 14. **Implemented:** add 250 ms debounced/cancellable automatic ranked recalculation with generation-based stale-result suppression. The Desktop analysis workspace uses this as its primary workflow; explicit Search remains only in compatibility/narrow UI paths.
 15. **Implemented:** map-driven center selection now uses map coordinates rather than marker activation and does not change ranked-result selection or sidebar scroll position. Native MapLibre reports the clicked WGS84 coordinate directly; Intel macOS JCEF sends a bounded same-origin coordinate payload through the loopback server. Shared lookup selects the nearest settlement from the complete dataset settlement index using Haversine distance, then reuses the existing `Settlement` center/radius/persistence path and fills the Search area center name.
 16. **Implementation support complete; local acceptance pending:** ranked-analysis performance diagnostics now record candidate/scoring volumes plus batch retrieval, shared scoring/sort, and end-to-end latency for completed current generations. Run parent-workflow regression checks, capture at least one realistic country-scale measurement, and complete Desktop/Android validation.

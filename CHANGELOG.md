@@ -8,6 +8,8 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Label ranked settlements on the map and show every active Required/Preference metric in the selected-settlement summary.
+
 - Clarified Desktop map interaction: `Pick center on map` changes only the search center, while normal marker clicks select ranked settlements; center recalculation no longer scrolls the sidebar to a previously selected result.
 
 - Add bidirectional Desktop map marker selection and `Pick center on map` nearest-settlement center selection for native MapLibre and Intel macOS JCEF renderers.

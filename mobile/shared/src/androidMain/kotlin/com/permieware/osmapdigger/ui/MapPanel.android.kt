@@ -7,6 +7,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.DatasetInfo
@@ -118,7 +119,7 @@ private fun RenderMapLibrePanel(
     val resultJson = remember(results) { MapOverlayGeoJson.build(results) }
     val selectedJson = remember(selected) { MapOverlayGeoJson.build(listOfNotNull(selected)) }
 
-    Box(modifier) {
+    Box(modifier.clipToBounds()) {
         MaplibreMap(
             modifier = Modifier.fillMaxSize(),
             baseStyle = BaseStyle.Json(styleJson),
@@ -158,6 +159,26 @@ private fun RenderMapLibrePanel(
                     strokeColor = const(Color.White),
                     strokeWidth = const(2.dp),
                     onClick = settlementClickHandler(onSettlementActivated),
+                )
+            }
+        }
+
+        val projection = camera.projection
+        val cameraPosition = camera.position
+        if (projection != null) {
+            key(cameraPosition) {
+                SettlementMapLabels(
+                    results = results,
+                    selected = selected,
+                    zoom = cameraPosition.zoom,
+                    positionOf = { settlement ->
+                        projection.screenLocationFromPosition(
+                            Position(
+                                latitude = settlement.location.latitude,
+                                longitude = settlement.location.longitude,
+                            ),
+                        )
+                    },
                 )
             }
         }

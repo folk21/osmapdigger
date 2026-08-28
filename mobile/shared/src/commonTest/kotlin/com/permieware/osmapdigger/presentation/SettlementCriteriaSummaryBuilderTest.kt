@@ -65,17 +65,17 @@ class SettlementCriteriaSummaryBuilderTest {
     }
 
     @Test
-    fun limitsCompactSummaryToThreeMetricsByDefault() {
-        val definitions = (1..4).map { definition("m$it", "Metric $it", "km") }
+    fun includesEveryParticipatingMetricWithoutCompactLimit() {
+        val definitions = (1..5).map { definition("m$it", "Metric $it", "km") }
         val result =
             SettlementCriteriaSummaryBuilder.build(
                 details = SettlementDetails(settlement(), definitions.mapIndexed { index, it -> MetricValue(it, index.toDouble()) }),
                 definitions = definitions.associateBy { it.id },
-                conditions = definitions.map { SearchCondition(it.id, maxValue = 10.0) },
-                preferences = emptyList(),
+                conditions = definitions.take(4).map { SearchCondition(it.id, maxValue = 10.0) },
+                preferences = listOf(preference("m5", enabled = true)),
             )
 
-        assertEquals(listOf("m1", "m2", "m3"), result.map { it.metricId })
+        assertEquals(listOf("m1", "m2", "m3", "m4", "m5"), result.map { it.metricId })
     }
 
     private fun preference(metricId: String, enabled: Boolean) =

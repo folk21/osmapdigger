@@ -14,7 +14,7 @@ data class SettlementCriteriaSummaryItem(
 )
 
 /**
- * Select the most relevant search metrics for compact settlement presentation.
+ * Select all metrics participating in the current settlement analysis.
  *
  * Effective hard constraints come first, then enabled ranking preferences. Metric IDs are
  * de-duplicated while preserving that priority. Missing metric data remains unknown.
@@ -25,11 +25,7 @@ object SettlementCriteriaSummaryBuilder {
         definitions: Map<String, MetricDefinition>,
         conditions: List<SearchCondition>,
         preferences: List<EffectiveMetricPreference>,
-        limit: Int = 3,
     ): List<SettlementCriteriaSummaryItem> {
-        require(limit >= 0) { "Summary metric limit must not be negative" }
-        if (limit == 0) return emptyList()
-
         val metricValues = details.metrics.associate { it.definition.id to it.value }
         val metricIds = linkedSetOf<String>()
         conditions.asSequence()
@@ -41,7 +37,6 @@ object SettlementCriteriaSummaryBuilder {
 
         return metricIds
             .asSequence()
-            .take(limit)
             .map { metricId ->
                 val definition = definitions[metricId]
                 SettlementCriteriaSummaryItem(

@@ -28,5 +28,6 @@ class MapOverlayGeoJsonTest {
         val properties = feature.getValue("properties").jsonObject
 
         assertEquals("node/42", properties.getValue("id").jsonPrimitive.content)
+        assertEquals("Example", properties.getValue("name").jsonPrimitive.content)
     }
 }

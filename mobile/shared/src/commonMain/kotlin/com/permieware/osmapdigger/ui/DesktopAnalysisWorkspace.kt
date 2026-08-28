@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -787,13 +788,16 @@ private fun SettlementSummaryPanel(
                 )
             }
             if (criteriaSummary.isNotEmpty()) {
+                Text("Active criteria", style = MaterialTheme.typography.labelMedium)
                 Row(
-                    Modifier.fillMaxWidth(),
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     criteriaSummary.forEach { metric ->
-                        Column(Modifier.weight(1f)) {
+                        Column(Modifier.widthIn(min = 132.dp, max = 220.dp)) {
                             Text(metric.title, style = MaterialTheme.typography.labelSmall, maxLines = 1)
                             Text(
                                 formatCompactMetric(metric.value, metric.unit),

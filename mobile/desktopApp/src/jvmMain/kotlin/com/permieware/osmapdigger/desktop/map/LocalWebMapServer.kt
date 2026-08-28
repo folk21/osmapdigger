@@ -17,6 +17,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.io.Closeable
+import java.io.IOException
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.nio.charset.StandardCharsets
@@ -48,6 +49,7 @@ internal class LocalWebMapServer(
     private val tileRequestCount = AtomicLong(0)
     private val notFoundCount = AtomicLong(0)
     private val errorCount = AtomicLong(0)
+    private val clientCancelledCount = AtomicLong(0)
     private val executor =
         Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "osmapdigger-web-map").apply { isDaemon = true }
@@ -103,7 +105,7 @@ internal class LocalWebMapServer(
             .onFailure { failure -> DesktopDiagnostics.warn("map.server", "PMTiles reader close failed", failure) }
         DesktopDiagnostics.info(
             "map.server",
-            "stopped dataset=${datasetInfo.id} requests=${requestCount.get()} tiles=${tileRequestCount.get()} notFound=${notFoundCount.get()} errors=${errorCount.get()}",
+            "stopped dataset=${datasetInfo.id} requests=${requestCount.get()} tiles=${tileRequestCount.get()} notFound=${notFoundCount.get()} cancelled=${clientCancelledCount.get()} errors=${errorCount.get()}",
         )
     }
 
@@ -156,6 +158,8 @@ internal class LocalWebMapServer(
                     }
                 }
             }
+        } catch (cancelled: ClientDisconnectedException) {
+            clientCancelledCount.incrementAndGet()
         } catch (failure: Throwable) {
             DesktopDiagnostics.error(
                 "map.server",
@@ -273,9 +277,16 @@ internal class LocalWebMapServer(
         if (status >= 500) errorCount.incrementAndGet()
         exchange.responseHeaders.set("Content-Type", contentType)
         exchange.responseHeaders.set("Access-Control-Allow-Origin", baseUrl)
-        exchange.sendResponseHeaders(status, bytes.size.toLong())
-        if (bytes.isNotEmpty()) {
-            exchange.responseBody.write(bytes)
+        try {
+            exchange.sendResponseHeaders(status, bytes.size.toLong())
+            if (bytes.isNotEmpty()) {
+                exchange.responseBody.write(bytes)
+            }
+        } catch (failure: IOException) {
+            if (isExpectedClientDisconnect(failure)) {
+                throw ClientDisconnectedException(failure)
+            }
+            throw failure
         }
     }
 
@@ -352,6 +363,30 @@ internal class LocalWebMapServer(
               }
             }
 
+            function ensureSettlementLabelLayer(id, sourceId, selected) {
+              if (map.getLayer(id)) return;
+              map.addLayer({
+                id: id,
+                type: 'symbol',
+                source: sourceId,
+                minzoom: selected ? 0 : 8,
+                layout: {
+                  'text-field': ['get', 'name'],
+                  'text-font': ['Arial'],
+                  'text-size': selected ? 13 : 12,
+                  'text-anchor': 'bottom',
+                  'text-offset': [0, -0.75],
+                  'text-allow-overlap': selected,
+                  'text-ignore-placement': selected
+                },
+                paint: {
+                  'text-color': selected ? '#D84315' : '#263238',
+                  'text-halo-color': '#ffffff',
+                  'text-halo-width': selected ? 2 : 1.5
+                }
+              });
+            }
+
             let mapLocationPickingEnabled = false;
 
             function applyState(state, focusSelected) {
@@ -371,6 +406,8 @@ internal class LocalWebMapServer(
                 'circle-stroke-color': '#ffffff',
                 'circle-stroke-width': 2
               });
+              ensureSettlementLabelLayer('osmapdigger-result-labels', 'osmapdigger-results', false);
+              ensureSettlementLabelLayer('osmapdigger-selected-label', 'osmapdigger-selected', true);
               map.getSource('osmapdigger-results').setData(results);
               map.getSource('osmapdigger-selected').setData(selected);
 
@@ -459,6 +496,25 @@ internal class LocalWebMapServer(
     }
 }
 
+
+private class ClientDisconnectedException(cause: IOException) : IOException(cause)
+
+internal fun isExpectedClientDisconnect(failure: IOException): Boolean {
+    var current: Throwable? = failure
+    while (current != null) {
+        val message = current.message?.lowercase().orEmpty()
+        if (
+            message.contains("broken pipe") ||
+            message.contains("connection reset") ||
+            message.contains("closed channel") ||
+            message.contains("stream is closed")
+        ) {
+            return true
+        }
+        current = current.cause
+    }
+    return false
+}
 
 internal fun decodeSettlementInteraction(body: String): String? =
     runCatching {
