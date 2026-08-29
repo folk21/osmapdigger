@@ -162,6 +162,32 @@ The analysis sidebar is resizable on wide Desktop windows and defaults to roughl
 
 Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback. Ranked settlement markers show their settlement names when space/zoom permits, with the selected settlement label kept visually prominent. Clicking a ranked settlement marker selects the same result shown in the left list and opens its lower summary. **Pick center on map** is different: click anywhere on the map and OsmapDigger selects the geographically nearest settlement from the complete dataset as the search center. The chosen settlement name appears in Search area, and existing radius, persistence, and automatic recalculation semantics are reused.
 
+## Record ranked-analysis acceptance performance
+
+After opening a realistic country-scale package on Desktop, exercise representative Required/Preferences/radius changes and let the latest recalculation complete. Then run:
+
+```bash
+make analysis-acceptance
+```
+
+If the installed dataset has no enabled Preferences, the command reports `Mode: filter-only`; this is useful throughput evidence but not final ranked-scoring acceptance. After rebuilding/loading preference defaults and running a scored analysis, use:
+
+```bash
+make analysis-acceptance-strict
+```
+
+The command reads the persistent Desktop diagnostics log and prints the latest qualifying ranked-analysis sample with candidate/scoring volumes and retrieval/shared/end-to-end latency. By default a sample must contain at least 1000 repository candidates and at least one enabled scoring metric. The command fails instead of silently accepting a smaller run.
+
+For a deliberately different representative threshold or copied diagnostics log:
+
+```bash
+make analysis-acceptance \
+  ANALYSIS_LOG=/path/to/desktop.log \
+  ANALYSIS_MIN_CANDIDATES=5000
+```
+
+This report is acceptance evidence only; it does not affect search, scoring, ranking, or persisted user state.
+
 ## Android package workflow
 
 1. Build a full `.omd.zip` on a workstation.

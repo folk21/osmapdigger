@@ -91,7 +91,29 @@ Desktop records one `analysis.performance` line for each completed current analy
 - `sharedMs`: shared exact-radius filtering, scoring, deterministic sort, and final limit time;
 - `totalMs`: end-to-end `SettlementAnalysisService` execution time.
 
-Record at least one representative line for sub-spec acceptance. Rapid edits should produce diagnostics only for the latest completed generation; superseded work must not be reported as the accepted measurement. These timings are diagnostic only and must never affect deterministic ranking.
+Use the repository acceptance command instead of copying a log line manually:
+
+```bash
+make analysis-acceptance
+```
+
+`make analysis-acceptance` prefers a country-scale sample with enabled scoring metrics. If the current installed dataset has no preference defaults, it reports the latest qualifying run as `filter-only` instead of failing. That report validates repository/radius throughput but does not complete ranked-scoring acceptance.
+
+For the strict stage-16 gate after rebuilding/loading a dataset with at least one enabled Preference:
+
+```bash
+make analysis-acceptance-strict
+```
+
+The command reads `~/.osmapdigger/logs/desktop.log`, requires at least 1000 batch candidates and at least one enabled scoring metric, selects the latest qualifying completed sample, and prints a copy-ready Markdown acceptance record. Override the defaults only when the dataset scope justifies it:
+
+```bash
+make analysis-acceptance \
+  ANALYSIS_LOG=/path/to/desktop.log \
+  ANALYSIS_MIN_CANDIDATES=5000
+```
+
+A non-zero exit status means no representative sample is available yet. This prevents a small Andorra or zero-preference run from being accidentally recorded as country-scale acceptance evidence. Rapid edits should produce diagnostics only for the latest completed generation; superseded work must not be reported as the accepted measurement. These timings are diagnostic only and must never affect deterministic ranking.
 
 ## Desktop analysis workspace acceptance
 
