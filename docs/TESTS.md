@@ -167,3 +167,13 @@ Shared input parsing tests verify that blank and numeric zero mean an unset opti
 
 
 JCEF settlement-ID and WGS84 map-location payload decoding plus the minimum normal-marker click hit tolerance are covered without starting JCEF or a display server. Shared settlement lookup tests cover nearest-center selection against the complete dataset index using Haversine distance.
+
+## UI localization checks
+
+Shared tests verify that Russian is the default UI language, Russian and English catalogs expose distinct application chrome, settlement display names prefer persisted aliases matching the selected language, current category labels resolve to Russian with dataset-title fallback, and the active-criteria layout preserves order across two balanced rows. Manual Desktop/Android checks should verify runtime switching between Russian and English and confirm that ranked-list/map/center settlement names update without reopening the dataset.
+
+### Belarus metric catalog check
+
+`geo-builder/tests/test_config.py` verifies that the `core10` profile publishes `beach.distance_km` as an addable Required metric (`default_enabled = false`) and does not publish legacy `water.*` metrics. Rebuild the full local Belarus package with `make build-belarus` before validating the filter chooser against generated data.
+
+For Intel macOS Desktop acceptance, verify that the lower status/details pane remains fully visible while selecting and closing settlements; the JCEF map rectangle must remain fixed above that pane.

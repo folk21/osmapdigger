@@ -57,7 +57,7 @@ class AndroidUserPreferencesRepository(
                         id, dataset_id, center_settlement_id, center_settlement_name, radius_km, filters_json, preferences_json
                     ) VALUES (1, ?, ?, ?, ?, ?, ?)
                     """.trimIndent(),
-                    arrayOf(
+                    arrayOf<Any?>(
                         preferences.datasetId,
                         preferences.centerSettlementId,
                         preferences.centerSettlementName,

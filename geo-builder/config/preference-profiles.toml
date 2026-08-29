@@ -8,7 +8,7 @@ limit = 10.0
 weight = 8
 
 [[profiles.balanced-living.preferences]]
-metric_id = "water.distance_km"
+metric_id = "beach.distance_km"
 enabled = true
 target = 2.0
 limit = 15.0

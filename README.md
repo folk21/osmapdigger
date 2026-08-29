@@ -35,6 +35,8 @@ flowchart LR
 
 The runtime never parses OSM PBF. Python performs heavy GIS processing at build time; the installed app reads a generated SQLite search database and a generated PMTiles basemap.
 
+The shared application UI supports Russian and English. Russian is the default UI language; users can switch the application chrome at runtime without changing dataset/search semantics.
+
 ## Start here
 
 Commands below run from the repository root unless noted otherwise.
@@ -102,6 +104,7 @@ Build the full package when tilemaker or Docker is installed:
 
 ```bash
 make build-andorra
+make build-belarus
 ```
 
 Published artifacts appear under the ignored path:

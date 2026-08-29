@@ -4,19 +4,30 @@ import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.SearchRequest
 import com.permieware.osmapdigger.presentation.NumberFormatter
 
+/** Language-specific connective text for deterministic filter summaries. */
+data class FilterSummaryText(
+    val noFilters: String,
+    val findSettlements: String,
+    val withinCenter: (String, String) -> String,
+    val aroundCenter: (String) -> String,
+    val atLeast: (String) -> String,
+    val upTo: (String) -> String,
+)
+
 /** Produces a human-readable equivalent of the visual filter state without generative AI. */
 object FilterSummaryBuilder {
     fun build(
         request: SearchRequest,
         definitions: Map<String, MetricDefinition>,
+        text: FilterSummaryText = EnglishFilterSummaryText,
     ): String {
         val parts = mutableListOf<String>()
 
         request.center?.let { center ->
             if (request.radiusKm != null) {
-                parts += "within ${NumberFormatter.compact(request.radiusKm)} km of ${center.name}"
+                parts += text.withinCenter(NumberFormatter.compact(request.radiusKm), center.name)
             } else {
-                parts += "around ${center.name}"
+                parts += text.aroundCenter(center.name)
             }
         }
 
@@ -29,18 +40,27 @@ object FilterSummaryBuilder {
                     condition.minValue != null && condition.maxValue != null ->
                         "${definition.title}: ${NumberFormatter.compact(condition.minValue)}–${NumberFormatter.compact(condition.maxValue)}$unit"
                     condition.minValue != null ->
-                        "${definition.title}: at least ${NumberFormatter.compact(condition.minValue)}$unit"
+                        "${definition.title}: ${text.atLeast(NumberFormatter.compact(condition.minValue))}$unit"
                     condition.maxValue != null ->
-                        "${definition.title}: up to ${NumberFormatter.compact(condition.maxValue)}$unit"
+                        "${definition.title}: ${text.upTo(NumberFormatter.compact(condition.maxValue))}$unit"
                     else -> return@forEach
                 }
             }
 
         return if (parts.isEmpty()) {
-            "No filters: show settlements from the current dataset."
+            text.noFilters
         } else {
-            "Find settlements " + parts.joinToString(", ") + "."
+            text.findSettlements + " " + parts.joinToString(", ") + "."
         }
     }
 
+    private val EnglishFilterSummaryText =
+        FilterSummaryText(
+            noFilters = "No filters: show settlements from the current dataset.",
+            findSettlements = "Find settlements",
+            withinCenter = { radius, center -> "within $radius km of $center" },
+            aroundCenter = { center -> "around $center" },
+            atLeast = { value -> "at least $value" },
+            upTo = { value -> "up to $value" },
+        )
 }

@@ -91,7 +91,7 @@ Stores small string key/value compatibility and dataset identity fields required
 
 Stores the runtime filter catalog. Important semantics:
 
-- `metric_id` is a stable persisted key such as `water.distance_km`;
+- `metric_id` is a stable persisted key such as `beach.distance_km`;
 - `category_id` groups related measures produced from one source category;
 - `group_id`, `title`, `description`, and `unit` support generic UI;
 - `measure_type` distinguishes distance/count/coverage semantics;
@@ -359,3 +359,14 @@ There is intentionally no parallel `docs/implementation/` topic-document layer; 
 
 
 Intel macOS normal marker activation uses a tolerant screen-space hit box and reports a stable settlement ID through the loopback interaction endpoint. **Pick center on map** uses a separate bounded WGS84 coordinate endpoint; shared Kotlin resolves the nearest dataset settlement, so center selection is independent of current ranked markers. Runtime diagnostics log both interaction boundaries without exposing map-engine objects.
+
+## Shared UI localization
+
+Application-owned Compose text is routed through the shared `UiLocalization` catalog. Russian (`ru`) is the default UI language and English (`en`) is the fallback/alternate language. `OsmapDiggerApp` owns the current presentation language and provides it through composition locals so Desktop and Android shared UI use one catalog. The in-session selection is saveable across normal Compose state recreation but is not stored in the application settings SQLite yet.
+
+Localization applies to application chrome, search-area controls, filter labels/descriptions, ranking labels, settlement detail controls, deterministic filter summaries, and map/fallback status text. Settlement display names are resolved from dataset-provided `settlement_name` aliases for the selected UI language, with canonical-name fallback when that language is unavailable. Active-criteria presentation also provides Russian labels for the current stable metric categories by `category_id` and measure semantics, while unknown categories fall back to the dataset title. Dataset display names and configured external-provider titles remain dataset-owned.
+
+### Intel macOS map sizing invariant
+
+The Desktop analysis workspace reserves the same lower one-third pane whether or not a settlement is selected. This keeps the JCEF `SwingPanel` host rectangle stable while browsing results and avoids native browser painting into the Compose status/details pane during large dynamic resizes.
+

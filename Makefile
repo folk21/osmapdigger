@@ -1,4 +1,4 @@
-.PHONY: help check check-all test-python test-mobile test-desktop build-andorra-data build-andorra run-desktop build-android
+.PHONY: help check check-all test-python test-mobile test-desktop build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
 
 PYTHON ?= python
 GEO_BUILDER_PYTHONPATH = geo-builder/src
@@ -11,6 +11,8 @@ help:
 	@echo "  check-all            Run Python plus configured Kotlin tests"
 	@echo "  build-andorra-data   Build SQLite/metadata from local Andorra PBF, skip PMTiles"
 	@echo "  build-andorra        Build full Andorra package including PMTiles"
+	@echo "  build-belarus-data   Build Belarus SQLite/metadata from local PBF, skip PMTiles"
+	@echo "  build-belarus        Build full Belarus package including PMTiles"
 	@echo "  run-desktop          Run Desktop host"
 	@echo "  build-android        Build Android debug APK"
 
@@ -34,6 +36,12 @@ build-andorra-data:
 
 build-andorra:
 	PYTHONPATH=$(GEO_BUILDER_PYTHONPATH) $(PYTHON) -m osmapdigger_geo.cli build andorra --datasets $(DATASET_CONFIG) --metrics $(METRICS_CONFIG)
+
+build-belarus-data:
+	PYTHONPATH=$(GEO_BUILDER_PYTHONPATH) $(PYTHON) -m osmapdigger_geo.cli build belarus --datasets $(DATASET_CONFIG) --metrics $(METRICS_CONFIG) --skip-map
+
+build-belarus:
+	PYTHONPATH=$(GEO_BUILDER_PYTHONPATH) $(PYTHON) -m osmapdigger_geo.cli build belarus --datasets $(DATASET_CONFIG) --metrics $(METRICS_CONFIG)
 
 run-desktop:
 	cd mobile && ./gradlew :desktopApp:run

@@ -50,7 +50,7 @@ def test_belarus_uses_core10_metric_profile():
     assert "name:ru" in dataset.settlement_name_tags
     assert [category.id for category in selected] == [
         "forest",
-        "water",
+        "beach",
         "industrial",
         "landfill",
         "railway_station",
@@ -60,6 +60,10 @@ def test_belarus_uses_core10_metric_profile():
         "medical",
         "supermarket",
     ]
+
+    beach = next(category for category in selected if category.id == "beach")
+    assert beach.default_filter is False
+
 
 
 def test_full_metric_profile_selects_complete_catalog():
@@ -104,15 +108,37 @@ def test_balanced_preference_profile_resolves_against_generated_catalog():
 
     assert len(defaults) == 10
     forest = next(item for item in defaults if item.metric_id == "forest.distance_km")
+    beach = next(item for item in defaults if item.metric_id == "beach.distance_km")
     landfill = next(item for item in defaults if item.metric_id == "landfill.distance_km")
     assert forest.direction == "lower"
     assert forest.default_enabled is True
     assert forest.target_value == 1.0
     assert forest.limit_value == 10.0
     assert forest.weight == 8
+    assert beach.direction == "lower"
+    assert beach.default_enabled is True
+    assert beach.target_value == 2.0
+    assert beach.limit_value == 15.0
+    assert beach.weight == 8
     assert landfill.direction == "higher"
     assert landfill.target_value == 15.0
     assert landfill.limit_value == 3.0
+
+
+def test_belarus_core10_publishes_addable_beach_distance_metric():
+    _, all_categories = load_categories(ROOT / "geo-builder/config/metrics.toml")
+    profile_ids = load_metric_profile(
+        ROOT / "geo-builder/config/metric-profiles.toml",
+        "core10",
+    )
+    selected = select_categories(all_categories, profile_ids, "core10")
+    definitions = build_metric_definitions(selected)
+
+    beach = next(item for item in definitions if item.metric_id == "beach.distance_km")
+    assert beach.measure_type == "distance"
+    assert beach.unit == "km"
+    assert beach.default_enabled is False
+    assert all(not item.metric_id.startswith("water.") for item in definitions)
 
 
 def test_preference_profile_rejects_metric_not_generated_by_selected_metric_profile(tmp_path):

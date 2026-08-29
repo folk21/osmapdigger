@@ -8,6 +8,10 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Highlight the selected ranked settlement, show active criteria in two rows, and resolve settlement/map display names from persisted aliases matching the selected UI language.
+
+- Replace the broad analytical Water metric with Beach proximity in generated metric catalogs and default ranking profiles. Basemap water rendering remains unchanged.
+
 - Label ranked settlements on the map and show every active Required/Preference metric in the selected-settlement summary.
 
 - Clarified Desktop map interaction: `Pick center on map` changes only the search center, while normal marker clicks select ranked settlements; center recalculation no longer scrolls the sidebar to a previously selected result.
@@ -26,3 +30,5 @@ All notable changes are documented here.
 - Local persistence and restart restoration for the current dataset-scoped center, radius, and dynamic filters on Desktop and Android.
 - Dataset management architecture documentation.
 - Desktop and Android platform documentation rules.
+
+- Add shared Russian/English UI localization with Russian as the default application language.

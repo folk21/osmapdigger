@@ -81,11 +81,12 @@ private fun RenderMapLibrePanel(
     onSettlementActivated: ((String) -> Unit)?,
     onMapLocationActivated: ((GeoPoint) -> Unit)?,
 ) {
+    val strings = LocalUiStrings.current
     if (datasetInfo == null || styleJson == null) {
         Box(modifier.padding(24.dp)) {
             Card {
                 Text(
-                    if (datasetInfo == null) "Loading dataset…" else "This package has no generated map.",
+                    if (datasetInfo == null) strings.loadingMap else strings.noGeneratedMap,
                     modifier = Modifier.padding(16.dp),
                 )
             }
@@ -124,13 +125,15 @@ private fun RenderMapLibrePanel(
             modifier = Modifier.fillMaxSize(),
             baseStyle = BaseStyle.Json(styleJson),
             cameraState = camera,
-            onMapClick =
-                onMapLocationActivated?.let { callback ->
-                    { position, _ ->
-                        callback(GeoPoint(position.latitude, position.longitude))
-                        ClickResult.Consume
-                    }
-                },
+            onMapClick = { position, _ ->
+                val callback = onMapLocationActivated
+                if (callback == null) {
+                    ClickResult.Pass
+                } else {
+                    callback(GeoPoint(position.latitude, position.longitude))
+                    ClickResult.Consume
+                }
+            },
         ) {
             val resultSource = rememberGeoJsonSource(GeoJsonData.JsonString(resultJson))
             LaunchedEffect(resultJson) {

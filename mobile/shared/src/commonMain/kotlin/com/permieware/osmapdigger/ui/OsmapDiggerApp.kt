@@ -3,6 +3,7 @@ package com.permieware.osmapdigger.ui
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.analysis.AnalysisWorkspaceController
@@ -11,6 +12,10 @@ import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
+import com.permieware.osmapdigger.presentation.SettlementDisplayNameResolver
+import com.permieware.osmapdigger.presentation.UiLanguage
+import com.permieware.osmapdigger.presentation.UiLocalization
+import com.permieware.osmapdigger.presentation.UiStrings
 import com.permieware.osmapdigger.runtime.OsmapDiggerRuntime
 import com.permieware.osmapdigger.search.FilterSummaryBuilder
 import com.permieware.osmapdigger.search.OptionalRadiusInput
@@ -30,7 +35,16 @@ fun OsmapDiggerApp(
     onAnalysisDiagnostics: (SettlementAnalysisDiagnostics) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    MaterialTheme {
+    var uiLanguageCode by rememberSaveable { mutableStateOf(UiLocalization.defaultLanguage.code) }
+    val uiLanguage = UiLanguage.entries.firstOrNull { it.code == uiLanguageCode } ?: UiLocalization.defaultLanguage
+    val strings = remember(uiLanguage) { UiLocalization.strings(uiLanguage) }
+
+    CompositionLocalProvider(
+        LocalUiLanguage provides uiLanguage,
+        LocalUiStrings provides strings,
+        LocalUiLanguageSetter provides { uiLanguageCode = it.code },
+    ) {
+        MaterialTheme {
         if (runtime == null) {
             MissingDatasetScreen(onImportDataset = onImportDataset, modifier = modifier)
         } else {
@@ -46,6 +60,7 @@ fun OsmapDiggerApp(
             )
         }
     }
+    }
 }
 
 @Composable
@@ -53,6 +68,7 @@ private fun MissingDatasetScreen(
     onImportDataset: () -> Unit,
     modifier: Modifier,
 ) {
+    val strings = LocalUiStrings.current
     Box(modifier.fillMaxSize().padding(32.dp)) {
         Card {
             Column(
@@ -60,10 +76,11 @@ private fun MissingDatasetScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text("OsmapDigger", style = MaterialTheme.typography.headlineMedium)
-                Text("No local dataset is installed.")
-                Text("Generate a .omd.zip with the Python Geo Builder, then import it here.")
+                Text(strings.noDatasetInstalled)
+                Text(strings.generateAndImportDataset)
+                LanguageSelector()
                 Button(onClick = onImportDataset) {
-                    Text("Import dataset")
+                    Text(strings.importDataset)
                 }
             }
         }
@@ -103,6 +120,20 @@ private fun LoadedDatasetApp(
     var radiusInitializedForDataset by remember { mutableStateOf<String?>(null) }
     var uiError by remember { mutableStateOf<String?>(null) }
     var searchProviders by remember { mutableStateOf<List<ExternalSearchProvider>>(emptyList()) }
+    val strings = LocalUiStrings.current
+    val uiLanguage = LocalUiLanguage.current
+    var settlementNameEntries by remember(runtime.repository) { mutableStateOf<List<SettlementSearchEntry>>(emptyList()) }
+
+    LaunchedEffect(runtime.repository) {
+        settlementNameEntries = runCatching { runtime.repository.settlementSearchEntries() }.getOrDefault(emptyList())
+    }
+
+    val settlementDisplayNames = remember(settlementNameEntries, uiLanguage) {
+        SettlementDisplayNameResolver.resolve(settlementNameEntries, uiLanguage.code)
+    }
+    val settlementDisplayName: (Settlement) -> String = { settlement ->
+        settlementDisplayNames[settlement.id] ?: settlement.name
+    }
 
     LaunchedEffect(analysisController) {
         radiusInitializedForDataset = null
@@ -125,7 +156,7 @@ private fun LoadedDatasetApp(
         val info = analysisState.datasetInfo ?: return@LaunchedEffect
         runCatching { externalSearchProviders.providersFor(info.countryCode) }
             .onSuccess { searchProviders = it }
-            .onFailure { uiError = "Could not load external search providers: ${it.message ?: it}" }
+            .onFailure { uiError = strings.externalProvidersLoadFailed(it.message ?: it.toString()) }
     }
 
     val datasetInfo = analysisState.datasetInfo
@@ -139,8 +170,8 @@ private fun LoadedDatasetApp(
     val radiusError =
         when {
             radiusInput is OptionalRadiusInput.Unset -> null
-            center == null -> "Select a center settlement before setting a radius."
-            radiusInput is OptionalRadiusInput.Invalid -> "Radius must be zero or a positive number."
+            center == null -> strings.radiusRequiresCenter
+            radiusInput is OptionalRadiusInput.Invalid -> strings.radiusInvalid
             else -> null
         }
     val request =
@@ -149,7 +180,7 @@ private fun LoadedDatasetApp(
             radiusKm = (radiusInput as? OptionalRadiusInput.Value)?.kilometers,
             conditions = conditions,
         )
-    val summary = FilterSummaryBuilder.build(request, definitionMap)
+    val summary = FilterSummaryBuilder.build(request, definitionMap, strings.filterSummaryText())
     val error = uiError ?: analysisState.errorMessage
 
     LaunchedEffect(results.map { it.id }) {
@@ -218,6 +249,7 @@ private fun LoadedDatasetApp(
                 onImportDataset = onImportDataset,
                 externalLinks = runtime.externalLinks,
                 searchProviders = searchProviders,
+                settlementDisplayName = settlementDisplayName,
             )
         }
 
@@ -264,13 +296,14 @@ private fun LoadedDatasetApp(
                 onImportDataset = onImportDataset,
                 externalLinks = runtime.externalLinks,
                 searchProviders = searchProviders,
+                settlementDisplayName = settlementDisplayName,
                 mapContent = { mapModifier, onSettlementActivated, onMapLocationActivated ->
                     RuntimeMapPanel(
                         modifier = mapModifier,
                         datasetInfo = datasetInfo,
                         mapPackage = runtime.mapPackage,
-                        results = results,
-                        selected = selected?.settlement,
+                        results = results.map { it.copy(name = settlementDisplayName(it)) },
+                        selected = selected?.settlement?.let { it.copy(name = settlementDisplayName(it)) },
                         platformMapSurface = platformMapSurface,
                         onSettlementActivated = onSettlementActivated,
                         onMapLocationActivated = onMapLocationActivated,
@@ -284,8 +317,8 @@ private fun LoadedDatasetApp(
                     modifier = Modifier.weight(1f).fillMaxHeight(),
                     datasetInfo = datasetInfo,
                     mapPackage = runtime.mapPackage,
-                    results = results,
-                    selected = selected?.settlement,
+                    results = results.map { it.copy(name = settlementDisplayName(it)) },
+                    selected = selected?.settlement?.let { it.copy(name = settlementDisplayName(it)) },
                     platformMapSurface = platformMapSurface,
                 )
             }
@@ -293,8 +326,8 @@ private fun LoadedDatasetApp(
             var page by remember { mutableStateOf(0) }
             Column(Modifier.fillMaxSize()) {
                 PrimaryTabRow(selectedTabIndex = page) {
-                    Tab(selected = page == 0, onClick = { page = 0 }, text = { Text("Search") })
-                    Tab(selected = page == 1, onClick = { page = 1 }, text = { Text("Map") })
+                    Tab(selected = page == 0, onClick = { page = 0 }, text = { Text(strings.searchTab) })
+                    Tab(selected = page == 1, onClick = { page = 1 }, text = { Text(strings.mapTab) })
                 }
                 if (page == 0) {
                     searchPane(Modifier.fillMaxSize())
@@ -303,8 +336,8 @@ private fun LoadedDatasetApp(
                         modifier = Modifier.fillMaxSize(),
                         datasetInfo = datasetInfo,
                         mapPackage = runtime.mapPackage,
-                        results = results,
-                        selected = selected?.settlement,
+                        results = results.map { it.copy(name = settlementDisplayName(it)) },
+                        selected = selected?.settlement?.let { it.copy(name = settlementDisplayName(it)) },
                         platformMapSurface = platformMapSurface,
                     )
                 }

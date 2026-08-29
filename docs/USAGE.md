@@ -210,3 +210,14 @@ A data-only package is valid but has no PMTiles artifact. Rebuild without `--ski
 ### A requested filter excludes all settlements
 
 A settlement without that metric value does not satisfy the filter. Check the selected settlement details or source-data coverage; missing is intentionally not treated as zero.
+
+## UI language
+
+The application starts in Russian. Use the language control in the application header to switch between `Русский` and `English` for the current application session. The selected language survives ordinary Compose state recreation, but it is not yet stored in the application settings database across a complete application restart.
+
+The language switch changes OsmapDigger-owned controls, labels, status messages, deterministic filter summaries, and map fallback text. Names and descriptions stored inside a dataset are shown in the form supplied by that dataset.
+
+
+### Selected settlement presentation
+
+The ranked result currently selected from either the list or the map is highlighted in the results list. The lower Desktop summary places active criteria in two balanced rows. With Russian UI, current built-in metric categories use Russian presentation labels; unknown future categories retain their dataset-provided titles. Settlement names use a matching persisted language alias when available (`ru`/`en`) and otherwise fall back to the canonical dataset name.

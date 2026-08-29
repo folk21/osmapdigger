@@ -20,6 +20,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -95,7 +96,7 @@ class AnalysisWorkspaceControllerTest {
     }
 
     @Test
-    fun preferenceOverrideChangePersistsAndRecalculatesWithEnabledPreferencesOnly() = runTest {
+    fun disablingLastPreferencePersistsOverrideWithoutUnboundedAnalysis() = runTest {
         val repository = FakeRepository(candidates = emptyList())
         val preferences = FakePreferencesRepository(null)
         val controller = AnalysisWorkspaceController(repository, preferences, this, debounceMillis = 0)
@@ -115,8 +116,8 @@ class AnalysisWorkspaceControllerTest {
         )
         advanceUntilIdle()
 
-        assertEquals(1, repository.analysisCalls)
-        assertEquals(emptySet(), repository.lastScoringMetricIds)
+        assertEquals(0, repository.analysisCalls)
+        assertTrue(controller.state.value.rankedResults.isEmpty())
         assertEquals(9, controller.state.value.effectivePreferences.single().preference.weight)
         assertFalse(controller.state.value.effectivePreferences.single().enabled)
         assertEquals(9, preferences.saved.last().preferenceOverrides.single().weight)
@@ -209,8 +210,10 @@ class AnalysisWorkspaceControllerTest {
 
         controller.updateConditions(listOf(SearchCondition("hard", maxValue = 5.0)))
         advanceTimeBy(250)
+        runCurrent()
         controller.updateConditions(listOf(SearchCondition("hard", maxValue = 2.0)))
         advanceTimeBy(250)
+        runCurrent()
         assertEquals(listOf("new"), controller.state.value.rankedResults.map { it.settlement.id })
 
         advanceTimeBy(750)

@@ -12,16 +12,6 @@ coverage_radii_km = [1.0, 3.0]
 selectors = [[{ tag = "natural", values = ["wood"] }], [{ tag = "landuse", values = ["forest"] }]]
 
 [[categories]]
-id = "water"
-title = "Water"
-group = "Nature"
-default_filter = true
-distance = true
-preferred_direction = "lower"
-coverage_radii_km = [1.0, 3.0]
-selectors = [[{ tag = "natural", values = ["water"] }], [{ tag = "landuse", values = ["reservoir", "basin"] }], [{ tag = "waterway", values = ["riverbank"] }]]
-
-[[categories]]
 id = "river_stream"
 title = "River or stream"
 group = "Nature"

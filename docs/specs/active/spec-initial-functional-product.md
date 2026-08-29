@@ -219,7 +219,7 @@ Exercises: R1, R3, R6, R16.
 
 ### S3 — transparent real-estate search
 
-A user chooses a city as center, sets radius 50 km, forest 0–2 km, water 0–5 km, railway station <= 20 km, farmyard >= 5 km, then reads the generated sentence describing that query and runs it locally.
+A user chooses a city as center, sets radius 50 km, forest 0–2 km, beach 0–5 km, railway station <= 20 km, farmyard >= 5 km, then reads the generated sentence describing that query and runs it locally.
 
 Exercises: R5, R9, R10, R11, R12.
 

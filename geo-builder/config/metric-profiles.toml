@@ -7,7 +7,7 @@ categories = ["*"]
 [profiles.core10]
 categories = [
     "forest",
-    "water",
+    "beach",
     "industrial",
     "landfill",
     "major_road",

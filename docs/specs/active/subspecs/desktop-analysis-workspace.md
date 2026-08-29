@@ -474,7 +474,7 @@ Exercises: DA-R1, DA-R2, DA-R4, DA-R5, DA-R6, DA-R7, DA-R11, DA-R12.
 ### DA-S2 — combine hard constraints and preferences
 
 A user requires settlements to be within 50 km of a selected center and requires a risk-related metric
-to satisfy a hard minimum distance. Forest and water proximity are strong preferences while medical
+to satisfy a hard minimum distance. Forest and beach proximity are strong preferences while medical
 access has a smaller weight.
 
 A settlement violating a required condition is absent. Remaining settlements are ranked by preference
@@ -666,3 +666,8 @@ Suggested implementation order:
 
 
 Implementation note: normal Intel macOS ranked-marker selection still uses a practical screen-space hit tolerance. **Pick center on map** does not depend on marker hit testing: it reports the clicked map coordinate and resolves the nearest dataset settlement in shared Kotlin.
+
+
+### Presentation refinements
+
+The selected ranked result must be visually distinct in the left result list whether selection originates from the list or the map. The lower summary should arrange active criteria in two balanced rows rather than one long row. Settlement display names should prefer persisted aliases matching the selected UI language and fall back to the canonical name when unavailable.

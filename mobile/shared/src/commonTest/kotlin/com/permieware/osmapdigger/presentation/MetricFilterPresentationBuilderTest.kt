@@ -48,6 +48,30 @@ class MetricFilterPresentationBuilderTest {
         assertEquals("items/km²", presentation.fieldUnit)
     }
 
+    @Test
+    fun acceptsLocalizedGenericLabelsWithoutMetricIdBranches() {
+        val text =
+            MetricFilterPresentationText(
+                minDistance = "Мин. расстояние",
+                maxDistance = "Макс. расстояние",
+                minNumber = "Мин. количество",
+                maxNumber = "Макс. количество",
+                minCoverage = "Мин. покрытие",
+                maxCoverage = "Макс. покрытие",
+                minValue = "Мин. значение",
+                maxValue = "Макс. значение",
+                nearestMappedFeature = { suffix -> "До ближайшего объекта$suffix" },
+                mappedFeaturesInFixedRadius = "Количество объектов в радиусе",
+                mappedAreaCoverage = { suffix -> "Покрытие площади$suffix" },
+            )
+
+        val presentation = MetricFilterPresentationBuilder.build(definition("distance", "km"), text)
+
+        assertEquals("Мин. расстояние", presentation.minLabel)
+        assertEquals("Макс. расстояние", presentation.maxLabel)
+        assertTrue(presentation.chooserDescription.startsWith("До ближайшего объекта"))
+    }
+
     private fun definition(measureType: String, unit: String) =
         MetricDefinition(
             id = "railway_station.example",

@@ -58,7 +58,9 @@ The current profiles are:
 - `full` — all configured categories, used by the small Andorra integration dataset;
 - `core10` — ten high-value nature/risk/transport/infrastructure categories, used by Belarus to keep country-scale generation practical.
 
-`core10` currently includes forest, water, industrial areas, landfill, major roads, railway stations, bus stops, schools, medical facilities, and supermarkets. Profile category IDs are validated against `metrics.toml` before expensive PBF processing starts.
+`core10` currently includes forest, beach, industrial areas, landfill, major roads, railway stations, bus stops, schools, medical facilities, and supermarkets. Profile category IDs are validated against `metrics.toml` before expensive PBF processing starts.
+
+Beach is generated in `core10` but is not pre-added as a Required hard filter. It remains available through `Add filter`, while the `balanced-living` preference profile can enable `beach.distance_km` independently for ranking.
 
 ## Preference default profiles
 
@@ -96,7 +98,7 @@ Provider customization currently has no dedicated settings screen. Advanced/manu
 
 `metrics.toml` begins with shared settings such as `settlement_places`. Each `[[categories]]` block defines one conceptual OSM feature category.
 
-Example concepts represented by current configuration include forest, water, farmyard, landfill, railway station, school, medical facility, supermarket, protected area, and many additional non-default categories.
+Example concepts represented by current configuration include forest, beach, river/stream, farmyard, landfill, railway station, school, medical facility, supermarket, protected area, and many additional non-default categories.
 
 ### Selector alternatives
 

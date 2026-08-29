@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -26,14 +27,17 @@ import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchUrlBuilder
 import com.permieware.osmapdigger.preferences.EffectiveMetricPreference
 import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
+import com.permieware.osmapdigger.presentation.UiStrings
 import com.permieware.osmapdigger.presentation.DesktopWorkspaceLayoutPolicy
 import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
 import com.permieware.osmapdigger.presentation.SettlementCriteriaSummaryBuilder
+import com.permieware.osmapdigger.presentation.TwoRowLayout
 import com.permieware.osmapdigger.runtime.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
+import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
 import com.permieware.osmapdigger.presentation.MetricFilterPresentationBuilder
 
 /** Map-first wide Desktop workspace for required constraints, preferences, and ranked results. */
@@ -66,6 +70,7 @@ internal fun DesktopAnalysisWorkspace(
     onImportDataset: () -> Unit,
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
+    settlementDisplayName: (Settlement) -> String = { it.name },
     mapContent: @Composable (Modifier, (String) -> Unit, ((GeoPoint) -> Unit)?) -> Unit,
 ) {
     var filterPickerOpen by remember { mutableStateOf(false) }
@@ -158,6 +163,7 @@ internal fun DesktopAnalysisWorkspace(
                         mapCenterPickerActive = false
                         filterPickerOpen = true
                     },
+                    settlementDisplayName = settlementDisplayName,
                 )
 
                 if (filterPickerOpen) {
@@ -196,15 +202,15 @@ internal fun DesktopAnalysisWorkspace(
 
             BoxWithConstraints(Modifier.weight(1f).fillMaxHeight()) {
                 val dividerHeight = 1.dp
+                // Keep the Intel macOS JCEF host rectangle stable while navigating results.
+                // A large dynamic SwingPanel resize can leave the native browser window painting
+                // into the newly allocated Compose lower pane. Reserving the same lower area in
+                // both selected and unselected states avoids that platform-specific resize path.
                 val lowerPaneHeight =
-                    if (selected == null) {
-                        76.dp
-                    } else {
-                        maxHeight / (
-                            DesktopWorkspaceLayoutPolicy.MAP_HEIGHT_WEIGHT +
-                                DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT
-                        )
-                    }
+                    maxHeight / (
+                        DesktopWorkspaceLayoutPolicy.MAP_HEIGHT_WEIGHT +
+                            DesktopWorkspaceLayoutPolicy.DETAILS_HEIGHT_WEIGHT
+                    )
                 val mapHeight = (maxHeight - lowerPaneHeight - dividerHeight).coerceAtLeast(0.dp)
 
                 Column(Modifier.fillMaxSize()) {
@@ -236,6 +242,7 @@ internal fun DesktopAnalysisWorkspace(
                                     onDetails = { settlementPaneMode = DesktopSettlementPaneMode.DETAILS },
                                     onExternalSearch = { settlementPaneMode = DesktopSettlementPaneMode.EXTERNAL_SEARCH },
                                     onClose = onCloseSelected,
+                                    settlementDisplayName = settlementDisplayName,
                                 )
                             DesktopSettlementPaneMode.DETAILS ->
                                 SettlementDetailedInfoPanel(
@@ -244,6 +251,7 @@ internal fun DesktopAnalysisWorkspace(
                                     score = selectedScore,
                                     definitions = definitionMap,
                                     onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
+                                    settlementDisplayName = settlementDisplayName,
                                 )
                             DesktopSettlementPaneMode.EXTERNAL_SEARCH ->
                                 SettlementExternalSearchPanel(
@@ -253,6 +261,7 @@ internal fun DesktopAnalysisWorkspace(
                                     externalLinks = externalLinks,
                                     searchProviders = searchProviders,
                                     onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
+                                    settlementDisplayName = settlementDisplayName,
                                 )
                         }
                     }
@@ -292,7 +301,9 @@ private fun DesktopAnalysisSidebar(
     onSelect: (Settlement) -> Unit,
     onImportDataset: () -> Unit,
     onAddFilterRequested: () -> Unit,
+    settlementDisplayName: (Settlement) -> String,
 ) {
+    val strings = LocalUiStrings.current
     val listState = rememberLazyListState()
     LaunchedEffect(selectedId) {
         val resultIndex = rankedResults.indexOfFirst { it.settlement.id == selectedId }
@@ -315,9 +326,9 @@ private fun DesktopAnalysisSidebar(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text("OsmapDigger", style = MaterialTheme.typography.headlineSmall)
-                    Text(datasetInfo?.displayName ?: "Loading dataset…")
+                    Text(datasetInfo?.displayName ?: strings.loadingDataset)
                 }
-                TextButton(onClick = onImportDataset) { Text("Change") }
+                Row { LanguageSelector(); TextButton(onClick = onImportDataset) { Text(strings.changeDataset) } }
             }
         }
 
@@ -332,6 +343,7 @@ private fun DesktopAnalysisSidebar(
                 radiusText = radiusText,
                 onRadiusChanged = onRadiusChanged,
                 radiusError = radiusError,
+                settlementDisplayName = settlementDisplayName,
             )
         }
 
@@ -340,7 +352,7 @@ private fun DesktopAnalysisSidebar(
                 definitions = definitions,
                 conditions = conditions,
                 onConditionsChanged = onConditionsChanged,
-                title = "Required",
+                title = strings.required,
                 onAddFilterRequested = onAddFilterRequested,
             )
         }
@@ -375,7 +387,7 @@ private fun DesktopAnalysisSidebar(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Ranked results", style = MaterialTheme.typography.titleMedium)
+                Text(strings.rankedResults, style = MaterialTheme.typography.titleMedium)
                 Text(rankedResults.size.toString(), style = MaterialTheme.typography.labelLarge)
             }
         }
@@ -386,6 +398,7 @@ private fun DesktopAnalysisSidebar(
                 result = result,
                 selected = result.settlement.id == selectedId,
                 onClick = { onSelect(result.settlement) },
+                displayName = settlementDisplayName(result.settlement),
             )
         }
     }
@@ -399,6 +412,7 @@ private fun DesktopFilterPicker(
     onAdd: (MetricDefinition) -> Unit,
     onClose: () -> Unit,
 ) {
+    val strings = LocalUiStrings.current
     val activeIds = remember(conditions) { conditions.mapTo(hashSetOf()) { it.metricId } }
     val available = remember(definitions, activeIds) {
         definitions.filterNot { it.id in activeIds }
@@ -419,19 +433,19 @@ private fun DesktopFilterPicker(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("Add required filter", style = MaterialTheme.typography.headlineSmall)
+                    Text(strings.addRequiredFilter, style = MaterialTheme.typography.headlineSmall)
                     Text(
-                        "Choose a metric to add as a hard eligibility constraint.",
+                        strings.chooseRequiredMetric,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                TextButton(onClick = onClose) { Text("Close") }
+                TextButton(onClick = onClose) { Text(strings.close) }
             }
 
             HorizontalDivider()
 
             if (available.isEmpty()) {
-                Text("All available metrics are already used as required filters.")
+                Text(strings.allRequiredMetricsUsed)
             } else {
                 LazyColumn(
                     Modifier.fillMaxSize(),
@@ -442,7 +456,7 @@ private fun DesktopFilterPicker(
                             onClick = { onAdd(definition) },
                             modifier = Modifier.fillMaxWidth(),
                         ) {
-                            val presentation = MetricFilterPresentationBuilder.build(definition)
+                            val presentation = MetricFilterPresentationBuilder.build(definition, strings.metricFilterText())
                             Column(Modifier.padding(12.dp)) {
                                 Text(presentation.title, style = MaterialTheme.typography.titleSmall)
                                 Text(
@@ -472,16 +486,17 @@ private fun PreferencesSection(
     onThresholdsChanged: (String, Double, Double) -> Unit,
     onReset: (String) -> Unit,
 ) {
+    val strings = LocalUiStrings.current
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     val overriddenIds = remember(preferenceOverrides) { preferenceOverrides.mapTo(hashSetOf()) { it.metricId } }
     var expandedMetricId by remember { mutableStateOf<String?>(null) }
 
     Card {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text("Preferences", style = MaterialTheme.typography.titleSmall)
+            Text(strings.preferences, style = MaterialTheme.typography.titleSmall)
             if (effectivePreferences.isEmpty()) {
                 Text(
-                    "This dataset has no preference defaults. Required constraints remain available.",
+                    strings.noPreferenceDefaults,
                     style = MaterialTheme.typography.bodySmall,
                 )
             }
@@ -522,6 +537,7 @@ private fun PreferenceRow(
     onThresholdsChanged: (Double, Double) -> Unit,
     onReset: () -> Unit,
 ) {
+    val strings = LocalUiStrings.current
     val preference = effective.preference
     var targetText by remember(effective.metricId, preference.targetValue) {
         mutableStateOf(preference.targetValue.toString())
@@ -556,7 +572,7 @@ private fun PreferenceRow(
             ) {
                 Text(title, style = MaterialTheme.typography.bodyMedium)
                 Text(
-                    preferenceTargetSummary(preference.direction, preference.targetValue, preference.limitValue, unit),
+                    preferenceTargetSummary(preference.direction, preference.targetValue, preference.limitValue, unit, strings),
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
@@ -583,7 +599,7 @@ private fun PreferenceRow(
                                 onThresholdsChanged(parsedTarget!!, parsedLimit!!)
                             }
                         },
-                        label = { Text(targetLabel(preference.direction)) },
+                        label = { Text(targetLabel(preference.direction, strings)) },
                         suffix = { if (unit.isNotBlank()) Text(unit) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
@@ -599,7 +615,7 @@ private fun PreferenceRow(
                                 onThresholdsChanged(parsedTarget!!, parsedLimit!!)
                             }
                         },
-                        label = { Text(limitLabel(preference.direction)) },
+                        label = { Text(limitLabel(preference.direction, strings)) },
                         suffix = { if (unit.isNotBlank()) Text(unit) },
                         modifier = Modifier.weight(1f),
                         singleLine = true,
@@ -608,13 +624,13 @@ private fun PreferenceRow(
                 }
                 if (!thresholdsValid) {
                     Text(
-                        thresholdError(preference.direction),
+                        thresholdError(preference.direction, strings),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
 
-                Text("Weight ${preference.weight}", style = MaterialTheme.typography.labelMedium)
+                Text(strings.weight(preference.weight), style = MaterialTheme.typography.labelMedium)
                 Slider(
                     value = preference.weight.toFloat(),
                     onValueChange = { onWeightChanged(it.roundToInt().coerceIn(1, 10)) },
@@ -623,7 +639,7 @@ private fun PreferenceRow(
                 )
 
                 if (overridden) {
-                    TextButton(onClick = onReset) { Text("Reset to dataset default") }
+                    TextButton(onClick = onReset) { Text(strings.resetDatasetDefault) }
                 }
             }
         }
@@ -636,10 +652,16 @@ private fun RankedSettlementCard(
     result: ScoredSettlement,
     selected: Boolean,
     onClick: () -> Unit,
+    displayName: String,
 ) {
+    val strings = LocalUiStrings.current
     OutlinedCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.outlinedCardColors(
+            containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+        ),
+        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
     ) {
         Row(
             modifier = Modifier.padding(10.dp),
@@ -653,25 +675,25 @@ private fun RankedSettlementCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(result.settlement.name, style = MaterialTheme.typography.titleSmall)
-                    Text(scoreLabel(result.score), style = MaterialTheme.typography.titleSmall)
+                    Text(displayName, style = MaterialTheme.typography.titleSmall)
+                    Text(scoreLabel(result.score, strings), style = MaterialTheme.typography.titleSmall)
                 }
                 val context =
                     listOfNotNull(
                         result.settlement.placeType,
-                        result.settlement.population?.let { "population $it" },
+                        result.settlement.population?.let(strings.population),
                     ).joinToString(" · ")
                 if (context.isNotBlank()) {
                     Text(context, style = MaterialTheme.typography.bodySmall)
                 }
                 if (result.score.coverage < 99.5) {
                     Text(
-                        "Data coverage ${result.score.coverage.roundToInt()}%",
+                        strings.dataCoverage(result.score.coverage.roundToInt()),
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
                 if (selected) {
-                    Text("Selected", style = MaterialTheme.typography.labelSmall)
+                    Text(strings.selected, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -684,6 +706,7 @@ private fun ResultsStatusPanel(
     resultCount: Int,
     running: Boolean,
 ) {
+    val strings = LocalUiStrings.current
     Surface(modifier) {
         Row(
             Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -691,9 +714,9 @@ private fun ResultsStatusPanel(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text("Search results", style = MaterialTheme.typography.labelLarge)
+                Text(strings.searchResults, style = MaterialTheme.typography.labelLarge)
                 Text(
-                    if (resultCount == 1) "1 settlement found" else "$resultCount settlements found",
+                    strings.settlementsFound(resultCount),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
@@ -703,7 +726,7 @@ private fun ResultsStatusPanel(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
-                    Text("Updating…", style = MaterialTheme.typography.bodySmall)
+                    Text(strings.updating.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -730,7 +753,10 @@ private fun SettlementSummaryPanel(
     onDetails: () -> Unit,
     onExternalSearch: () -> Unit,
     onClose: () -> Unit,
+    settlementDisplayName: (Settlement) -> String,
 ) {
+    val strings = LocalUiStrings.current
+    val language = LocalUiLanguage.current
     Card(modifier) {
         Column(
             Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 10.dp),
@@ -741,20 +767,20 @@ private fun SettlementSummaryPanel(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(details.settlement.name, style = MaterialTheme.typography.titleLarge)
+                Text(settlementDisplayName(details.settlement), style = MaterialTheme.typography.titleLarge)
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onDetails) { Text("Details") }
+                    TextButton(onClick = onDetails) { Text(strings.details) }
                     if (hasExternalSearch) {
-                        TextButton(onClick = onExternalSearch) { Text("External search") }
+                        TextButton(onClick = onExternalSearch) { Text(strings.externalSearch) }
                     }
-                    TextButton(onClick = onClose) { Text("Close") }
+                    TextButton(onClick = onClose) { Text(strings.close) }
                 }
             }
 
             val context =
                 listOfNotNull(
                     details.settlement.placeType,
-                    details.settlement.population?.let { "population $it" },
+                    details.settlement.population?.let(strings.population),
                 ).joinToString(" · ")
             val coordinates =
                 "${NumberFormatter.compact(details.settlement.location.latitude)}, " +
@@ -766,44 +792,49 @@ private fun SettlementSummaryPanel(
 
             Text(
                 buildString {
-                    append(if (resultCount == 1) "1 settlement found" else "$resultCount settlements found")
-                    if (running) append(" · updating…")
+                    append(strings.settlementsFound(resultCount))
+                    if (running) append(" · ${strings.updating}")
                 },
                 style = MaterialTheme.typography.labelMedium,
             )
 
             score?.let { settlementScore ->
                 Text(
-                    "${scoreLabel(settlementScore)} · coverage ${settlementScore.coverage.roundToInt()}%",
+                    strings.scoreAndCoverage(settlementScore.value?.roundToInt(), settlementScore.coverage.roundToInt()),
                     style = MaterialTheme.typography.titleSmall,
                 )
             }
 
-            val criteriaSummary = remember(details, definitions, conditions, effectivePreferences) {
+            val criteriaSummary = remember(details, definitions, conditions, effectivePreferences, language) {
                 SettlementCriteriaSummaryBuilder.build(
                     details = details,
                     definitions = definitions,
                     conditions = conditions,
                     preferences = effectivePreferences,
-                )
+                ).map { item ->
+                    val definition = definitions[item.metricId]
+                    if (definition == null) item else item.copy(title = MetricDisplayNameResolver.resolve(definition, language))
+                }
             }
             if (criteriaSummary.isNotEmpty()) {
-                Text("Active criteria", style = MaterialTheme.typography.labelMedium)
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(18.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                Text(strings.activeCriteria, style = MaterialTheme.typography.labelMedium)
+                val rows = TwoRowLayout.split(criteriaSummary)
+                Column(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    criteriaSummary.forEach { metric ->
-                        Column(Modifier.widthIn(min = 132.dp, max = 220.dp)) {
-                            Text(metric.title, style = MaterialTheme.typography.labelSmall, maxLines = 1)
-                            Text(
-                                formatCompactMetric(metric.value, metric.unit),
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                            )
+                    rows.forEach { rowItems ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
+                            rowItems.forEach { metric ->
+                                Column(Modifier.width(180.dp)) {
+                                    Text(metric.title, style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                    Text(
+                                        formatCompactMetric(metric.value, metric.unit, strings),
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        maxLines = 1,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -819,7 +850,9 @@ private fun SettlementDetailedInfoPanel(
     score: SettlementScore?,
     definitions: Map<String, MetricDefinition>,
     onBack: () -> Unit,
+    settlementDisplayName: (Settlement) -> String,
 ) {
+    val strings = LocalUiStrings.current
     Card(modifier) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -830,14 +863,14 @@ private fun SettlementDetailedInfoPanel(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text(details.settlement.name, style = MaterialTheme.typography.headlineSmall)
-                TextButton(onClick = onBack) { Text("Summary") }
+                Text(settlementDisplayName(details.settlement), style = MaterialTheme.typography.headlineSmall)
+                TextButton(onClick = onBack) { Text(strings.summary) }
             }
 
             val context =
                 listOfNotNull(
                     details.settlement.placeType,
-                    details.settlement.population?.let { "population $it" },
+                    details.settlement.population?.let(strings.population),
                 ).joinToString(" · ")
             if (context.isNotBlank()) {
                 Text(context, style = MaterialTheme.typography.bodySmall)
@@ -848,9 +881,9 @@ private fun SettlementDetailedInfoPanel(
             )
 
             score?.let { settlementScore ->
-                Text("Score", style = MaterialTheme.typography.labelLarge)
+                Text(strings.score, style = MaterialTheme.typography.labelLarge)
                 Text(
-                    "${scoreLabel(settlementScore)} · coverage ${settlementScore.coverage.roundToInt()}%",
+                    strings.scoreAndCoverage(settlementScore.value?.roundToInt(), settlementScore.coverage.roundToInt()),
                     style = MaterialTheme.typography.titleMedium,
                 )
                 val explanation = remember(settlementScore, definitions) {
@@ -858,19 +891,19 @@ private fun SettlementDetailedInfoPanel(
                 }
                 explanation.strongest?.let { strongest ->
                     Text(
-                        "Strongest: ${contributionLabel(strongest.title, strongest.unit, strongest.contribution.rawValue, strongest.contribution.scoreContribution)}",
+                        "${strings.strongest}: ${contributionLabel(strongest.title, strongest.unit, strongest.contribution.rawValue, strongest.contribution.scoreContribution, strings)}",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
                 explanation.weakest?.let { weakest ->
                     Text(
-                        "Weakest: ${contributionLabel(weakest.title, weakest.unit, weakest.contribution.rawValue, weakest.contribution.scoreContribution)}",
+                        "${strings.weakest}: ${contributionLabel(weakest.title, weakest.unit, weakest.contribution.rawValue, weakest.contribution.scoreContribution, strings)}",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
                 if (explanation.unknown.isNotEmpty()) {
                     Text(
-                        "Unknown: ${explanation.unknown.joinToString { it.title }}",
+                        "${strings.unknown}: ${explanation.unknown.joinToString { it.title }}",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -899,7 +932,9 @@ private fun SettlementExternalSearchPanel(
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
     onBack: () -> Unit,
+    settlementDisplayName: (Settlement) -> String,
 ) {
+    val strings = LocalUiStrings.current
     Card(modifier) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -911,14 +946,14 @@ private fun SettlementExternalSearchPanel(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Column(Modifier.weight(1f)) {
-                    Text("External search", style = MaterialTheme.typography.headlineSmall)
-                    Text(details.settlement.name, style = MaterialTheme.typography.bodyMedium)
+                    Text(strings.externalSearch, style = MaterialTheme.typography.headlineSmall)
+                    Text(settlementDisplayName(details.settlement), style = MaterialTheme.typography.bodyMedium)
                 }
-                TextButton(onClick = onBack) { Text("Summary") }
+                TextButton(onClick = onBack) { Text(strings.summary) }
             }
 
             if (searchProviders.isEmpty()) {
-                Text("No external search providers are configured for this dataset.")
+                Text(strings.noExternalProviders)
             } else {
                 searchProviders.forEach { provider ->
                     OutlinedButton(
@@ -941,26 +976,27 @@ private fun SettlementExternalSearchPanel(
     }
 }
 
-private fun formatCompactMetric(value: Double?, unit: String): String {
-    val formatted = value?.let(NumberFormatter::compact) ?: "unknown"
+private fun formatCompactMetric(value: Double?, unit: String, strings: UiStrings): String {
+    val formatted = value?.let(NumberFormatter::compact) ?: strings.unknownValue
     return if (value == null || unit.isBlank() || unit == "count") formatted else "$formatted $unit"
 }
 
-private fun scoreLabel(score: SettlementScore): String =
-    score.value?.roundToInt()?.let { "Score $it" } ?: "Score —"
+private fun scoreLabel(score: SettlementScore, strings: UiStrings): String =
+    strings.scoreValue(score.value?.roundToInt())
 
 private fun contributionLabel(
     title: String,
     unit: String,
     rawValue: Double?,
     scoreContribution: Double?,
+    strings: UiStrings,
 ): String {
     val value =
         rawValue?.let {
             val formatted = NumberFormatter.compact(it)
             if (unit.isBlank() || unit == "count") formatted else "$formatted $unit"
-        } ?: "unknown"
-    val points = scoreContribution?.let { "+${NumberFormatter.compact(it)} pts" } ?: "unknown contribution"
+        } ?: strings.unknownValue
+    val points = scoreContribution?.let { strings.points(NumberFormatter.compact(it)) } ?: strings.unknownContribution
     return "$title · $value · $points"
 }
 
@@ -969,14 +1005,15 @@ private fun preferenceTargetSummary(
     target: Double,
     limit: Double,
     unit: String,
+    strings: UiStrings,
 ): String {
     val suffix = unit.takeIf { it.isNotBlank() }?.let { " $it" }.orEmpty()
     return when (direction) {
         PreferredDirection.LOWER ->
-            "best ≤ ${NumberFormatter.compact(target)}$suffix · zero ≥ ${NumberFormatter.compact(limit)}$suffix"
+            strings.bestLowerSummary("${NumberFormatter.compact(target)}$suffix", "${NumberFormatter.compact(limit)}$suffix")
         PreferredDirection.HIGHER ->
-            "best ≥ ${NumberFormatter.compact(target)}$suffix · zero ≤ ${NumberFormatter.compact(limit)}$suffix"
-        PreferredDirection.NEUTRAL -> "not scoreable"
+            strings.bestHigherSummary("${NumberFormatter.compact(target)}$suffix", "${NumberFormatter.compact(limit)}$suffix")
+        PreferredDirection.NEUTRAL -> strings.notScoreable
     }
 }
 
@@ -992,24 +1029,24 @@ private fun validThresholds(
             PreferredDirection.NEUTRAL -> false
         }
 
-private fun targetLabel(direction: PreferredDirection): String =
+private fun targetLabel(direction: PreferredDirection, strings: UiStrings): String =
     when (direction) {
-        PreferredDirection.LOWER -> "Best ≤"
-        PreferredDirection.HIGHER -> "Best ≥"
-        PreferredDirection.NEUTRAL -> "Target"
+        PreferredDirection.LOWER -> strings.bestLower
+        PreferredDirection.HIGHER -> strings.bestHigher
+        PreferredDirection.NEUTRAL -> strings.target
     }
 
-private fun limitLabel(direction: PreferredDirection): String =
+private fun limitLabel(direction: PreferredDirection, strings: UiStrings): String =
     when (direction) {
-        PreferredDirection.LOWER -> "Zero ≥"
-        PreferredDirection.HIGHER -> "Zero ≤"
-        PreferredDirection.NEUTRAL -> "Limit"
+        PreferredDirection.LOWER -> strings.zeroHigher
+        PreferredDirection.HIGHER -> strings.zeroLower
+        PreferredDirection.NEUTRAL -> strings.limit
     }
 
-private fun thresholdError(direction: PreferredDirection): String =
+private fun thresholdError(direction: PreferredDirection, strings: UiStrings): String =
     when (direction) {
-        PreferredDirection.LOWER -> "Best threshold must be lower than zero-contribution threshold."
-        PreferredDirection.HIGHER -> "Best threshold must be higher than zero-contribution threshold."
-        PreferredDirection.NEUTRAL -> "Neutral metrics require an explicit scoreable direction."
+        PreferredDirection.LOWER -> strings.lowerThresholdError
+        PreferredDirection.HIGHER -> strings.higherThresholdError
+        PreferredDirection.NEUTRAL -> strings.neutralThresholdError
     }
 

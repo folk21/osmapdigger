@@ -84,11 +84,12 @@ private fun RenderMapLibrePanel(
     onSettlementActivated: ((String) -> Unit)?,
     onMapLocationActivated: ((GeoPoint) -> Unit)?,
 ) {
+    val strings = LocalUiStrings.current
     if (datasetInfo == null || styleJson == null) {
         Box(modifier.padding(24.dp)) {
             Card {
                 Text(
-                    if (datasetInfo == null) "Loading dataset…" else "This package has no generated map.",
+                    if (datasetInfo == null) strings.loadingMap else strings.noGeneratedMap,
                     modifier = Modifier.padding(16.dp),
                 )
             }
@@ -229,30 +230,30 @@ private fun DesktopMapFallback(
     results: List<Settlement>,
     selected: Settlement?,
 ) {
+    val strings = LocalUiStrings.current
     Box(modifier.padding(24.dp)) {
         Card {
             Column(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text("Map unavailable on this Desktop host", style = MaterialTheme.typography.titleMedium)
+                Text(strings.mapUnavailable, style = MaterialTheme.typography.titleMedium)
                 Text(
-                    "This OS/architecture has no MapLibre Compose native runtime configured by OsmapDigger. " +
-                        "Search, filters, settlement details, and generated dataset data remain available.",
+                    strings.mapUnavailableExplanation,
                 )
                 datasetInfo?.let {
-                    Text("Dataset: ${it.displayName}", style = MaterialTheme.typography.bodySmall)
+                    Text(strings.dataset(it.displayName), style = MaterialTheme.typography.bodySmall)
                 }
-                Text("Results in current search: ${results.size}", style = MaterialTheme.typography.bodySmall)
+                Text(strings.resultsInCurrentSearch(results.size), style = MaterialTheme.typography.bodySmall)
                 selected?.let {
                     Text(
-                        "Selected: ${it.name} (${it.location.latitude}, ${it.location.longitude})",
+                        strings.selectedSettlement(it.name, it.location.latitude, it.location.longitude),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
                 if (styleJson == null) {
                     Text(
-                        "The installed package also has no generated map artifact.",
+                        strings.noGeneratedMapArtifact,
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }

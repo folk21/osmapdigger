@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -46,7 +47,9 @@ internal fun SearchPane(
     onImportDataset: () -> Unit,
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
+    settlementDisplayName: (Settlement) -> String = { it.name },
 ) {
+    val strings = LocalUiStrings.current
     LazyColumn(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -58,9 +61,9 @@ internal fun SearchPane(
             ) {
                 Column {
                     Text("OsmapDigger", style = MaterialTheme.typography.headlineSmall)
-                    Text(datasetInfo?.displayName ?: "Loading dataset…")
+                    Text(datasetInfo?.displayName ?: strings.loadingDataset)
                 }
-                TextButton(onClick = onImportDataset) { Text("Change") }
+                Row { LanguageSelector(); TextButton(onClick = onImportDataset) { Text(strings.changeDataset) } }
             }
         }
 
@@ -80,13 +83,14 @@ internal fun SearchPane(
                 radiusText = radiusText,
                 onRadiusChanged = onRadiusChanged,
                 radiusError = radiusError,
+                settlementDisplayName = settlementDisplayName,
             )
         }
 
         item {
             Card {
                 Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Generated search query", style = MaterialTheme.typography.titleSmall)
+                    Text(strings.generatedSearchQuery, style = MaterialTheme.typography.titleSmall)
                     Text(summary, style = MaterialTheme.typography.bodySmall)
                 }
             }
@@ -98,7 +102,7 @@ internal fun SearchPane(
                 enabled = !running && radiusError == null,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(if (running) "Searching…" else "Search settlements")
+                Text(if (running) strings.searching else strings.searchSettlements)
             }
         }
 
@@ -106,19 +110,24 @@ internal fun SearchPane(
             item { Text(message, color = MaterialTheme.colorScheme.error) }
         }
 
-        item { Text("Found settlements (${results.size})", style = MaterialTheme.typography.titleMedium) }
+        item { Text(strings.foundSettlements(results.size), style = MaterialTheme.typography.titleMedium) }
 
         items(results, key = { it.id }) { settlement ->
+            val isSelected = selected?.settlement?.id == settlement.id
             OutlinedCard(
                 onClick = { onSelect(settlement) },
                 modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.outlinedCardColors(
+                    containerColor = if (isSelected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
+                ),
+                border = if (isSelected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
                 Column(Modifier.padding(12.dp)) {
-                    Text(settlement.name, style = MaterialTheme.typography.titleSmall)
+                    Text(settlementDisplayName(settlement), style = MaterialTheme.typography.titleSmall)
                     val subtitle =
                         listOfNotNull(
                             settlement.placeType,
-                            settlement.population?.let { "population $it" },
+                            settlement.population?.let(strings.population),
                         ).joinToString(" · ")
                     if (subtitle.isNotBlank()) {
                         Text(subtitle, style = MaterialTheme.typography.bodySmall)
@@ -134,6 +143,7 @@ internal fun SearchPane(
                     datasetInfo = datasetInfo,
                     externalLinks = externalLinks,
                     searchProviders = searchProviders,
+                    settlementDisplayName = settlementDisplayName,
                 )
             }
         }
@@ -151,20 +161,23 @@ internal fun CenterSelector(
     radiusText: String,
     onRadiusChanged: (String) -> Unit,
     radiusError: String?,
+    settlementDisplayName: (Settlement) -> String = { it.name },
 ) {
+    val strings = LocalUiStrings.current
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
+    val centerDisplayName = center?.let(settlementDisplayName)
     var suggestions by remember { mutableStateOf<List<SettlementSearchMatch>>(emptyList()) }
 
-    LaunchedEffect(center?.id, center?.name) {
-        if (center != null) {
-            query = center.name
+    LaunchedEffect(center?.id, centerDisplayName) {
+        if (centerDisplayName != null) {
+            query = centerDisplayName
         }
     }
 
     Card {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Search area (optional)", style = MaterialTheme.typography.titleSmall)
+            Text(strings.searchAreaOptional, style = MaterialTheme.typography.titleSmall)
 
             if (center != null) {
                 AssistChip(
@@ -172,7 +185,7 @@ internal fun CenterSelector(
                         query = ""
                         onCenterChanged(null)
                     },
-                    label = { Text("Center: ${center.name} ×") },
+                    label = { Text(strings.center(settlementDisplayName(center))) },
                 )
             }
 
@@ -181,11 +194,11 @@ internal fun CenterSelector(
                 onValueChange = { value ->
                     query = value
                     suggestions = emptyList()
-                    if (center != null && value != center.name) {
+                    if (center != null && value != centerDisplayName) {
                         onCenterChanged(null)
                     }
                 },
-                label = { Text("Center settlement (optional)") },
+                label = { Text(strings.centerSettlementOptional) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
             )
@@ -203,7 +216,7 @@ internal fun CenterSelector(
                             if (exactMatches.size == 1) {
                                 val exact = exactMatches.single().settlement
                                 onCenterChanged(exact)
-                                query = exact.name
+                                query = settlementDisplayName(exact)
                                 suggestions = emptyList()
                             } else {
                                 suggestions = found
@@ -213,7 +226,7 @@ internal fun CenterSelector(
                     enabled = query.isNotBlank(),
                     modifier = Modifier.weight(1f),
                 ) {
-                    Text("Find center")
+                    Text(strings.findCenter)
                 }
 
                 if (onMapPickerToggle != null) {
@@ -222,14 +235,14 @@ internal fun CenterSelector(
                         enabled = mapPickerEnabled || mapPickerActive,
                         modifier = Modifier.weight(1f),
                     ) {
-                        Text(if (mapPickerActive) "Cancel center pick" else "Pick center on map")
+                        Text(if (mapPickerActive) strings.cancelCenterPick else strings.pickCenterOnMap)
                     }
                 }
             }
 
             if (mapPickerActive) {
                 Text(
-                    "Click anywhere on the map. The nearest settlement will become the search center; result selection will not change.",
+                    strings.mapPickHint,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
@@ -240,15 +253,16 @@ internal fun CenterSelector(
                     onClick = {
                         onCenterChanged(match.settlement)
                         suggestions = emptyList()
-                        query = match.settlement.name
+                        query = settlementDisplayName(match.settlement)
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column(Modifier.fillMaxWidth()) {
-                        Text("Use ${match.settlement.name} as center")
+                        val displayName = settlementDisplayName(match.settlement)
+                        Text(strings.useAsCenter(displayName))
                         val details =
                             listOfNotNull(
-                                match.matchedName.takeIf { it != match.settlement.name },
+                                match.matchedName.takeIf { it != displayName },
                                 match.settlement.placeType,
                                 match.kind.name.lowercase().takeIf { match.kind == SettlementMatchKind.FUZZY },
                             ).joinToString(" · ")
@@ -267,15 +281,15 @@ internal fun CenterSelector(
                 OutlinedTextField(
                     value = radiusText,
                     onValueChange = onRadiusChanged,
-                    label = { Text("Radius from center, km (optional)") },
+                    label = { Text(strings.radiusOptional) },
                     modifier = Modifier.weight(1f),
                     singleLine = true,
                     enabled = center != null,
                     isError = radiusError != null,
                     supportingText = {
                         val message = radiusError ?: when {
-                            center == null -> "Select a center settlement first."
-                            radiusText.trim().toDoubleOrNull() == 0.0 -> "0 means no radius limit."
+                            center == null -> strings.selectCenterFirst
+                            radiusText.trim().toDoubleOrNull() == 0.0 -> strings.zeroRadiusHint
                             else -> null
                         }
                         if (message != null) {
@@ -289,7 +303,7 @@ internal fun CenterSelector(
                         enabled = center != null,
                         modifier = Modifier.padding(top = 8.dp),
                     ) {
-                        Text("Clear")
+                        Text(strings.clear)
                     }
                 }
             }
@@ -307,9 +321,11 @@ internal fun DynamicFilters(
     definitions: List<MetricDefinition>,
     conditions: List<SearchCondition>,
     onConditionsChanged: (List<SearchCondition>) -> Unit,
-    title: String = "Filters",
+    title: String? = null,
     onAddFilterRequested: (() -> Unit)? = null,
 ) {
+    val strings = LocalUiStrings.current
+    val resolvedTitle = title ?: strings.filters
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     var menuExpanded by remember { mutableStateOf(false) }
     val activeIds = conditions.mapTo(mutableSetOf()) { it.metricId }
@@ -321,7 +337,7 @@ internal fun DynamicFilters(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
             ) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(resolvedTitle, style = MaterialTheme.typography.titleSmall)
                 Box {
                     TextButton(
                         onClick = {
@@ -332,7 +348,7 @@ internal fun DynamicFilters(
                             }
                         },
                     ) {
-                        Text("Add filter")
+                        Text(strings.addFilter)
                     }
                     if (onAddFilterRequested == null) {
                         DropdownMenu(
@@ -342,7 +358,7 @@ internal fun DynamicFilters(
                             available.forEach { definition ->
                                 DropdownMenuItem(
                                     text = {
-                                        val presentation = MetricFilterPresentationBuilder.build(definition)
+                                        val presentation = MetricFilterPresentationBuilder.build(definition, strings.metricFilterText())
                                         Column {
                                             Text(presentation.title)
                                             Text(
@@ -389,6 +405,7 @@ private fun MetricRangeRow(
     onChange: (SearchCondition) -> Unit,
     onRemove: () -> Unit,
 ) {
+    val strings = LocalUiStrings.current
     var minText by remember(condition.metricId, condition.minValue) {
         mutableStateOf(condition.minValue?.toString() ?: "")
     }
@@ -396,7 +413,7 @@ private fun MetricRangeRow(
         mutableStateOf(condition.maxValue?.toString() ?: "")
     }
 
-    val presentation = remember(definition) { MetricFilterPresentationBuilder.build(definition) }
+    val presentation = remember(definition, strings.language) { MetricFilterPresentationBuilder.build(definition, strings.metricFilterText()) }
 
     Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Row(
@@ -410,7 +427,7 @@ private fun MetricRangeRow(
                     style = MaterialTheme.typography.labelSmall,
                 )
             }
-            TextButton(onClick = onRemove) { Text("Remove") }
+            TextButton(onClick = onRemove) { Text(strings.remove) }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedTextField(
@@ -445,11 +462,13 @@ private fun SettlementDetailsCard(
     datasetInfo: DatasetInfo?,
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
+    settlementDisplayName: (Settlement) -> String = { it.name },
 ) {
+    val strings = LocalUiStrings.current
     Card {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Settlement details", style = MaterialTheme.typography.labelLarge)
-            Text(details.settlement.name, style = MaterialTheme.typography.titleMedium)
+            Text(strings.settlementDetails, style = MaterialTheme.typography.labelLarge)
+            Text(settlementDisplayName(details.settlement), style = MaterialTheme.typography.titleMedium)
             Text(
                 "${details.settlement.location.latitude}, ${details.settlement.location.longitude}",
                 style = MaterialTheme.typography.bodySmall,
@@ -468,7 +487,7 @@ private fun SettlementDetailsCard(
                 }
 
             if (searchProviders.isNotEmpty()) {
-                Text("External property search", style = MaterialTheme.typography.labelLarge)
+                Text(strings.externalPropertySearch, style = MaterialTheme.typography.labelLarge)
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     searchProviders.forEach { provider ->
                         OutlinedButton(

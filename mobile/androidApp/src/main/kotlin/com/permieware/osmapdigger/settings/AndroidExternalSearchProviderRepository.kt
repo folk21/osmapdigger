@@ -67,7 +67,7 @@ class AndroidExternalSearchProviderRepository(
                     provider_id, title, country_code, url_template, enabled, priority
                 ) VALUES (?, ?, ?, ?, 1, ?)
                 """.trimIndent(),
-                arrayOf(
+                arrayOf<Any?>(
                     provider.id,
                     provider.title,
                     provider.countryCode ?: AndroidSettingsDatabase.GLOBAL_COUNTRY_CODE,
