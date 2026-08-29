@@ -11,9 +11,9 @@ This roadmap stays intentionally compact. Detailed requirements for significant 
 
 Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
-Current implementation focus: [`specs/active/subspecs/desktop-analysis-workspace.md`](specs/active/subspecs/desktop-analysis-workspace.md) — map-first Desktop analysis workspace with explainable weighted preference ranking.
+Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, visual shortlisting, persisted notebook snapshots, export/share, and batch external search on top of the existing weighted ranking engine.
 
-Previously implemented Desktop map and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
+Previously implemented Desktop analysis workspace, Desktop map, and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
 
 Acceptance requires a configured workstation to demonstrate:
 
@@ -43,11 +43,11 @@ Acceptance requires a configured workstation to demonstrate:
 
 ## P1 — user workflow
 
-- favorites;
-- notes;
-- saved filters/searches;
-- comparison of multiple settlements;
-- share/export search parameters and settlement summaries.
+Current active work covers shortlist/favorites-style notebook entries, notes, imported settlement candidate lists, batch external search, and portable export/share. Follow-up P1 work remains:
+
+- named saved filters/searches;
+- richer comparison of multiple settlements;
+- reusable named preference profiles.
 
 ## P2 — additional data sources
 

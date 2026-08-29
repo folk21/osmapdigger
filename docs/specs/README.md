@@ -95,9 +95,10 @@ Umbrella:
 
 Current implementation focus:
 
-- [`active/subspecs/desktop-analysis-workspace.md`](active/subspecs/desktop-analysis-workspace.md) — map-first Desktop analysis workspace, explainable weighted preference scoring, ranked results, and map-overlay settlement details.
+- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — visual ranked shortlisting, imported candidate sets, persisted notebook snapshots, export/share, and batch external searches.
 
 Verification-pending completed increments:
 
+- [`active/subspecs/desktop-analysis-workspace.md`](active/subspecs/desktop-analysis-workspace.md) — weighted ranking/map-first implementation complete; strict country-scale scoring and remaining configured acceptance checks are pending.
 - [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — Desktop offline map implementation complete; remaining acceptance verification pending.
 - [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — local search-context persistence implementation complete; remaining cross-platform verification pending.

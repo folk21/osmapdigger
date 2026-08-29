@@ -4,7 +4,7 @@ title: OsmapDigger initial functional product specification
 description: Active umbrella specification for the initial country-agnostic offline product and dataset pipeline.
 document_role: umbrella
 spec_status: active
-current_focus: subspecs/desktop-analysis-workspace.md
+current_focus: subspecs/settlement-shortlist-workflow.md
 ---
 # OsmapDigger initial functional product specification
 
@@ -20,7 +20,9 @@ After acceptance, move stable behavior into owning implementation/architecture d
 
 Current implementation sub-spec:
 
-- [`subspecs/desktop-analysis-workspace.md`](subspecs/desktop-analysis-workspace.md) — map-first Desktop analysis workspace with hard constraints, explainable weighted preferences, ranked results, and map-overlay settlement details.
+- [`subspecs/settlement-shortlist-workflow.md`](subspecs/settlement-shortlist-workflow.md) — visual ranked shortlisting, imported candidate lists, saved notebook snapshots, export/share, and batch external searches.
+
+The implemented [`subspecs/desktop-analysis-workspace.md`](subspecs/desktop-analysis-workspace.md) remains verification-pending while its strict country-scale scored acceptance and remaining configured checks are completed.
 
 Previous implemented sub-specs such as [`subspecs/desktop-map.md`](subspecs/desktop-map.md) and
 [`subspecs/user-preferences.md`](subspecs/user-preferences.md) remain verification-pending until their

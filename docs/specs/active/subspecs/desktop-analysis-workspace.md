@@ -1,23 +1,23 @@
 ---
 type: Specification
 title: Desktop analysis workspace and explainable ranking
-description: Current-focus sub-spec for a map-first Desktop workspace with hard constraints, weighted preferences, deterministic ranking, and non-overlapping settlement details.
+description: Desktop map-first weighted-analysis sub-spec with implementation substantially complete and acceptance verification pending.
 document_role: subspec
-spec_status: active
+spec_status: verification-pending
 parent: ../spec-initial-functional-product.md
 ---
 # Desktop analysis workspace and explainable ranking
 
 ## Status
 
-Active implementation sub-spec.
+Implementation substantially complete; acceptance verification pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-This sub-spec becomes the current implementation focus after the pre-change repository baseline is
-committed and tagged. Existing `desktop-map.md` and `user-preferences.md` sub-specs remain
-verification-pending until their remaining acceptance checks are recorded; changing the coding focus
-does not imply that either previous sub-spec or the umbrella specification is accepted.
+This sub-spec is no longer the current coding focus. The umbrella now points to
+[`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md). Strict country-scale ranked
+analysis acceptance and the remaining configured Desktop/Android checks still must be recorded before
+this sub-spec can be archived; changing the coding focus does not imply acceptance.
 
 ## Goal
 

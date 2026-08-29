@@ -9,6 +9,7 @@ zip -qr "$OUT" osmapdigger \
   -x 'osmapdigger/.idea/*' \
   -x 'osmapdigger/.venv/*' \
   -x 'osmapdigger/**/__pycache__/*' \
+  -x 'osmapdigger/**/osmapdigger_geo_builder.egg-info/*' \
   -x 'osmapdigger/**/.pytest_cache/*' \
   -x 'osmapdigger/**/build/*' \
   -x 'osmapdigger/**/*.log' \
@@ -16,5 +17,8 @@ zip -qr "$OUT" osmapdigger \
   -x 'osmapdigger/data/source/osm/*' \
   -x 'osmapdigger/data/generated/*' \
   -x 'osmapdigger/osmapdigger_files.txt' \
-  -x 'osmapdigger/mobile/.kotlin/*'
+  -x 'osmapdigger/mobile/.kotlin/*' \
+  -x 'osmapdigger/mobile/.gradle/*' \
+  -x 'osmapdigger/mobile/.DS_Store' \
+  -x 'osmapdigger/.DS_Store'
 echo "$OUT"
