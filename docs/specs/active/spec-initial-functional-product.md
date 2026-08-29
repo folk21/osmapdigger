@@ -4,7 +4,7 @@ title: OsmapDigger initial functional product specification
 description: Active umbrella specification for the initial country-agnostic offline product and dataset pipeline.
 document_role: umbrella
 spec_status: active
-current_focus: subspecs/settlement-shortlist-workflow.md
+current_focus: subspecs/kmp-modular-architecture-hardening.md
 ---
 # OsmapDigger initial functional product specification
 
@@ -20,7 +20,11 @@ After acceptance, move stable behavior into owning implementation/architecture d
 
 Current implementation sub-spec:
 
-- [`subspecs/settlement-shortlist-workflow.md`](subspecs/settlement-shortlist-workflow.md) — visual ranked shortlisting, imported candidate lists, saved notebook snapshots, export/share, and batch external searches.
+- [`subspecs/kmp-modular-architecture-hardening.md`](subspecs/kmp-modular-architecture-hardening.md) — incremental KMP dependency cleanup, unified runtime error handling, cross-platform semantic DRY, atomic package installation, and physical module extraction.
+
+Queued active product work:
+
+- [`subspecs/settlement-shortlist-workflow.md`](subspecs/settlement-shortlist-workflow.md) — visual ranked shortlisting, imported candidate lists, saved notebook snapshots, export/share, and batch external searches; implementation resumes after the architecture-hardening gate.
 
 The implemented [`subspecs/desktop-analysis-workspace.md`](subspecs/desktop-analysis-workspace.md) remains verification-pending while its strict country-scale scored acceptance and remaining configured checks are completed.
 

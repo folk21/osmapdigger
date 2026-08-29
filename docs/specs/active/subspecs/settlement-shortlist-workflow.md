@@ -1,7 +1,7 @@
 ---
 type: Specification
 title: Settlement shortlist, import, notebook, and batch actions
-description: Current-focus sub-spec for visually shortlisting ranked settlements, importing explicit candidate lists, saving analysis snapshots, exporting them, and launching batch external searches.
+description: Queued active sub-spec for visually shortlisting ranked settlements, importing explicit candidate lists, saving analysis snapshots, exporting them, and launching batch external searches.
 document_role: subspec
 spec_status: active
 parent: ../spec-initial-functional-product.md
@@ -10,9 +10,11 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Active implementation sub-spec.
+Active product sub-spec; implementation queued after [`kmp-modular-architecture-hardening.md`](kmp-modular-architecture-hardening.md).
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
+
+Architecture hardening is temporarily the current implementation focus so this feature can be added on cleaner module, persistence, and error-handling boundaries. The requirements in this document remain active and are not superseded.
 
 The previously current [`desktop-analysis-workspace.md`](desktop-analysis-workspace.md) implementation is
 substantially complete and remains verification-pending until strict country-scale scoring and the

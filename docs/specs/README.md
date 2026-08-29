@@ -95,7 +95,11 @@ Umbrella:
 
 Current implementation focus:
 
-- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — visual ranked shortlisting, imported candidate sets, persisted notebook snapshots, export/share, and batch external searches.
+- [`active/subspecs/kmp-modular-architecture-hardening.md`](active/subspecs/kmp-modular-architecture-hardening.md) — incremental KMP dependency cleanup, unified error policy, cross-platform semantic DRY, atomic dataset installation, and physical module extraction.
+
+Queued active product sub-spec:
+
+- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — visual ranked shortlisting, imported candidate sets, persisted notebook snapshots, export/share, and batch external searches; implementation resumes after architecture hardening.
 
 Verification-pending completed increments:
 
