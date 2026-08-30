@@ -21,12 +21,12 @@ must happen only between completed, testable feature increments, not in the midd
 Iteration 1 implementation is complete; configured Kotlin validation remains pending in environments where the Gradle distribution/dependencies are unavailable. Logical commonMain ownership is acyclic, workspace orchestration and filter-summary
 presentation have moved to the appropriate owners, dataset/map/external contracts no longer live in a generic runtime
 API file, the unused legacy dataset-manager API is removed, and a network-free architecture check protects the current
-dependency direction. The shortlist workflow is now the current product implementation focus.
+dependency direction. The Favorites/import/notebook workflow is now the current product implementation focus.
 
 The remaining work must continue as independently reviewable PATCH iterations. Each iteration must leave the repository
 in a coherent, testable state; this specification deliberately rejects a single repository-wide rewrite.
 
-The first shortlist feature checkpoint is complete at the candidate-source core boundary. Hardening iterations 2 and 3 are now also implemented: selected meaningful runtime paths use the shared typed operational-failure contract, settings schema/migrations have one shared semantic owner, package metadata/layout parsing is shared, and Desktop/Android replacement installation is staging-based and failure-safe. Configured Gradle validation remains pending in environments without an available Gradle distribution. The imported-list workflow remains the current product implementation focus.
+The first Favorites/import/notebook feature checkpoint is complete at the candidate-source core boundary. Hardening iterations 2 and 3 are now also implemented: selected meaningful runtime paths use the shared typed operational-failure contract, settings schema/migrations have one shared semantic owner, package metadata/layout parsing is shared, and Desktop/Android replacement installation is staging-based and failure-safe. Configured Gradle validation remains pending in environments without an available Gradle distribution. The imported-list workflow remains the current product implementation focus.
 
 ## Goal
 
@@ -60,7 +60,7 @@ The parent umbrella already requires shared reusable logic, platform-owned files
 deterministic local search, and a country-agnostic runtime. This sub-spec strengthens those boundaries without
 changing the umbrella acceptance target.
 
-The queued shortlist/import/notebook work is expected to add more application state, persistence, UI, and platform
+The queued Favorites/import/notebook work is expected to add more application state, persistence, UI, and platform
 integration. Performing the structural work first reduces the risk that those features further enlarge the current
 `shared` module or duplicate another settings/storage implementation.
 
@@ -483,7 +483,7 @@ Exercises: MH-R13, MH-R14, MH-R15.
 
 This sub-spec does not require:
 
-- implementing shortlist/import/notebook/export behavior;
+- implementing Favorites/import/notebook/export behavior;
 - redesigning the preference scoring formula or adopting TOPSIS;
 - rewriting Compose UI appearance;
 - changing MapLibre/JCEF renderer choices;
@@ -616,7 +616,7 @@ Implemented result:
 - `dataset/DatasetPackageContract.kt` owns runtime package filenames, PMTiles placeholder, and the common `metadata.json` parser;
 - Desktop and Android loaders retain platform filesystem/SQLite ownership while consuming the same package metadata semantics;
 - both ZIP installers extract and validate in staging before replacing the installed target and preserve/restore the previous package around publication;
-- Iteration 3 completed while the application settings schema was version 3 and left `geo-format` unchanged. The subsequent candidate-source feature increment advances the same shared-owned settings schema to version 4 without changing the ownership established by this gate.
+- Iteration 3 completed while the application settings schema was version 3 and left `geo-format` unchanged. The subsequent candidate-source feature increment advanced the same shared-owned settings schema to version 4, and the later Favorites foundation advances it to version 5 with a normalized favorite table, without changing the ownership established by this gate.
 
 ### Iteration 4 — DRY analytical repository semantics
 

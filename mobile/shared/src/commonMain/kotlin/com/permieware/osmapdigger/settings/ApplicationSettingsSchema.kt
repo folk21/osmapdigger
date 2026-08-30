@@ -18,7 +18,7 @@ data class SettingsMigration(
  * Platform owners still control transactions, database APIs, paths, and resource lifecycle.
  */
 object ApplicationSettingsSchema {
-    const val VERSION: Int = 4
+    const val VERSION: Int = 5
     const val GLOBAL_COUNTRY_CODE: String = "*"
     const val DEFAULT_CANDIDATE_SCOPE_PAYLOAD: String = "{\"version\":1,\"source\":\"dataset\",\"settlementIds\":[]}"
 
@@ -45,6 +45,15 @@ object ApplicationSettingsSchema {
                 enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
                 priority INTEGER NOT NULL DEFAULT 100,
                 PRIMARY KEY(provider_id, country_code)
+            )
+            """.trimIndent(),
+            """
+            CREATE TABLE IF NOT EXISTS favorite_settlement (
+                dataset_id TEXT NOT NULL,
+                settlement_id TEXT NOT NULL,
+                settlement_name TEXT NOT NULL,
+                added_at_epoch_ms INTEGER NOT NULL,
+                PRIMARY KEY(dataset_id, settlement_id)
             )
             """.trimIndent(),
         )
@@ -77,6 +86,11 @@ object ApplicationSettingsSchema {
                         ADD COLUMN candidate_scope_json TEXT NOT NULL DEFAULT '$DEFAULT_CANDIDATE_SCOPE_PAYLOAD'
                         """.trimIndent(),
                     ),
+            ),
+            SettingsMigration(
+                fromVersion = 4,
+                toVersion = 5,
+                statements = listOf(createStatements[2]),
             ),
         )
 

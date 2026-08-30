@@ -114,7 +114,9 @@ flowchart TB
     UI --> LINKS[ExternalLinkOpener]
     LINKS --> BROWSER[Platform browser]
     UI --> PREFS[UserPreferencesRepository]
+    UI --> FAV[FavoriteSettlementRepository]
     PREFS --> PSTORE[Platform settings SQLite]
+    FAV --> PSTORE
 ```
 
 `mobile/shared` owns:
@@ -126,6 +128,7 @@ flowchart TB
 - deterministic preference scoring/ranking and dataset-default models;
 - result-to-GeoJSON conversion;
 - immutable user-preference/search-context contracts and restore validation;
+- dataset-scoped Favorites/notebook persistence contracts;
 - shared responsive UI and map overlays.
 
 Platform hosts own:
@@ -140,9 +143,9 @@ Platform hosts own:
 
 ## User-owned state boundary
 
-Generated dataset SQLite remains read-only analytical data. Mutable user search context is stored in a separate application-owned settings database through the shared `UserPreferencesRepository` contract.
+Generated dataset SQLite remains read-only analytical data. Mutable user state is stored in a separate application-owned settings database. `UserPreferencesRepository` owns the current restorable analysis context, while `FavoriteSettlementRepository` owns the persistent dataset-scoped Favorites/notebook collection.
 
-Persisted analysis state is dataset-scoped and references stable settlement/metric IDs. It may also contain a reviewed imported candidate list as an ordered set of stable settlement IDs plus retained user source text for editing. Only stable IDs participate in analytical identity; import activation is a separate candidate-scope choice and remains orthogonal to numeric `SearchCondition` values. Restore occurs only after the matching dataset and metric catalog are available; removed metrics are ignored and an unavailable saved center clears the radius constraint. The settings schema has its own lifecycle and is not part of `geo-format`. Its logical version/DDL/migration sequence has one shared Kotlin owner, while Android and Desktop execute that contract through their platform SQLite APIs.
+Persisted analysis state is dataset-scoped and references stable settlement/metric IDs. It may also contain a reviewed imported candidate list as an ordered set of stable settlement IDs plus retained user source text for editing. Favorites are a separate output collection keyed by `(datasetId, settlementId)` and never alter candidate scope automatically. Only stable IDs participate in analytical identity; import activation is a separate candidate-scope choice and remains orthogonal to numeric `SearchCondition` values. Restore occurs only after the matching dataset and metric catalog are available; removed metrics are ignored and an unavailable saved center clears the radius constraint. The settings schema has its own lifecycle and is not part of `geo-format`. Its logical version/DDL/migration sequence has one shared Kotlin owner, while Android and Desktop execute that contract through their platform SQLite APIs.
 
 ## Runtime operational failures
 

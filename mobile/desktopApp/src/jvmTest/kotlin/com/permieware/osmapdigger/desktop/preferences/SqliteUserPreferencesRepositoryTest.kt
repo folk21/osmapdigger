@@ -122,7 +122,7 @@ class SqliteUserPreferencesRepositoryTest {
                         result.getInt(1)
                     }
                 }
-                assertEquals(4, version)
+                assertEquals(5, version)
             }
         } finally {
             database.parent.toFile().deleteRecursively()

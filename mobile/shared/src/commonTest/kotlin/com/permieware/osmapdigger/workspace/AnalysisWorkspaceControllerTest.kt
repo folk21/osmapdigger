@@ -16,6 +16,8 @@ import com.permieware.osmapdigger.domain.SettlementSearchEntry
 import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.preferences.UserPreferences
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
+import com.permieware.osmapdigger.notebook.FavoriteSettlement
+import com.permieware.osmapdigger.notebook.FavoriteSettlementRepository
 import com.permieware.osmapdigger.dataset.GeoRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
@@ -420,26 +422,39 @@ class AnalysisWorkspaceControllerTest {
     }
 
     @Test
-    fun shortlistChangesAreTransientAndDoNotRecalculateOrPersistPreferences() = runTest {
+    fun favoritesPersistWithoutRecalculationOrPreferenceWrites() = runTest {
         val repository = FakeRepository(candidates = listOf(candidate("best", "Best", 1.0)))
         val preferences = FakePreferencesRepository(null)
-        val controller = AnalysisWorkspaceController(repository, preferences, this, debounceMillis = 0)
+        val favorites = FakeFavoriteRepository()
+        val controller =
+            AnalysisWorkspaceController(
+                repository = repository,
+                userPreferences = preferences,
+                scope = this,
+                favoriteSettlements = favorites,
+                debounceMillis = 0,
+            )
 
         controller.initialize()
         advanceUntilIdle()
         val analysisCallsBefore = repository.analysisCalls
         val savesBefore = preferences.saved.size
 
-        controller.updateShortlistMembership("best", included = true)
-        controller.updateShortlistMembership("other", included = true)
+        controller.addFavorite(settlement("best", "Best"))
+        controller.addFavorite(settlement("other", "Other"))
         advanceUntilIdle()
 
-        assertEquals(setOf("best", "other"), controller.state.value.shortlist.settlementIds)
+        assertEquals(listOf("other", "best"), controller.state.value.favorites.map { it.settlementId })
         assertEquals(analysisCallsBefore, repository.analysisCalls)
         assertEquals(savesBefore, preferences.saved.size)
 
-        controller.clearShortlist()
-        assertTrue(controller.state.value.shortlist.settlementIds.isEmpty())
+        controller.removeFavorite("best")
+        advanceUntilIdle()
+        assertEquals(listOf("other"), controller.state.value.favorites.map { it.settlementId })
+
+        controller.clearFavorites()
+        advanceUntilIdle()
+        assertTrue(controller.state.value.favorites.isEmpty())
         assertEquals(analysisCallsBefore, repository.analysisCalls)
         assertEquals(savesBefore, preferences.saved.size)
     }
@@ -491,6 +506,29 @@ class AnalysisWorkspaceControllerTest {
         override suspend fun save(preferences: UserPreferences) {
             current = preferences
             saved += preferences
+        }
+    }
+
+    private class FakeFavoriteRepository : FavoriteSettlementRepository {
+        private val entries = linkedMapOf<String, FavoriteSettlement>()
+        private var clock = 0L
+
+        override suspend fun list(datasetId: String): List<FavoriteSettlement> =
+            entries.values.sortedWith(compareByDescending<FavoriteSettlement> { it.addedAtEpochMs }.thenBy { it.settlementId })
+
+        override suspend fun add(datasetId: String, settlement: Settlement): FavoriteSettlement {
+            val existing = entries[settlement.id]
+            if (existing != null) return existing
+            clock += 1
+            return FavoriteSettlement(datasetId, settlement.id, settlement.name, clock).also { entries[settlement.id] = it }
+        }
+
+        override suspend fun remove(datasetId: String, settlementId: String) {
+            entries.remove(settlementId)
+        }
+
+        override suspend fun clear(datasetId: String) {
+            entries.clear()
         }
     }
 

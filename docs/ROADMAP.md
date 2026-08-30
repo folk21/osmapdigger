@@ -13,8 +13,8 @@ Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/sp
 
 Architecture note: KMP architecture hardening iterations 1–3 are implemented between feature checkpoints (dependency direction, typed operational failures, shared settings/package semantics, and atomic dataset installation); later gates remain interleaved backlog.
 
-Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, visual shortlisting, persisted notebook snapshots, export/share, and batch external search.
-Candidate-source core/workflow and Desktop visual shortlist multi-selection are implemented; the next product increment is persistent notebook entries with frozen analysis snapshots.
+Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, persistent favorites/notebook, later analysis snapshots, export/share, and batch external search.
+Candidate-source core/workflow, visual ranked affordances, and persistent dataset-scoped Favorites are implemented; the next notebook increment adds optional notes and frozen analysis snapshots.
 
 Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — dependency-direction, typed-error, and shared settings/package/atomic-install gates 1–3 are implemented; later DRY/module gates run between completed product increments where they protect the next feature boundary.
 
@@ -48,7 +48,7 @@ Acceptance requires a configured workstation to demonstrate:
 
 ## P1 — user workflow
 
-The active shortlist sub-spec covers favorites-style notebook entries, notes, imported settlement candidate lists, batch external search, and portable export/share, interleaved with bounded KMP architecture-hardening checkpoints. Follow-up P1 work remains:
+The active Favorites/import/notebook sub-spec covers favorites-style notebook entries, notes, imported settlement candidate lists, batch external search, and portable export/share, interleaved with bounded KMP architecture-hardening checkpoints. Follow-up P1 work remains:
 
 - named saved filters/searches;
 - richer comparison of multiple settlements;

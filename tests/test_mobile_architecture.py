@@ -18,11 +18,12 @@ ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
     "dataset": {"domain", "error"},
     "map": {"domain"},
     "external": {"domain", "error"},
+    "notebook": {"domain", "error"},
     "search": {"domain", "geo", "dataset"},
     "analysis": {"domain", "search", "dataset"},
     "preferences": {"domain", "analysis", "error", "settings"},
     "presentation": {"domain", "analysis", "preferences", "error"},
-    "workspace": {"domain", "analysis", "preferences", "dataset", "error"},
+    "workspace": {"domain", "analysis", "preferences", "dataset", "notebook", "error"},
     "runtime": {"dataset", "map", "external"},
     "ui": {
         "domain",
@@ -34,6 +35,7 @@ ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
         "runtime",
         "map",
         "external",
+        "notebook",
         "error",
     },
 }
@@ -172,6 +174,7 @@ def test_settings_schema_semantics_have_one_shared_owner() -> None:
     assert "CREATE TABLE user_preferences" in shared
     assert "external_search_provider" in shared
     assert "candidate_scope_json" in shared
+    assert "favorite_settlement" in shared
     assert "ALTER TABLE user_preferences" in shared
     for platform_source in (desktop, android):
         assert "ApplicationSettingsSchema" in platform_source

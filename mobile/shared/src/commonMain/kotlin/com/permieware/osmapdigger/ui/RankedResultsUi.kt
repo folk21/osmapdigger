@@ -24,15 +24,14 @@ import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
 import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
 import com.permieware.osmapdigger.presentation.UiStrings
-import com.permieware.osmapdigger.workspace.SettlementShortlist
 import kotlin.math.roundToInt
 
-/** Compact result-list heading that keeps transient shortlist state visible without another pane. */
+/** Compact result-list heading with direct access to the persistent favorites notebook. */
 @Composable
 internal fun RankedResultsHeader(
     rankedResultCount: Int,
-    shortlist: SettlementShortlist,
-    onClearShortlist: () -> Unit,
+    favoriteCount: Int,
+    onOpenFavorites: () -> Unit,
 ) {
     val strings = LocalUiStrings.current
     Row(
@@ -43,24 +42,22 @@ internal fun RankedResultsHeader(
         Column {
             Text(strings.rankedResults, style = MaterialTheme.typography.titleMedium)
             Text(
-                strings.shortlistCount(shortlist.size),
+                strings.favoriteCount(favoriteCount),
                 style = MaterialTheme.typography.labelMedium,
             )
         }
         Column(horizontalAlignment = Alignment.End) {
             Text(rankedResultCount.toString(), style = MaterialTheme.typography.labelLarge)
-            if (shortlist.size > 0) {
-                TextButton(onClick = onClearShortlist) {
-                    Text(strings.clearShortlist)
-                }
+            TextButton(onClick = onOpenFavorites) {
+                Text(strings.openFavorites)
             }
         }
     }
 }
 
 /**
- * Scan-friendly ranked result card with numeric score, 0-100 score bar, contribution cues, and
- * shortlist membership that remains independent from the single map/details selection.
+ * Scan-friendly ranked result card with authoritative score presentation and independent persistent
+ * favorite membership. Favorite changes never modify candidate source, filters, ranking, or map focus.
  */
 @Composable
 internal fun RankedSettlementCard(
@@ -68,9 +65,9 @@ internal fun RankedSettlementCard(
     result: ScoredSettlement,
     definitions: Map<String, MetricDefinition>,
     selected: Boolean,
-    shortlisted: Boolean,
+    favorite: Boolean,
     onClick: () -> Unit,
-    onShortlistChanged: (Boolean) -> Unit,
+    onFavoriteChanged: (Boolean) -> Unit,
     displayName: String,
 ) {
     val strings = LocalUiStrings.current
@@ -159,10 +156,10 @@ internal fun RankedSettlementCard(
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Checkbox(
-                    checked = shortlisted,
-                    onCheckedChange = onShortlistChanged,
+                    checked = favorite,
+                    onCheckedChange = onFavoriteChanged,
                 )
-                Text(strings.shortlist, style = MaterialTheme.typography.labelSmall)
+                Text(strings.addToFavorites, style = MaterialTheme.typography.labelSmall)
             }
         }
     }

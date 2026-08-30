@@ -1,12 +1,12 @@
 ---
 type: Specification
-title: Settlement shortlist, import, notebook, and batch actions
-description: Current-focus sub-spec for visually shortlisting ranked settlements, importing explicit candidate lists, saving analysis snapshots, exporting them, and launching batch external searches.
+title: Settlement favorites, import, notebook, and batch actions
+description: Current-focus sub-spec for importing explicit candidate lists, saving ranked settlements as persistent favorites, enriching notebook entries with analysis snapshots, exporting them, and launching batch external searches.
 document_role: subspec
 spec_status: active
 parent: ../spec-initial-functional-product.md
 ---
-# Settlement shortlist, import, notebook, and batch actions
+# Settlement favorites, import, notebook, and batch actions
 
 ## Status
 
@@ -16,7 +16,7 @@ Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-
 
 Architecture-hardening iterations 1–3 established the dependency direction, typed operational-failure policy, shared settings/package contracts, and failure-safe dataset installation needed before the persisted candidate-source workflow. Further architecture gates remain active and will continue to be interleaved only between completed, testable product increments.
 
-The first three bounded feature increments are implemented. Shared/runtime contracts parse and conservatively resolve imported settlement text, ranked analysis carries an imported stable-ID scope, and Desktop/Android dataset adapters restrict candidate retrieval in deterministic bounded batches. Wide Desktop adds paste/UTF-8 file import plus explicit review of ambiguous/non-exact matches, while application settings schema version 4 persists the reviewed dataset-scoped candidate source. Ranked result cards now expose the existing numeric score as a 0–100 visual bar, deterministic strongest/weakest contribution cues, incomplete coverage, and a transient stable-ID shortlist checkbox independent from the single map/details selection. Android shares the candidate-source persistence and analysis contracts; its document/text import UI and polished shortlist presentation remain deferred.
+The first four bounded feature increments are implemented. Shared/runtime contracts parse and conservatively resolve imported settlement text, ranked analysis carries an imported stable-ID scope, and Desktop/Android dataset adapters restrict candidate retrieval in deterministic bounded batches. Wide Desktop adds paste/UTF-8 file import plus explicit review of ambiguous/non-exact matches, while application settings schema version 4 persists the reviewed dataset-scoped candidate source. Ranked result cards expose the existing numeric score as a 0–100 visual bar, deterministic strongest/weakest contribution cues, and incomplete coverage. The earlier transient shortlist concept has been superseded by persistent dataset-scoped Favorites: application settings schema version 5 stores favorite settlements in a normalized table, and Desktop can browse, open, remove, and clear them without changing candidate source, ranking, or map/details selection. Android shares the persistence contract; polished Favorites UI remains Desktop-first.
 
 The previously current [`desktop-analysis-workspace.md`](desktop-analysis-workspace.md) implementation is
 substantially complete and remains verification-pending until strict country-scale scoring and the
@@ -30,12 +30,11 @@ Turn ranked analysis into a practical settlement research workflow in which a us
 1. obtain a candidate set either from the existing dataset-wide filters or from an explicitly imported
    list of settlement names;
 2. understand the ranked candidates visually without opening full details for every row;
-3. select several interesting settlements into a transient shortlist;
-4. save chosen settlements into an application-owned notebook together with the analysis assumptions
-   that produced the saved score;
-5. export/share the saved shortlist in a portable form;
-6. launch explicit external searches for several shortlisted settlements without copying names one by
-   one.
+3. save interesting ranked settlements directly into an application-owned Favorites/Notebook collection;
+4. browse and remove saved settlements independently from the current candidate source and current ranking;
+5. later attach frozen analysis assumptions/notes to saved entries;
+6. export/share the saved notebook in a portable form;
+7. launch explicit external searches for several saved settlements without copying names one by one.
 
 The implementation must reuse the existing deterministic preference engine. This increment does not
 introduce TOPSIS, opaque machine-learned ranking, hidden composite scores, or a second scoring formula.
@@ -69,10 +68,10 @@ flowchart LR
     ELIGIBLE --> HARD[Required constraints + optional radius]
     HARD --> SCORE[Existing preference scoring]
     SCORE --> RANK[Ranked visual results]
-    RANK --> SHORTLIST[Transient shortlist]
-    SHORTLIST --> NOTEBOOK[Saved notebook entries]
-    SHORTLIST --> BATCH[Batch external search]
-    NOTEBOOK --> EXPORT[Portable export/share]
+    RANK --> FAVORITES[Persistent Favorites / Notebook]
+    FAVORITES --> BATCH[Batch external search]
+    FAVORITES --> SNAPSHOT[Future notes + frozen analysis snapshot]
+    FAVORITES --> EXPORT[Portable export/share]
 ```
 
 ## Product model
@@ -93,15 +92,14 @@ as a fake metric or encoded into generated dataset SQLite.
 A future saved notebook or named collection may become another candidate source, but that is not
 required by this increment.
 
-### Shortlist versus notebook
+### Favorites / notebook versus candidate source
 
-Two concepts must remain distinct:
+The imported candidate list and Favorites/Notebook are different product concepts:
 
-- **Shortlist** — transient multi-selection in the current analysis session, used for batch actions;
-- **Notebook** — persisted user-owned settlements with optional notes and a frozen analysis snapshot.
+- **Candidate source** is an input boundary: it limits which settlements are considered by Required/radius/ranking.
+- **Favorites / Notebook** is persistent user-owned output: it collects interesting settlements found during research for later browsing, comparison, external search, export, notes, and re-analysis.
 
-The existing single selected settlement remains the details/map focus. Multi-selection must not turn
-map/detail selection into an ambiguous set-valued state.
+Adding/removing a favorite must never change candidate source, filters, ranking inputs, or the single details/map selection. The existing single selected settlement remains the details/map focus. A future explicit action may analyze Favorites as a candidate source, but there is no automatic feedback loop.
 
 ### Saved analysis snapshot
 
@@ -177,7 +175,7 @@ not hidden runtime adaptation.
 
 ### SS-R1 — one authoritative scoring engine
 
-The shortlist workflow must consume the existing shared deterministic score/contribution models.
+The Favorites/notebook workflow must consume the existing shared deterministic score/contribution models.
 
 No parallel scoring implementation may be introduced in UI, notebook persistence, export, or external
 search code. A saved score is a snapshot of the authoritative analysis result, not a separately
@@ -244,46 +242,32 @@ The ranked list should become easier to scan while staying compact. Each ordinar
 - coverage when incomplete;
 - compact contribution cues for a small number of strongest/weakest active preferences when space
   allows;
-- shortlist state.
+- persistent favorite state.
 
 The numeric value must remain available; color alone must never carry score or coverage meaning.
 
 The first increment does not require statistical charts, scatter plots, radar charts, heatmaps, or
-spatial clustering. Those may be evaluated after the shortlist workflow is usable.
+spatial clustering. Those may be evaluated after the favorites/notebook workflow is usable.
 
-### SS-R6 — transient multi-selection
+### SS-R6 — persistent favorites collection
 
-Users must be able to add/remove ranked settlements from a transient shortlist without changing the
-single settlement selected for map/details focus.
+Users must be able to add/remove ranked settlements directly from a persistent dataset-scoped Favorites collection without changing the single settlement selected for map/details focus or the current candidate source.
 
-Shortlist order should follow current ranked order for analysis actions. Explicit user ordering is not
-required initially.
+The initial Favorites entry uses stable `(datasetId, settlementId)` identity and stores the settlement display/canonical name at save time plus an insertion timestamp for deterministic presentation. Duplicate additions are idempotent. Desktop must provide a basic Favorites view with browse/open/remove/clear actions.
 
-Changing filters/preferences may remove a shortlisted settlement from the current ranked result set;
-that must not silently delete an already saved notebook entry.
+Changing filters/preferences or imported candidate source may remove a favorite from current ranked results; that must not delete the persistent favorite.
 
-### SS-R7 — application-owned notebook persistence
+### SS-R7 — notebook enrichment and analysis snapshots
 
-Notebook state belongs in the application settings database, never in generated `georisk.sqlite`.
+Favorites/notebook state belongs in the application settings database, never in generated `georisk.sqlite`. The initial normalized `favorite_settlement` table is the persistent foundation and uses `(dataset_id, settlement_id)` as its primary key.
 
-Shared code should define immutable notebook models and a small repository contract. Desktop and Android
-settings database owners must migrate their own schema together and remain the only owners of
-`PRAGMA user_version`/Android database version.
-
-A notebook entry must use `(datasetId, settlementId)` as stable geographic identity and support at
-least:
+A later notebook-enrichment increment adds at least:
 
 - optional user note;
 - frozen versioned analysis snapshot;
-- deterministic persisted ordering.
+- deterministic notebook presentation/order semantics where needed.
 
-A recommended first physical shape is one application-settings row per saved settlement with
-`dataset_id`, `settlement_id`, `sort_order`, optional `note`, and `snapshot_json`, using
-`(dataset_id, settlement_id)` as the primary key. This avoids turning a growing notebook into one large
-JSON cell while keeping snapshot internals versioned and replaceable. Multiple historical snapshots
-per settlement are a future extension.
-
-Names are presentation/snapshot data, not identity fallback.
+Snapshot internals should remain versioned and replaceable without turning the growing notebook into one large JSON cell. Multiple historical snapshots per settlement are a future extension. Names are presentation/snapshot data, not identity fallback.
 
 ### SS-R8 — explicit snapshot refresh
 
@@ -298,9 +282,9 @@ than being reassigned by name.
 
 ### SS-R9 — portable deterministic export
 
-The notebook/shortlist must support a portable export that is useful outside OsmapDigger.
+The Favorites/notebook collection must support a portable export that is useful outside OsmapDigger.
 
-The first export should be one portable archive, for example `osmapdigger-shortlist.zip`, containing:
+The first export should be one portable archive, for example `osmapdigger-favorites.zip`, containing:
 
 - one machine-readable versioned JSON manifest with stable IDs, names, notes, score/coverage, and
   snapshot criteria;
@@ -318,12 +302,12 @@ Platform sharing is an adapter concern:
 
 ### SS-R10 — multi-settlement external search
 
-The user must be able to invoke an external search for the current shortlist without copying each
+The user must be able to invoke an external search for the current Favorites selection/collection without copying each
 settlement name manually.
 
 Batch search must reuse the configured `ExternalSearchProvider` catalog and remain an explicit user
 action. Shared URL/query generation may combine names into a query such as quoted alternatives and may
-split a large shortlist into several bounded query actions when the encoded URL would become too long.
+split a large Favorites selection into several bounded query actions when the encoded URL would become too long.
 For generic web search, quoted names joined with `OR` are preferable to blindly joining names with
 spaces because ordinary spaces commonly mean that every settlement name must occur in the same result;
 the provider template still owns any site restriction such as the current Kufar-oriented query.
@@ -358,7 +342,7 @@ The runtime remains country-agnostic.
 
 ### SS-R13 — no generated-format change for notebook/import state
 
-Candidate lists, shortlist state, notes, snapshots, and exports are user-owned data. They must not add
+Candidate lists, Favorites/notebook state, notes, snapshots, and exports are user-owned data. They must not add
 columns/tables to generated dataset SQLite and must not increment `geo-format/VERSION`.
 
 A generated-format change is needed only if a later feature requires new analytical evidence not
@@ -384,7 +368,7 @@ Shared Kotlin should still own:
 
 - candidate-source models;
 - import parsing/resolution state that is platform-neutral;
-- shortlist/notebook models;
+- Favorites/notebook models;
 - snapshot/export model construction;
 - batch external-search query construction.
 
@@ -400,7 +384,7 @@ At minimum test:
 - import normalization/deduplication;
 - exact/ambiguous/unresolved alias resolution;
 - candidate-ID restriction before scoring;
-- shortlist state independent from details selection;
+- favorite state independent from candidate source and details selection;
 - notebook snapshot encode/decode and schema migration;
 - snapshot immutability under later current-preference changes;
 - explicit snapshot refresh;
@@ -410,11 +394,10 @@ At minimum test:
 
 ## Scenarios
 
-### SS-S1 — filter, rank, and shortlist
+### SS-S1 — filter, rank, and save favorites
 
 A user analyzes the current dataset with Required constraints and weighted Preferences. Results show
-score bars and coverage. The user checks several promising settlements into the shortlist while opening
-only one of them in the map/details pane.
+score bars and coverage. The user marks several promising settlements as Favorites while opening only one of them in the map/details pane. The saved settlements remain available after filters or candidate source change.
 
 Exercises: SS-R1, SS-R5, SS-R6.
 
@@ -428,7 +411,7 @@ Exercises: SS-R2, SS-R3, SS-R4, SS-R12.
 
 ### SS-S3 — save a promising settlement
 
-The user saves a shortlisted settlement with a note. The notebook preserves its score, coverage, active
+The user enriches an already saved favorite with a note and frozen analysis snapshot. The notebook preserves its score, coverage, active
 criteria, weights, and contributions as they were at save time. Later the user changes the current
 forest and medical weights; the saved snapshot remains unchanged.
 
@@ -444,15 +427,15 @@ Exercises: SS-R8.
 
 ### SS-S5 — batch property discovery
 
-The user shortlists several Belarus settlements and opens **External search**. The UI offers a Kufar-
-oriented site-search batch query containing the shortlist names and splits it into multiple explicit
+The user has several Belarus settlements in Favorites and opens **External search**. The UI offers a Kufar-
+oriented site-search batch query containing the favorite settlement names and splits it into multiple explicit
 actions only if necessary for bounded URLs.
 
 Exercises: SS-R10, SS-R11.
 
 ### SS-S6 — share the notebook
 
-The user exports a shortlist. OsmapDigger writes one deterministic ZIP bundle containing a versioned
+The user exports Favorites/notebook entries. OsmapDigger writes one deterministic ZIP bundle containing a versioned
 JSON manifest plus a human-readable summary from the same notebook model. Android can pass the archive
 to the system share sheet; Desktop can save and reveal the file for attachment to mail/chat applications.
 
@@ -500,7 +483,7 @@ This increment does not require:
 
 The generated dataset contract does not change in the first implementation.
 
-The application settings database remains independent from `geo-format` and uses one shared semantic schema owner executed by both platforms. Candidate-source persistence now uses coordinated schema version 4 with `candidate_scope_json`; legacy rows migrate to dataset-wide scope. This migration was intentionally completed before notebook persistence so the candidate-source workflow can form an independently testable restart-safe increment. Notebook persistence may therefore require a later coordinated settings migration (expected version 5 if new persisted tables/columns are required).
+The application settings database remains independent from `geo-format` and uses one shared semantic schema owner executed by both platforms. Candidate-source persistence uses schema version 4 with `candidate_scope_json`. Persistent Favorites use coordinated settings schema version 5 with normalized `favorite_settlement`; this does not change `geo-format` or require dataset regeneration. Later notes/snapshot fields may use a subsequent settings migration or additive notebook table while preserving the stable `(dataset_id, settlement_id)` identity.
 
 A notebook snapshot/export payload must include its own explicit payload version so later additive or
 incompatible fields can be handled without coupling file format evolution to the SQLite schema version.
@@ -509,14 +492,13 @@ incompatible fields can be handled without coupling file format evolution to the
 
 Acceptance requires all of the following:
 
-1. Shared tests prove existing scoring results are unchanged by shortlist/notebook additions.
+1. Shared tests prove existing scoring results are unchanged by Favorites/notebook additions.
 2. Imported candidate lists resolve stable IDs deterministically, never auto-select fuzzy/ambiguous
    matches, restrict review alternatives to the active center/radius when present, and support explicit
    multi/select-all for duplicate exact names.
 3. Ranked analysis of an imported set considers no settlement outside the resolved candidate IDs.
 4. Candidate restriction uses batch repository access and has no per-candidate details hydration.
-5. Desktop visually exposes score/coverage plus multi-selection without conflating shortlist and details
-   selection.
+5. Desktop visually exposes score/coverage plus persistent Favorites without conflating favorite membership, candidate source, and details selection.
 6. Notebook persistence round-trips on Desktop and Android adapters with a coordinated settings schema
    migration.
 7. Saved snapshots do not silently change after current preference edits.
@@ -538,9 +520,10 @@ Implement in small increments:
 
 1. **Implemented: Candidate-source core** — immutable candidate-scope/import models, conservative bulk alias resolution, repository candidate-ID restriction, bounded stable-ID batching, and focused shared/Desktop tests. The core is wired into `AnalysisWorkspaceController` as transient state, but no user-facing import control or persistence is enabled yet.
 2. **Implemented: Candidate-source workflow** — Desktop paste/file import and full-sidebar review UI connect explicit reviewed matches to the shared stable-ID scope; active center/radius bounds the review alternatives, ambiguous exact matches support multi/select-all, the previous source text reopens for editing, and import can be disabled/re-enabled independently from deleting the retained list. Application settings schema version 4 keeps the same SQLite column while candidate-source payload version 2 stores active source plus retained reviewed IDs/source text; restore drops stale IDs without broadening an active import. The same shared contracts remain available for later Android document/text integration.
-3. **Implemented: Visual shortlist** — Desktop ranked cards keep the numeric score and add a 0–100 score bar, incomplete-coverage text, deterministic strongest/weakest preference cues, and a stable-ID shortlist checkbox. `SettlementShortlist` is transient shared workspace state: it is independent from the single selected settlement, does not trigger analysis/persistence, and exposes current ranked ordering for visible shortlist actions.
-4. **Notebook persistence** — add shared notebook/snapshot contracts, coordinated settings SQLite migration, Desktop/Android repositories, notes, save/remove/update-snapshot operations, and tests.
-5. **Batch external search** — extend generic query construction to a settlement list with explicit bounded/chunked browser actions and no provider-specific UI branches.
-6. **Export/share** — add versioned deterministic JSON plus human-readable summary export and platform save/share adapters.
-7. **Calibration validation** — rebuild/inspect representative Andorra and Belarus analytical packages if necessary; record score/metric distribution evidence before deliberately changing checked-in `balanced-living` defaults.
-8. **Acceptance/documentation** — run configured shared/Desktop/Android tests, record manual workflow acceptance, update owning current-state docs, and archive this sub-spec when complete.
+3. **Implemented: Visual ranked affordances** — Desktop ranked cards keep the numeric score and add a 0–100 score bar, incomplete-coverage text, and deterministic strongest/weakest preference cues. The experimental transient `SettlementShortlist` layer was removed after clarifying that the user collection is persistent Favorites rather than another analysis-input loop.
+4. **Implemented: Persistent Favorites foundation** — add shared `FavoriteSettlementRepository`, settings schema version 5 with normalized `favorite_settlement`, Desktop/Android SQLite adapters, persistent result-card toggles, and a Desktop Favorites pane with browse/open/remove/clear. Favorites remain output state and never change candidate source or trigger recalculation.
+5. **Notebook enrichment** — add optional notes and frozen versioned analysis snapshots plus explicit snapshot refresh and tests.
+6. **Batch external search** — extend generic query construction to Favorites with explicit bounded/chunked browser actions and no provider-specific UI branches.
+7. **Export/share** — add versioned deterministic JSON plus human-readable summary export and platform save/share adapters.
+8. **Calibration validation** — rebuild/inspect representative Andorra and Belarus analytical packages if necessary; record score/metric distribution evidence before deliberately changing checked-in `balanced-living` defaults.
+9. **Acceptance/documentation** — run configured shared/Desktop/Android tests, record manual workflow acceptance, update owning current-state docs, and archive this sub-spec when complete.

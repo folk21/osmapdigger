@@ -23,6 +23,9 @@ import com.permieware.osmapdigger.dataset.GeoRepository
 import com.permieware.osmapdigger.error.OperationalFailure
 import com.permieware.osmapdigger.error.OperationalFailureKind
 import com.permieware.osmapdigger.error.toOperationalFailure
+import com.permieware.osmapdigger.notebook.EmptyFavoriteSettlementRepository
+import com.permieware.osmapdigger.notebook.FavoriteSettlement
+import com.permieware.osmapdigger.notebook.FavoriteSettlementRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -47,7 +50,7 @@ data class AnalysisWorkspaceState(
     val radiusKm: Double? = null,
     val candidateScope: SettlementCandidateScope = SettlementCandidateScope.Dataset,
     val importedCandidateList: ImportedCandidateList? = null,
-    val shortlist: SettlementShortlist = SettlementShortlist(),
+    val favorites: List<FavoriteSettlement> = emptyList(),
     val rankedResults: List<ScoredSettlement> = emptyList(),
     val analyzing: Boolean = false,
     val failure: OperationalFailure? = null,
@@ -63,6 +66,7 @@ class AnalysisWorkspaceController(
     private val repository: GeoRepository,
     private val userPreferences: UserPreferencesRepository,
     private val scope: CoroutineScope,
+    private val favoriteSettlements: FavoriteSettlementRepository = EmptyFavoriteSettlementRepository,
     private val debounceMillis: Long = DEFAULT_DEBOUNCE_MILLIS,
     private val onAnalysisDiagnostics: (SettlementAnalysisDiagnostics) -> Unit = {},
 ) {
@@ -84,6 +88,17 @@ class AnalysisWorkspaceController(
             val info = repository.datasetInfo()
             val definitions = repository.metricDefinitions()
             val preferenceDefaults = repository.preferenceDefaults()
+            var favoritesFailure: OperationalFailure? = null
+            val favorites =
+                try {
+                    favoriteSettlements.list(info.id)
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (failure: Throwable) {
+                    favoritesFailure =
+                        failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not load favorite settlements")
+                    emptyList()
+                }
             val saved = userPreferences.load()
             val savedForDataset = saved?.takeIf { it.datasetId == info.id }
             val needsSettlementIndex =
@@ -128,6 +143,8 @@ class AnalysisWorkspaceController(
                     radiusKm = restoredSearch?.radiusKm,
                     candidateScope = restoredSearch?.candidateScope ?: SettlementCandidateScope.Dataset,
                     importedCandidateList = restoredSearch?.importedCandidateList,
+                    favorites = favorites,
+                    failure = favoritesFailure,
                 )
             persistCurrentState()
             scheduleAnalysis(immediate = true)
@@ -317,23 +334,69 @@ class AnalysisWorkspaceController(
         scheduleAnalysis(immediate = true, force = true)
     }
 
-    /** Update transient shortlist membership without changing analysis inputs or persisted state. */
-    fun updateShortlistMembership(
-        settlementId: String,
-        included: Boolean,
-    ) {
-        val current = mutableState.value
-        val nextShortlist = current.shortlist.withSettlement(settlementId, included)
-        if (nextShortlist == current.shortlist) return
-        mutableState.value = current.copy(shortlist = nextShortlist)
+    /** Add one settlement to the persistent dataset-scoped favorites collection without recalculating analysis. */
+    fun addFavorite(settlement: Settlement) {
+        val datasetId = mutableState.value.datasetInfo?.id ?: return
+        if (mutableState.value.favorites.any { it.settlementId == settlement.id }) return
+        scope.launch {
+            try {
+                val saved = favoriteSettlements.add(datasetId, settlement)
+                val current = mutableState.value
+                val next =
+                    (current.favorites.filterNot { it.settlementId == saved.settlementId } + saved)
+                        .sortedWith(compareByDescending<FavoriteSettlement> { it.addedAtEpochMs }.thenBy { it.settlementId })
+                mutableState.value = current.copy(favorites = next, failure = null)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Throwable) {
+                mutableState.value =
+                    mutableState.value.copy(
+                        failure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not save favorite settlement"),
+                    )
+            }
+        }
     }
 
-    /** Clear transient shortlist selection without changing ranked results or map/details focus. */
-    fun clearShortlist() {
-        val current = mutableState.value
-        val nextShortlist = current.shortlist.clear()
-        if (nextShortlist == current.shortlist) return
-        mutableState.value = current.copy(shortlist = nextShortlist)
+    /** Remove one persistent favorite by stable settlement ID without changing current analysis inputs. */
+    fun removeFavorite(settlementId: String) {
+        val datasetId = mutableState.value.datasetInfo?.id ?: return
+        if (mutableState.value.favorites.none { it.settlementId == settlementId }) return
+        scope.launch {
+            try {
+                favoriteSettlements.remove(datasetId, settlementId)
+                mutableState.value =
+                    mutableState.value.copy(
+                        favorites = mutableState.value.favorites.filterNot { it.settlementId == settlementId },
+                        failure = null,
+                    )
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Throwable) {
+                mutableState.value =
+                    mutableState.value.copy(
+                        failure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not remove favorite settlement"),
+                    )
+            }
+        }
+    }
+
+    /** Clear all favorites for the opened dataset without changing ranked results or map/details selection. */
+    fun clearFavorites() {
+        val datasetId = mutableState.value.datasetInfo?.id ?: return
+        if (mutableState.value.favorites.isEmpty()) return
+        scope.launch {
+            try {
+                favoriteSettlements.clear(datasetId)
+                mutableState.value = mutableState.value.copy(favorites = emptyList(), failure = null)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Throwable) {
+                mutableState.value =
+                    mutableState.value.copy(
+                        failure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not clear favorite settlements"),
+                    )
+            }
+        }
     }
 
     fun clearError() {

@@ -40,6 +40,8 @@ flowchart TD
     MAP[map] --> DOMAIN
     EXTERNAL[external] --> DOMAIN
     EXTERNAL --> ERROR
+    NOTEBOOK[notebook] --> DOMAIN
+    NOTEBOOK --> ERROR
     SEARCH[search] --> DOMAIN
     SEARCH --> GEO
     SEARCH --> DATASET
@@ -58,6 +60,7 @@ flowchart TD
     WORKSPACE --> ANALYSIS
     WORKSPACE --> PREFS
     WORKSPACE --> DATASET
+    WORKSPACE --> NOTEBOOK
     WORKSPACE --> ERROR
     RUNTIME[runtime] --> DATASET
     RUNTIME --> MAP
@@ -71,6 +74,7 @@ flowchart TD
     UI --> RUNTIME
     UI --> MAP
     UI --> EXTERNAL
+    UI --> NOTEBOOK
     UI --> ERROR
 ```
 
@@ -83,13 +87,14 @@ flowchart TD
 | `dataset` | Read-only analytical dataset boundary, package metadata/layout semantics, and deterministic stable-ID batching | `domain`, `error` | `GeoRepository`, `DatasetPackageLayout`, `DatasetPackageMetadataParser`, `StableIdBatches` |
 | `map` | Renderer-neutral map data/assets and overlay serialization | `domain` | `MapPackage`, `MapOverlayGeoJson` |
 | `external` | External-search provider model, URL expansion, explicit platform link action | `domain`, `error` | `ExternalSearchProviderRepository`, `ExternalSearchUrlBuilder`, `ExternalLinkOpener` |
+| `notebook` | Dataset-scoped persistent favorites contract and typed storage wrapper | `domain`, `error` | `FavoriteSettlement`, `FavoriteSettlementRepository` |
 | `search` | Deterministic hard search, radius semantics, settlement-name matching, conservative settlement-list import resolution | `domain`, `geo`, `dataset` | `SearchService`, `SettlementSearchService`, `SettlementListImportResolver`, `SettlementImportReviewer`, `SearchRequestSemantics` |
 | `analysis` | Preference scoring, candidate-scope/imported-list contracts, contributions, ranked-analysis orchestration | `domain`, `search`, `dataset` | `SettlementCandidateScope`, `ImportedCandidateList`, `PreferenceScorer`, `SettlementRanker`, `SettlementAnalysisService` |
 | `preferences` | Application-owned persisted search/preference/candidate-scope models, payload codecs, restore/override logic, and operational storage wrapper | `domain`, `analysis`, `error`, `settings` | `UserPreferencesRepository`, `MetricPreferenceOverrideResolver` |
 | `presentation` | Deterministic formatting, localized operational failures, and human-readable analysis/search presentation | `domain`, `analysis`, `preferences`, `error` | `FilterSummaryBuilder`, `ScoreExplanationBuilder`, metric/localization presentation |
-| `workspace` | Application orchestration for one opened analysis workspace, including candidate scope, transient shortlist state, and typed failure state | `domain`, `analysis`, `preferences`, `dataset`, `error` | `AnalysisWorkspaceController`, `SettlementShortlist` |
+| `workspace` | Application orchestration for one opened analysis workspace, including candidate scope, persistent favorites state, and typed failure state | `domain`, `analysis`, `preferences`, `dataset`, `notebook`, `error` | `AnalysisWorkspaceController` |
 | `runtime` | Dataset-scoped dependency bundle assembled only by platform composition roots | `dataset`, `map`, `external` | `OsmapDiggerRuntime` |
-| `ui` | Shared Compose presentation and feature composition | `domain`, `analysis`, `preferences`, `presentation`, `search`, `workspace`, `runtime`, `map`, `external`, `error` | `OsmapDiggerApp`, `DesktopAnalysisWorkspace`, `SearchPane`, `PlatformMapSurface` |
+| `ui` | Shared Compose presentation and feature composition | `domain`, `analysis`, `preferences`, `presentation`, `search`, `workspace`, `runtime`, `map`, `external`, `notebook`, `error` | `OsmapDiggerApp`, `DesktopAnalysisWorkspace`, `SearchPane`, `PlatformMapSurface` |
 
 ### Dependency rules
 

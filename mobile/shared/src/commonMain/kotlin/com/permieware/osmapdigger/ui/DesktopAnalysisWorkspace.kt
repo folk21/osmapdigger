@@ -37,7 +37,7 @@ import com.permieware.osmapdigger.presentation.TwoRowLayout
 import com.permieware.osmapdigger.external.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
 import com.permieware.osmapdigger.search.SettlementListImportResolver
-import com.permieware.osmapdigger.workspace.SettlementShortlist
+import com.permieware.osmapdigger.notebook.FavoriteSettlement
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
@@ -69,9 +69,11 @@ internal fun DesktopAnalysisWorkspace(
     radiusError: String?,
     summary: String,
     rankedResults: List<ScoredSettlement>,
-    shortlist: SettlementShortlist,
-    onShortlistMembershipChanged: (String, Boolean) -> Unit,
-    onShortlistCleared: () -> Unit,
+    favorites: List<FavoriteSettlement>,
+    favoriteSettlementsById: Map<String, Settlement>,
+    onFavoriteAdded: (Settlement) -> Unit,
+    onFavoriteRemoved: (String) -> Unit,
+    onFavoritesCleared: () -> Unit,
     candidateScope: SettlementCandidateScope,
     importedCandidateList: ImportedCandidateList?,
     onImportedCandidatesApplied: (String, List<String>) -> Unit,
@@ -94,6 +96,7 @@ internal fun DesktopAnalysisWorkspace(
 ) {
     var filterPickerOpen by remember { mutableStateOf(false) }
     var candidateImportOpen by remember { mutableStateOf(false) }
+    var favoritesOpen by remember { mutableStateOf(false) }
     var mapCenterPickerActive by remember { mutableStateOf(false) }
     var mapCenterPickerResolving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -183,9 +186,14 @@ internal fun DesktopAnalysisWorkspace(
                     onDeactivateImported = onImportedCandidatesDeactivated,
                     onClearImported = onImportedCandidatesCleared,
                     rankedResults = rankedResults,
-                    shortlist = shortlist,
-                    onShortlistMembershipChanged = onShortlistMembershipChanged,
-                    onShortlistCleared = onShortlistCleared,
+                    favorites = favorites,
+                    onFavoriteAdded = onFavoriteAdded,
+                    onFavoriteRemoved = onFavoriteRemoved,
+                    onFavoritesRequested = {
+                        filterPickerOpen = false
+                        candidateImportOpen = false
+                        favoritesOpen = true
+                    },
                     selectedId = selected?.settlement?.id,
                     running = running,
                     error = error,
@@ -228,6 +236,22 @@ internal fun DesktopAnalysisWorkspace(
                             candidateImportOpen = false
                         },
                         onClose = { candidateImportOpen = false },
+                        settlementDisplayName = settlementDisplayName,
+                    )
+                }
+
+                if (favoritesOpen) {
+                    FavoritesPanel(
+                        modifier = Modifier.fillMaxSize(),
+                        favorites = favorites,
+                        settlementsById = favoriteSettlementsById,
+                        onOpen = { settlement ->
+                            onSelect(settlement)
+                            favoritesOpen = false
+                        },
+                        onRemove = onFavoriteRemoved,
+                        onClear = onFavoritesCleared,
+                        onClose = { favoritesOpen = false },
                         settlementDisplayName = settlementDisplayName,
                     )
                 }
@@ -351,9 +375,10 @@ private fun DesktopAnalysisSidebar(
     onDeactivateImported: () -> Unit,
     onClearImported: () -> Unit,
     rankedResults: List<ScoredSettlement>,
-    shortlist: SettlementShortlist,
-    onShortlistMembershipChanged: (String, Boolean) -> Unit,
-    onShortlistCleared: () -> Unit,
+    favorites: List<FavoriteSettlement>,
+    onFavoriteAdded: (Settlement) -> Unit,
+    onFavoriteRemoved: (String) -> Unit,
+    onFavoritesRequested: () -> Unit,
     selectedId: String?,
     running: Boolean,
     error: String?,
@@ -365,10 +390,7 @@ private fun DesktopAnalysisSidebar(
 ) {
     val strings = LocalUiStrings.current
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
-    val visibleShortlistIds =
-        remember(shortlist, rankedResults) {
-            shortlist.orderedVisibleResults(rankedResults).mapTo(hashSetOf()) { it.settlement.id }
-        }
+    val favoriteIds = remember(favorites) { favorites.mapTo(hashSetOf()) { it.settlementId } }
     val listState = rememberLazyListState()
     LaunchedEffect(selectedId) {
         val resultIndex = rankedResults.indexOfFirst { it.settlement.id == selectedId }
@@ -463,8 +485,8 @@ private fun DesktopAnalysisSidebar(
         item {
             RankedResultsHeader(
                 rankedResultCount = rankedResults.size,
-                shortlist = shortlist,
-                onClearShortlist = onShortlistCleared,
+                favoriteCount = favorites.size,
+                onOpenFavorites = onFavoritesRequested,
             )
         }
 
@@ -474,10 +496,10 @@ private fun DesktopAnalysisSidebar(
                 result = result,
                 definitions = definitionMap,
                 selected = result.settlement.id == selectedId,
-                shortlisted = result.settlement.id in visibleShortlistIds,
+                favorite = result.settlement.id in favoriteIds,
                 onClick = { onSelect(result.settlement) },
-                onShortlistChanged = { included ->
-                    onShortlistMembershipChanged(result.settlement.id, included)
+                onFavoriteChanged = { included ->
+                    if (included) onFavoriteAdded(result.settlement) else onFavoriteRemoved(result.settlement.id)
                 },
                 displayName = settlementDisplayName(result.settlement),
             )

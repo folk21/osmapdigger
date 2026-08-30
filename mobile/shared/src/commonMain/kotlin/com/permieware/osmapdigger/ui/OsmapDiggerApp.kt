@@ -15,6 +15,7 @@ import com.permieware.osmapdigger.error.toOperationalFailure
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
 import com.permieware.osmapdigger.map.MapPackage
+import com.permieware.osmapdigger.notebook.FavoriteSettlementRepository
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
 import com.permieware.osmapdigger.presentation.SettlementDisplayNameResolver
 import com.permieware.osmapdigger.presentation.UiLanguage
@@ -34,6 +35,7 @@ import kotlinx.coroutines.launch
 fun OsmapDiggerApp(
     runtime: OsmapDiggerRuntime?,
     userPreferences: UserPreferencesRepository,
+    favoriteSettlements: FavoriteSettlementRepository,
     externalSearchProviders: ExternalSearchProviderRepository,
     onImportDataset: () -> Unit,
     onImportSettlementListFile: ((String) -> String?)? = null,
@@ -59,6 +61,7 @@ fun OsmapDiggerApp(
             LoadedDatasetApp(
                 runtime = runtime,
                 userPreferences = userPreferences,
+                favoriteSettlements = favoriteSettlements,
                 externalSearchProviders = externalSearchProviders,
                 onImportDataset = onImportDataset,
                 onImportSettlementListFile = onImportSettlementListFile,
@@ -108,6 +111,7 @@ private fun MissingDatasetScreen(
 private fun LoadedDatasetApp(
     runtime: OsmapDiggerRuntime,
     userPreferences: UserPreferencesRepository,
+    favoriteSettlements: FavoriteSettlementRepository,
     externalSearchProviders: ExternalSearchProviderRepository,
     onImportDataset: () -> Unit,
     onImportSettlementListFile: ((String) -> String?)?,
@@ -119,11 +123,12 @@ private fun LoadedDatasetApp(
 ) {
     val scope = rememberCoroutineScope()
     val analysisController =
-        remember(runtime.repository, userPreferences, scope) {
+        remember(runtime.repository, userPreferences, favoriteSettlements, scope) {
             AnalysisWorkspaceController(
                 repository = runtime.repository,
                 userPreferences = userPreferences,
                 scope = scope,
+                favoriteSettlements = favoriteSettlements,
                 onAnalysisDiagnostics = onAnalysisDiagnostics,
             )
         }
@@ -154,6 +159,9 @@ private fun LoadedDatasetApp(
     }
     val settlementDisplayName: (Settlement) -> String = { settlement ->
         settlementDisplayNames[settlement.id] ?: settlement.name
+    }
+    val settlementsById = remember(settlementNameEntries) {
+        settlementNameEntries.associate { it.settlement.id to it.settlement }
     }
 
     LaunchedEffect(analysisController) {
@@ -319,9 +327,11 @@ private fun LoadedDatasetApp(
                 radiusError = radiusError,
                 summary = summary,
                 rankedResults = rankedResults,
-                shortlist = analysisState.shortlist,
-                onShortlistMembershipChanged = analysisController::updateShortlistMembership,
-                onShortlistCleared = analysisController::clearShortlist,
+                favorites = analysisState.favorites,
+                favoriteSettlementsById = settlementsById,
+                onFavoriteAdded = analysisController::addFavorite,
+                onFavoriteRemoved = analysisController::removeFavorite,
+                onFavoritesCleared = analysisController::clearFavorites,
                 candidateScope = analysisState.candidateScope,
                 importedCandidateList = analysisState.importedCandidateList,
                 onImportedCandidatesApplied = analysisController::applyImportedCandidates,

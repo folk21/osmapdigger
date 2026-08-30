@@ -9,6 +9,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.desktop.map.IntelMacWebMapSurface
+import com.permieware.osmapdigger.desktop.notebook.SqliteFavoriteSettlementRepository
 import com.permieware.osmapdigger.desktop.importing.DesktopSettlementListFilePicker
 import com.permieware.osmapdigger.desktop.preferences.SqliteUserPreferencesRepository
 import com.permieware.osmapdigger.desktop.runtime.DesktopConfigLoader
@@ -19,6 +20,7 @@ import com.permieware.osmapdigger.error.OperationalFailure
 import com.permieware.osmapdigger.error.OperationalFailureKind
 import com.permieware.osmapdigger.error.toOperationalFailure
 import com.permieware.osmapdigger.external.OperationalExternalSearchProviderRepository
+import com.permieware.osmapdigger.notebook.OperationalFavoriteSettlementRepository
 import com.permieware.osmapdigger.preferences.OperationalUserPreferencesRepository
 import com.permieware.osmapdigger.ui.AppPresentationMode
 import com.permieware.osmapdigger.ui.OsmapDiggerApp
@@ -104,6 +106,10 @@ fun main() {
             remember {
                 OperationalUserPreferencesRepository(SqliteUserPreferencesRepository.createDefault())
             }
+        val favoriteSettlements =
+            remember {
+                OperationalFavoriteSettlementRepository(SqliteFavoriteSettlementRepository.createDefault())
+            }
         val externalSearchProviders =
             remember {
                 OperationalExternalSearchProviderRepository(SqliteExternalSearchProviderRepository.createDefault())
@@ -139,6 +145,7 @@ fun main() {
             OsmapDiggerApp(
                 runtime = datasetState.value?.runtime,
                 userPreferences = userPreferences,
+                favoriteSettlements = favoriteSettlements,
                 externalSearchProviders = externalSearchProviders,
                 hostFailure = hostFailure.value,
                 platformMapSurface = platformMapSurface,
