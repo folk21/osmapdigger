@@ -34,6 +34,10 @@ class UiLocalizationTest {
         assertEquals("Favorites", english.favorites)
         assertEquals("В избранном: 3", russian.favoriteCount(3))
         assertEquals("Favorites: 3", english.favoriteCount(3))
+        assertEquals("Выбрано: 2", russian.selectedFavorites(2))
+        assertEquals("Copy to import list (2)", english.copyFavoritesToImport(2))
+        assertTrue(russian.favoriteCurrentAnalysis(4, 81, 75).contains("рейтинг #4"))
+        assertEquals("Not in the current analysis results.", english.favoriteNotInCurrentResults)
         assertNotEquals(
             russian.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),
             english.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),

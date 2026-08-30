@@ -84,6 +84,10 @@ data class UiStrings(
     val favoritesEmpty: String,
     val openFavorite: String,
     val favoriteUnavailable: String,
+    val selectedFavorites: (Int) -> String,
+    val copyFavoritesToImport: (Int) -> String,
+    val favoriteCurrentAnalysis: (Int?, Int?, Int) -> String,
+    val favoriteNotInCurrentResults: String,
     val dataCoverage: (Int) -> String,
     val selected: String,
     val searchResults: String,
@@ -230,6 +234,16 @@ private val RussianUiStrings = UiStrings(
     favoritesEmpty = "Избранное пока пусто.",
     openFavorite = "Открыть",
     favoriteUnavailable = "Населённый пункт отсутствует в текущей версии набора данных.",
+    selectedFavorites = { count -> "Выбрано: $count" },
+    copyFavoritesToImport = { count -> "Скопировать в импорт-список ($count)" },
+    favoriteCurrentAnalysis = { rank, score, coverage ->
+        listOfNotNull(
+            rank?.let { "рейтинг #$it" },
+            score?.let { "оценка $it" } ?: "оценка —",
+            "полнота $coverage%",
+        ).joinToString(" · ")
+    },
+    favoriteNotInCurrentResults = "Сейчас не входит в результаты анализа.",
     dataCoverage = { value -> "Полнота данных $value%" },
     selected = "Выбрано",
     searchResults = "Результаты поиска",
@@ -380,6 +394,16 @@ private val EnglishUiStrings = UiStrings(
     favoritesEmpty = "No favorites yet.",
     openFavorite = "Open",
     favoriteUnavailable = "This settlement is not available in the current dataset version.",
+    selectedFavorites = { count -> "Selected: $count" },
+    copyFavoritesToImport = { count -> "Copy to import list ($count)" },
+    favoriteCurrentAnalysis = { rank, score, coverage ->
+        listOfNotNull(
+            rank?.let { "rank #$it" },
+            score?.let { "score $it" } ?: "score —",
+            "coverage $coverage%",
+        ).joinToString(" · ")
+    },
+    favoriteNotInCurrentResults = "Not in the current analysis results.",
     dataCoverage = { value -> "Data coverage $value%" },
     selected = "Selected",
     searchResults = "Search results",

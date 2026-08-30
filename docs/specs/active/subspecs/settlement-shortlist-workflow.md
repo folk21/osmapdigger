@@ -16,7 +16,7 @@ Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-
 
 Architecture-hardening iterations 1–3 established the dependency direction, typed operational-failure policy, shared settings/package contracts, and failure-safe dataset installation needed before the persisted candidate-source workflow. Further architecture gates remain active and will continue to be interleaved only between completed, testable product increments.
 
-The first four bounded feature increments are implemented. Shared/runtime contracts parse and conservatively resolve imported settlement text, ranked analysis carries an imported stable-ID scope, and Desktop/Android dataset adapters restrict candidate retrieval in deterministic bounded batches. Wide Desktop adds paste/UTF-8 file import plus explicit review of ambiguous/non-exact matches, while application settings schema version 4 persists the reviewed dataset-scoped candidate source. Ranked result cards expose the existing numeric score as a 0–100 visual bar, deterministic strongest/weakest contribution cues, and incomplete coverage. The earlier transient shortlist concept has been superseded by persistent dataset-scoped Favorites: application settings schema version 5 stores favorite settlements in a normalized table, and Desktop can browse, open, remove, and clear them without changing candidate source, ranking, or map/details selection. Android shares the persistence contract; polished Favorites UI remains Desktop-first.
+The first four bounded feature increments are implemented. Shared/runtime contracts parse and conservatively resolve imported settlement text, ranked analysis carries an imported stable-ID scope, and Desktop/Android dataset adapters restrict candidate retrieval in deterministic bounded batches. Wide Desktop adds paste/UTF-8 file import plus explicit review of ambiguous/non-exact matches, while application settings schema version 4 persists the reviewed dataset-scoped candidate source. Ranked result cards expose the existing numeric score as a 0–100 visual bar, deterministic strongest/weakest contribution cues, and incomplete coverage. The earlier transient shortlist concept has been superseded by persistent dataset-scoped Favorites: application settings schema version 5 stores favorite settlements in a normalized table. Desktop can browse compact settlement/current-analysis context, select one or many available Favorites, select all, open/remove/clear entries, and explicitly replace/activate the imported candidate list from the selected Favorites before returning to ranked results. Android shares the persistence contract; polished Favorites UI remains Desktop-first.
 
 The previously current [`desktop-analysis-workspace.md`](desktop-analysis-workspace.md) implementation is
 substantially complete and remains verification-pending until strict country-scale scoring and the
@@ -99,7 +99,7 @@ The imported candidate list and Favorites/Notebook are different product concept
 - **Candidate source** is an input boundary: it limits which settlements are considered by Required/radius/ranking.
 - **Favorites / Notebook** is persistent user-owned output: it collects interesting settlements found during research for later browsing, comparison, external search, export, notes, and re-analysis.
 
-Adding/removing a favorite must never change candidate source, filters, ranking inputs, or the single details/map selection. The existing single selected settlement remains the details/map focus. A future explicit action may analyze Favorites as a candidate source, but there is no automatic feedback loop.
+Adding/removing a favorite must never change candidate source, filters, ranking inputs, or the single details/map selection. The existing single selected settlement remains the details/map focus. Desktop provides an explicit user action that copies the currently selected available Favorites into the retained imported candidate list by stable settlement ID, replaces any previous imported list, activates the imported source, and returns to ranked results. This explicit bridge is the only Favorites-to-candidate feedback loop in the current workflow; Favorites never affect analysis automatically.
 
 ### Saved analysis snapshot
 
@@ -249,13 +249,17 @@ The numeric value must remain available; color alone must never carry score or c
 The first increment does not require statistical charts, scatter plots, radar charts, heatmaps, or
 spatial clustering. Those may be evaluated after the favorites/notebook workflow is usable.
 
-### SS-R6 — persistent favorites collection
+### SS-R6 — persistent favorites collection and explicit re-analysis bridge
 
 Users must be able to add/remove ranked settlements directly from a persistent dataset-scoped Favorites collection without changing the single settlement selected for map/details focus or the current candidate source.
 
-The initial Favorites entry uses stable `(datasetId, settlementId)` identity and stores the settlement display/canonical name at save time plus an insertion timestamp for deterministic presentation. Duplicate additions are idempotent. Desktop must provide a basic Favorites view with browse/open/remove/clear actions.
+The initial Favorites entry uses stable `(datasetId, settlementId)` identity and stores the settlement display/canonical name at save time plus an insertion timestamp for deterministic presentation. Duplicate additions are idempotent. Desktop must provide a Favorites view with compact settlement/current-analysis context plus browse/open/remove/clear actions.
 
-Changing filters/preferences or imported candidate source may remove a favorite from current ranked results; that must not delete the persistent favorite.
+Favorites selection is transient UI state, separate from persistent membership. Users must be able to select individual available entries, select all available entries, and clear the current selection. A saved entry whose stable ID is unavailable in the current dataset remains visible/removable but cannot be selected for current re-analysis.
+
+An explicit **Copy selected to import list** action must transfer selected stable settlement IDs directly without name resolution, replace the retained imported list, activate `SettlementCandidateScope.Imported`, close the Favorites view, and return the Desktop sidebar to ranked results. The generated import source text is editing provenance only; stable IDs remain authoritative. Existing Required, Preferences, center, and radius state are preserved and continue to apply through the normal analysis pipeline.
+
+Changing filters/preferences or imported candidate source may remove a favorite from current ranked results; that must not delete the persistent favorite. Merely selecting Favorites must not trigger analysis until the explicit copy action is invoked.
 
 ### SS-R7 — notebook enrichment and analysis snapshots
 
@@ -385,6 +389,8 @@ At minimum test:
 - exact/ambiguous/unresolved alias resolution;
 - candidate-ID restriction before scoring;
 - favorite state independent from candidate source and details selection;
+- Favorites multi-selection/select-all plus direct stable-ID transfer into an activated imported candidate scope;
+- unavailable saved Favorites excluded from current re-analysis transfer without losing the historical entry;
 - notebook snapshot encode/decode and schema migration;
 - snapshot immutability under later current-preference changes;
 - explicit snapshot refresh;
@@ -398,6 +404,8 @@ At minimum test:
 
 A user analyzes the current dataset with Required constraints and weighted Preferences. Results show
 score bars and coverage. The user marks several promising settlements as Favorites while opening only one of them in the map/details pane. The saved settlements remain available after filters or candidate source change.
+
+The user may then select several available Favorites and explicitly copy them to the imported candidate list. The previous import is replaced, the imported source becomes active, and the ranked-results list reopens using the same Required/radius/Preferences semantics.
 
 Exercises: SS-R1, SS-R5, SS-R6.
 
@@ -521,7 +529,7 @@ Implement in small increments:
 1. **Implemented: Candidate-source core** — immutable candidate-scope/import models, conservative bulk alias resolution, repository candidate-ID restriction, bounded stable-ID batching, and focused shared/Desktop tests. The core is wired into `AnalysisWorkspaceController` as transient state, but no user-facing import control or persistence is enabled yet.
 2. **Implemented: Candidate-source workflow** — Desktop paste/file import and full-sidebar review UI connect explicit reviewed matches to the shared stable-ID scope; active center/radius bounds the review alternatives, ambiguous exact matches support multi/select-all, the previous source text reopens for editing, and import can be disabled/re-enabled independently from deleting the retained list. Application settings schema version 4 keeps the same SQLite column while candidate-source payload version 2 stores active source plus retained reviewed IDs/source text; restore drops stale IDs without broadening an active import. The same shared contracts remain available for later Android document/text integration.
 3. **Implemented: Visual ranked affordances** — Desktop ranked cards keep the numeric score and add a 0–100 score bar, incomplete-coverage text, and deterministic strongest/weakest preference cues. The experimental transient `SettlementShortlist` layer was removed after clarifying that the user collection is persistent Favorites rather than another analysis-input loop.
-4. **Implemented: Persistent Favorites foundation** — add shared `FavoriteSettlementRepository`, settings schema version 5 with normalized `favorite_settlement`, Desktop/Android SQLite adapters, persistent result-card toggles, and a Desktop Favorites pane with browse/open/remove/clear. Favorites remain output state and never change candidate source or trigger recalculation.
+4. **Implemented: Persistent Favorites foundation and re-analysis bridge** — add shared `FavoriteSettlementRepository`, settings schema version 5 with normalized `favorite_settlement`, Desktop/Android SQLite adapters, persistent result-card toggles, and a Desktop Favorites pane with compact current context plus browse/open/remove/clear. Favorites selection is transient; individual/select-all actions can explicitly replace and activate the imported stable-ID candidate list and return to ranked results without re-resolving names. Favorites otherwise remain output state and never change candidate source or trigger recalculation.
 5. **Notebook enrichment** — add optional notes and frozen versioned analysis snapshots plus explicit snapshot refresh and tests.
 6. **Batch external search** — extend generic query construction to Favorites with explicit bounded/chunked browser actions and no provider-specific UI branches.
 7. **Export/share** — add versioned deterministic JSON plus human-readable summary export and platform save/share adapters.

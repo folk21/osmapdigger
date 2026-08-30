@@ -97,6 +97,7 @@ internal fun DesktopAnalysisWorkspace(
     var filterPickerOpen by remember { mutableStateOf(false) }
     var candidateImportOpen by remember { mutableStateOf(false) }
     var favoritesOpen by remember { mutableStateOf(false) }
+    var resultsFocusRequest by remember { mutableStateOf(0) }
     var mapCenterPickerActive by remember { mutableStateOf(false) }
     var mapCenterPickerResolving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -194,6 +195,7 @@ internal fun DesktopAnalysisWorkspace(
                         candidateImportOpen = false
                         favoritesOpen = true
                     },
+                    resultsFocusRequest = resultsFocusRequest,
                     selectedId = selected?.settlement?.id,
                     running = running,
                     error = error,
@@ -245,12 +247,18 @@ internal fun DesktopAnalysisWorkspace(
                         modifier = Modifier.fillMaxSize(),
                         favorites = favorites,
                         settlementsById = favoriteSettlementsById,
+                        rankedResults = rankedResults,
                         onOpen = { settlement ->
                             onSelect(settlement)
                             favoritesOpen = false
                         },
                         onRemove = onFavoriteRemoved,
                         onClear = onFavoritesCleared,
+                        onCopySelectedToImport = { sourceText, settlementIds ->
+                            onImportedCandidatesApplied(sourceText, settlementIds)
+                            favoritesOpen = false
+                            resultsFocusRequest += 1
+                        },
                         onClose = { favoritesOpen = false },
                         settlementDisplayName = settlementDisplayName,
                     )
@@ -379,6 +387,7 @@ private fun DesktopAnalysisSidebar(
     onFavoriteAdded: (Settlement) -> Unit,
     onFavoriteRemoved: (String) -> Unit,
     onFavoritesRequested: () -> Unit,
+    resultsFocusRequest: Int,
     selectedId: String?,
     running: Boolean,
     error: String?,
@@ -400,6 +409,16 @@ private fun DesktopAnalysisSidebar(
                     (if (running) 1 else 0) +
                     (if (error != null) 1 else 0)
             listState.animateScrollToItem(firstResultItemIndex + resultIndex)
+        }
+    }
+
+    LaunchedEffect(resultsFocusRequest) {
+        if (resultsFocusRequest > 0) {
+            val resultsHeaderIndex =
+                DESKTOP_SIDEBAR_STATIC_ITEMS_BEFORE_RESULTS - 1 +
+                    (if (running) 1 else 0) +
+                    (if (error != null) 1 else 0)
+            listState.animateScrollToItem(resultsHeaderIndex.coerceAtLeast(0))
         }
     }
 

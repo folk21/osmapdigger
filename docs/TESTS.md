@@ -88,7 +88,7 @@ On wide Desktop, verify that **Candidate source** can switch between the full da
 
 ## Favorites notebook acceptance
 
-On wide Desktop, mark several ranked settlements as **Favorites** and verify that membership does not change current candidate source, Required/Preferences, ranking, or map/details selection. Open **Favorites** and verify saved settlements can be opened, individually removed, and cleared. Restart the application with the same dataset and confirm favorites are restored. Favorite identity must be dataset-scoped and duplicate additions must not create duplicate rows. Android must continue to compile and use the same settings schema/repository contract even though the initial browsing surface is Desktop-first.
+On wide Desktop, mark several ranked settlements as **Favorites** and verify that membership does not change current candidate source, Required/Preferences, ranking, or map/details selection. Open **Favorites** and verify compact current context, individual selection, **Select all**, clear-selection, open/remove/clear actions, and disabled selection for an entry unavailable in the current dataset. Use **Copy to import list** and verify the selected stable IDs replace the previous retained import, the imported source becomes active without name resolution, the Favorites pane closes, and the sidebar returns to ranked results while existing Required/Preferences/center/radius state remains intact. Restart the application with the same dataset and confirm favorites are restored. Favorite identity must be dataset-scoped and duplicate additions must not create duplicate rows. Android must continue to compile and use the same settings schema/repository contract even though the initial browsing surface is Desktop-first.
 
 ## Ranked-analysis performance measurement
 
@@ -140,7 +140,7 @@ With a dataset that contains preference defaults, verify on a wide Desktop windo
 - Required and Preferences are visually separate and preference rows remain metric-generic;
 - only one preference row expands at a time, weight/target/limit edits recalculate rankings automatically, and reset restores dataset defaults;
 - ranked result cards show the numeric score plus a matching 0–100 score bar, incomplete data coverage when applicable, and deterministic strongest/weakest contribution cues;
-- favorite checkboxes persist dataset-scoped settlements without changing candidate source or the single selected map/details settlement; favorite changes do not trigger recalculation, and the Favorites pane supports browse/open/remove/clear;
+- favorite checkboxes persist dataset-scoped settlements without changing candidate source or the single selected map/details settlement; favorite selection remains transient, and only the explicit selected-Favorites transfer replaces/activates the imported candidate source and triggers normal recalculation;
 - the Desktop analysis sidebar starts at roughly one third of a normal wide window and remains resizable within bounded limits;
 - **Add filter** opens a full-height chooser inside the left analysis pane and never overlaps the map rectangle;
 - with no selected settlement, the shallow pane beneath the map shows the current ranked-result count and updating state without requiring the user to inspect the left results list;
