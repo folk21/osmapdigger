@@ -36,6 +36,8 @@ interface GeoRepository {
      *
      * Implementations must not apply an unrelated final result limit here: shared
      * analysis performs exact radius filtering, scoring, ranking, and final limiting.
+     * [candidateSettlementIds] is null for the unrestricted dataset scope; a non-null set restricts
+     * retrieval to reviewed stable IDs. Empty sets must return no candidates without broadening.
      * Missing requested metrics remain absent from each candidate metric map.
      */
     suspend fun analysisCandidates(
@@ -43,6 +45,7 @@ interface GeoRepository {
         latitudeRange: ClosedFloatingPointRange<Double>?,
         longitudeRange: ClosedFloatingPointRange<Double>?,
         scoringMetricIds: Set<String>,
+        candidateSettlementIds: Set<String>?,
     ): List<SettlementAnalysisCandidate>
 
     suspend fun details(settlementId: String): SettlementDetails

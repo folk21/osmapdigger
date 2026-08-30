@@ -107,9 +107,9 @@ Validation checks required files and SQLite integrity/counts. It is also execute
 
 1. Download or prepare a `.osm.pbf` locally.
 2. Place it under `data/source/osm/`.
-3. Add a dataset entry in `geo-builder/config/datasets.toml`.
-4. Choose a practical initial map center/zoom.
-5. Run the normal build command with the new dataset ID.
+4. Add a dataset entry in `geo-builder/config/datasets.toml`.
+5. Choose a practical initial map center/zoom.
+6. Run the normal build command with the new dataset ID.
 
 For a very large country, prefer an externally supplied regional PBF rather than configuring an impractically large whole-country runtime package.
 
@@ -148,15 +148,16 @@ Imported ZIPs are installed under `~/.osmapdigger/datasets/`.
 ## Desktop analysis workflow
 
 1. Open a dataset.
-2. Optionally select a center settlement and radius in **Search area**.
-3. Use **Required** for hard eligibility constraints. Controls are labeled by persisted metric semantics: distance metrics use **Min/Max distance** with their distance unit, count metrics use **Min/Max number** for the number of mapped features inside the metric's fixed radius, and coverage metrics use **Min/Max coverage** with `%`. The **Add filter** chooser explains the measurement type so a nearest-feature distance is not confused with a fixed-radius feature count.
-4. Use **Preferences** to enable ranking criteria, expand one row at a time, and adjust target/limit/weight when needed.
-5. Results recalculate automatically after valid analytical changes and appear in ranked order with score and data coverage; the Desktop analysis workflow does not require pressing Search after each change.
-6. Radius is optional: blank or `0` means no radius limit, and **Clear** removes the current radius value.
-7. When no settlement is selected, the compact pane below the map shows the current number of ranked settlements and whether recalculation is still running.
-8. Select a ranked result to highlight/focus it on the map and replace that status pane with a compact settlement summary. The summary includes score/coverage plus every active search metric, prioritizing effective Required constraints and then enabled Preferences; scroll the compact criteria strip horizontally when many criteria are active.
-9. Use **Details** to open complete deterministic score explanation and grouped raw metrics in a scrollable view in the same lower pane.
-10. Use the separate **External search** action to open configured Google/Yandex/other provider buttons when relevant.
+2. Choose the candidate source. **Full dataset** keeps normal dataset-wide analysis. **Import settlement list** opens a left-pane review workflow where you can paste one settlement name per line or load a UTF-8 `.txt` file. Unique exact aliases are accepted automatically; ambiguous and non-exact suggestions require an explicit selection. Applying the review stores the resulting stable-ID scope for this dataset, and **Use full dataset** removes that restriction.
+3. Optionally select a center settlement and radius in **Search area**.
+4. Use **Required** for hard eligibility constraints. Controls are labeled by persisted metric semantics: distance metrics use **Min/Max distance** with their distance unit, count metrics use **Min/Max number** for the number of mapped features inside the metric's fixed radius, and coverage metrics use **Min/Max coverage** with `%`. The **Add filter** chooser explains the measurement type so a nearest-feature distance is not confused with a fixed-radius feature count.
+5. Use **Preferences** to enable ranking criteria, expand one row at a time, and adjust target/limit/weight when needed.
+6. Results recalculate automatically after valid analytical changes and appear in ranked order with score and data coverage; the Desktop analysis workflow does not require pressing Search after each change.
+7. Radius is optional: blank or `0` means no radius limit, and **Clear** removes the current radius value.
+8. When no settlement is selected, the compact pane below the map shows the current number of ranked settlements and whether recalculation is still running.
+9. Select a ranked result to highlight/focus it on the map and replace that status pane with a compact settlement summary. The summary includes score/coverage plus every active search metric, prioritizing effective Required constraints and then enabled Preferences; scroll the compact criteria strip horizontally when many criteria are active.
+10. Use **Details** to open complete deterministic score explanation and grouped raw metrics in a scrollable view in the same lower pane.
+11. Use the separate **External search** action to open configured Google/Yandex/other provider buttons when relevant.
 
 The analysis sidebar is resizable on wide Desktop windows and defaults to roughly one third of the window. **Add filter** opens a chooser that fills the left analysis pane only; it never covers the map. With no selected settlement, only a shallow search-status pane is reserved below the map. When a settlement is selected, the right side is split vertically so the map remains above and settlement information appears below it. Closing the settlement returns to the shallow result-count pane. An empty visible Required range has no filtering effect. Dataset-scoped center, radius, hard constraints, and sparse preference overrides are saved locally and restored for the same dataset.
 

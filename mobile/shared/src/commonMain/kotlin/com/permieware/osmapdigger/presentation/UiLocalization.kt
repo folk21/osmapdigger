@@ -1,5 +1,7 @@
 package com.permieware.osmapdigger.presentation
 
+import com.permieware.osmapdigger.error.OperationalFailureKind
+
 
 /** Languages supported by the shared application UI. Dataset-provided metric text remains dataset-owned. */
 enum class UiLanguage(val code: String, val displayName: String) {
@@ -16,6 +18,26 @@ data class UiStrings(
     val generateAndImportDataset: String,
     val importDataset: String,
     val changeDataset: String,
+    val candidateSource: String,
+    val candidateSourceDataset: String,
+    val candidateSourceImported: (Int) -> String,
+    val importSettlementList: String,
+    val replaceSettlementList: String,
+    val useFullDataset: String,
+    val settlementListImportTitle: String,
+    val settlementListImportInstructions: String,
+    val settlementListTextLabel: String,
+    val loadTextFile: String,
+    val resolveNames: String,
+    val resolvingNames: String,
+    val importResolvedSummary: (Int, Int) -> String,
+    val exactMatch: String,
+    val ambiguousMatch: String,
+    val noExactMatch: String,
+    val suggestions: String,
+    val skipEntry: String,
+    val applyImportedCandidates: (Int) -> String,
+    val noImportLines: String,
     val generatedSearchQuery: String,
     val searchTab: String,
     val mapTab: String,
@@ -79,7 +101,7 @@ data class UiStrings(
     val noGeneratedMapArtifact: String,
     val radiusRequiresCenter: String,
     val radiusInvalid: String,
-    val externalProvidersLoadFailed: (String) -> String,
+    val operationalFailureMessage: (OperationalFailureKind) -> String,
     val minDistance: String,
     val maxDistance: String,
     val minNumber: String,
@@ -128,6 +150,26 @@ private val RussianUiStrings = UiStrings(
     generateAndImportDataset = "Создайте .omd.zip с помощью Python Geo Builder и импортируйте его сюда.",
     importDataset = "Импортировать набор",
     changeDataset = "Сменить",
+    candidateSource = "Источник кандидатов",
+    candidateSourceDataset = "Весь набор данных",
+    candidateSourceImported = { count -> "Импортированный список: $count" },
+    importSettlementList = "Импортировать список",
+    replaceSettlementList = "Заменить список",
+    useFullDataset = "Использовать весь набор",
+    settlementListImportTitle = "Импорт населённых пунктов",
+    settlementListImportInstructions = "Вставьте список или загрузите UTF-8 текстовый файл: один населённый пункт на строку. Неоднозначные и неточные совпадения требуют явного выбора.",
+    settlementListTextLabel = "Названия населённых пунктов",
+    loadTextFile = "Загрузить .txt",
+    resolveNames = "Проверить названия",
+    resolvingNames = "Проверка…",
+    importResolvedSummary = { resolved, total -> "Выбрано кандидатов: $resolved из $total строк" },
+    exactMatch = "Точное совпадение",
+    ambiguousMatch = "Несколько точных совпадений — выберите одно",
+    noExactMatch = "Точного совпадения нет",
+    suggestions = "Возможные варианты",
+    skipEntry = "Пропустить строку",
+    applyImportedCandidates = { count -> "Использовать кандидатов: $count" },
+    noImportLines = "Добавьте хотя бы одно название населённого пункта.",
     generatedSearchQuery = "Условия поиска",
     searchTab = "Поиск",
     mapTab = "Карта",
@@ -191,7 +233,20 @@ private val RussianUiStrings = UiStrings(
     noGeneratedMapArtifact = "В установленном пакете также отсутствует сгенерированный файл карты.",
     radiusRequiresCenter = "Перед заданием радиуса выберите населённый пункт-центр.",
     radiusInvalid = "Радиус должен быть равен нулю или быть положительным числом.",
-    externalProvidersLoadFailed = { message -> "Не удалось загрузить внешние поисковые сервисы: $message" },
+    operationalFailureMessage = { kind ->
+        when (kind) {
+            OperationalFailureKind.DATASET_NOT_FOUND -> "Набор данных не найден."
+            OperationalFailureKind.DATASET_INVALID -> "Пакет набора данных повреждён или несовместим."
+            OperationalFailureKind.DATASET_STORAGE -> "Не удалось прочитать или сохранить файлы набора данных."
+            OperationalFailureKind.FILE_ACCESS -> "Не удалось прочитать выбранный локальный файл."
+            OperationalFailureKind.DATABASE -> "Не удалось прочитать локальные аналитические данные."
+            OperationalFailureKind.SETTINGS -> "Не удалось прочитать или сохранить локальные настройки."
+            OperationalFailureKind.SETTINGS_INCOMPATIBLE -> "Локальная база настроек имеет неподдерживаемую версию."
+            OperationalFailureKind.EXTERNAL_ACTION -> "Не удалось открыть внешнее действие."
+            OperationalFailureKind.MAP -> "Не удалось запустить локальную карту."
+            OperationalFailureKind.UNKNOWN -> "Произошла непредвиденная локальная ошибка."
+        }
+    },
     minDistance = "Мин. расстояние",
     maxDistance = "Макс. расстояние",
     minNumber = "Мин. количество",
@@ -231,6 +286,26 @@ private val EnglishUiStrings = UiStrings(
     generateAndImportDataset = "Generate a .omd.zip with the Python Geo Builder, then import it here.",
     importDataset = "Import dataset",
     changeDataset = "Change",
+    candidateSource = "Candidate source",
+    candidateSourceDataset = "Full dataset",
+    candidateSourceImported = { count -> "Imported list: $count" },
+    importSettlementList = "Import settlement list",
+    replaceSettlementList = "Replace list",
+    useFullDataset = "Use full dataset",
+    settlementListImportTitle = "Import settlements",
+    settlementListImportInstructions = "Paste a list or load a UTF-8 text file: one settlement per line. Ambiguous and non-exact matches require an explicit choice.",
+    settlementListTextLabel = "Settlement names",
+    loadTextFile = "Load .txt",
+    resolveNames = "Review names",
+    resolvingNames = "Reviewing…",
+    importResolvedSummary = { resolved, total -> "Selected candidates: $resolved from $total lines" },
+    exactMatch = "Exact match",
+    ambiguousMatch = "Multiple exact matches — choose one",
+    noExactMatch = "No exact match",
+    suggestions = "Suggestions",
+    skipEntry = "Skip line",
+    applyImportedCandidates = { count -> "Use $count candidates" },
+    noImportLines = "Add at least one settlement name.",
     generatedSearchQuery = "Generated search query",
     searchTab = "Search",
     mapTab = "Map",
@@ -294,7 +369,20 @@ private val EnglishUiStrings = UiStrings(
     noGeneratedMapArtifact = "The installed package also has no generated map artifact.",
     radiusRequiresCenter = "Select a center settlement before setting a radius.",
     radiusInvalid = "Radius must be zero or a positive number.",
-    externalProvidersLoadFailed = { message -> "Could not load external search providers: $message" },
+    operationalFailureMessage = { kind ->
+        when (kind) {
+            OperationalFailureKind.DATASET_NOT_FOUND -> "Dataset package was not found."
+            OperationalFailureKind.DATASET_INVALID -> "The dataset package is damaged or incompatible."
+            OperationalFailureKind.DATASET_STORAGE -> "Dataset files could not be read or stored."
+            OperationalFailureKind.FILE_ACCESS -> "The selected local file could not be read."
+            OperationalFailureKind.DATABASE -> "Local analytical data could not be read."
+            OperationalFailureKind.SETTINGS -> "Local settings could not be read or saved."
+            OperationalFailureKind.SETTINGS_INCOMPATIBLE -> "The local settings database has an unsupported version."
+            OperationalFailureKind.EXTERNAL_ACTION -> "The external action could not be opened."
+            OperationalFailureKind.MAP -> "The local map could not be started."
+            OperationalFailureKind.UNKNOWN -> "An unexpected local error occurred."
+        }
+    },
     minDistance = "Min distance",
     maxDistance = "Max distance",
     minNumber = "Min number",

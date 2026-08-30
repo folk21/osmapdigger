@@ -1,81 +1,63 @@
 package com.permieware.osmapdigger.settings
 
 import android.database.sqlite.SQLiteDatabase
+import com.permieware.osmapdigger.error.OperationalFailureKind
+import com.permieware.osmapdigger.error.operationalBoundary
+import com.permieware.osmapdigger.error.operationalFailure
 import java.io.File
 
-/** Owns the Android application settings SQLite schema and migrations. */
+/** Android SQLite executor for the shared application settings schema. */
 class AndroidSettingsDatabase(
     val file: File,
 ) {
-    fun initialize() {
-        file.parentFile?.mkdirs()
-        openDatabase().use { database ->
-            when (database.version) {
-                0 -> createSchema(database)
-                1 -> {
-                    migrateFrom1To2(database)
-                    migrateFrom2To3(database)
+    fun initialize() =
+        operationalBoundary(OperationalFailureKind.SETTINGS, "Could not initialize Android settings database") {
+            file.parentFile?.mkdirs()
+            openDatabase().use { database ->
+                val version = database.version
+                if (version == 0) {
+                    createSchema(database)
+                } else {
+                    val migrations =
+                        ApplicationSettingsSchema.migrationsFrom(version)
+                            ?: operationalFailure(
+                                OperationalFailureKind.SETTINGS_INCOMPATIBLE,
+                                "Unsupported settings database schema version $version; expected <= ${ApplicationSettingsSchema.VERSION}",
+                            )
+                    migrations.forEach { migration -> applyMigration(database, migration) }
                 }
-                2 -> migrateFrom2To3(database)
-                SCHEMA_VERSION -> Unit
-                else -> error(
-                    "Unsupported settings database schema version ${database.version}; " +
-                        "expected <= $SCHEMA_VERSION",
-                )
             }
+        }
+
+    fun openDatabase(): SQLiteDatabase =
+        operationalBoundary(OperationalFailureKind.SETTINGS, "Could not open Android settings database") {
+            SQLiteDatabase.openOrCreateDatabase(file, null)
+        }
+
+    private fun createSchema(database: SQLiteDatabase) {
+        database.inTransaction {
+            ApplicationSettingsSchema.createStatements.forEach { sql -> execSQL(sql) }
+            version = ApplicationSettingsSchema.VERSION
         }
     }
 
-    fun openDatabase(): SQLiteDatabase =
-        SQLiteDatabase.openOrCreateDatabase(file, null)
-
-    private fun createSchema(database: SQLiteDatabase) {
-        database.execSQL(USER_PREFERENCES_SCHEMA)
-        database.execSQL(EXTERNAL_SEARCH_PROVIDER_SCHEMA)
-        database.version = SCHEMA_VERSION
+    private fun applyMigration(
+        database: SQLiteDatabase,
+        migration: SettingsMigration,
+    ) {
+        database.inTransaction {
+            migration.statements.forEach { sql -> execSQL(sql) }
+            version = migration.toVersion
+        }
     }
 
-    private fun migrateFrom1To2(database: SQLiteDatabase) {
-        database.execSQL(EXTERNAL_SEARCH_PROVIDER_SCHEMA)
-        database.version = 2
-    }
-
-    private fun migrateFrom2To3(database: SQLiteDatabase) {
-        database.execSQL(ADD_PREFERENCE_OVERRIDES_COLUMN)
-        database.version = SCHEMA_VERSION
-    }
-
-    companion object {
-        const val SCHEMA_VERSION = 3
-        const val GLOBAL_COUNTRY_CODE = "*"
-
-        private const val USER_PREFERENCES_SCHEMA = """
-            CREATE TABLE user_preferences (
-                id INTEGER PRIMARY KEY NOT NULL CHECK(id = 1),
-                dataset_id TEXT NOT NULL,
-                center_settlement_id TEXT,
-                center_settlement_name TEXT,
-                radius_km REAL,
-                filters_json TEXT NOT NULL,
-                preferences_json TEXT NOT NULL DEFAULT '{"version":1,"preferences":[]}'
-            )
-        """
-
-        private const val ADD_PREFERENCE_OVERRIDES_COLUMN = """
-            ALTER TABLE user_preferences
-            ADD COLUMN preferences_json TEXT NOT NULL DEFAULT '{"version":1,"preferences":[]}'
-        """
-
-        private const val EXTERNAL_SEARCH_PROVIDER_SCHEMA = """
-            CREATE TABLE IF NOT EXISTS external_search_provider (
-                provider_id TEXT NOT NULL,
-                title TEXT NOT NULL,
-                country_code TEXT NOT NULL,
-                url_template TEXT NOT NULL,
-                enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
-                priority INTEGER NOT NULL DEFAULT 100,
-                PRIMARY KEY(provider_id, country_code)
-            )
-        """
+    private inline fun SQLiteDatabase.inTransaction(block: SQLiteDatabase.() -> Unit) {
+        beginTransaction()
+        try {
+            block()
+            setTransactionSuccessful()
+        } finally {
+            endTransaction()
+        }
     }
 }

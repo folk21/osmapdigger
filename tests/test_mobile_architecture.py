@@ -12,15 +12,17 @@ PACKAGE_PREFIX = "com.permieware.osmapdigger."
 # not an incidental consequence of which classes happen to import each other.
 ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
     "domain": set(),
+    "error": set(),
+    "settings": set(),
     "geo": {"domain"},
-    "dataset": {"domain"},
+    "dataset": {"domain", "error"},
     "map": {"domain"},
-    "external": {"domain"},
+    "external": {"domain", "error"},
     "search": {"domain", "geo", "dataset"},
     "analysis": {"domain", "search", "dataset"},
-    "preferences": {"domain", "analysis"},
-    "presentation": {"domain", "analysis", "preferences"},
-    "workspace": {"domain", "analysis", "preferences", "dataset"},
+    "preferences": {"domain", "analysis", "error", "settings"},
+    "presentation": {"domain", "analysis", "preferences", "error"},
+    "workspace": {"domain", "analysis", "preferences", "dataset", "error"},
     "runtime": {"dataset", "map", "external"},
     "ui": {
         "domain",
@@ -32,6 +34,7 @@ ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
         "runtime",
         "map",
         "external",
+        "error",
     },
 }
 
@@ -150,3 +153,67 @@ def test_mobile_readme_lists_all_current_gradle_modules() -> None:
     assert modules, "No mobile Gradle modules discovered"
     missing = sorted(module for module in modules if f"`{module}`" not in readme)
     assert missing == [], f"mobile/README.md does not document Gradle modules: {missing}"
+
+
+def test_settings_schema_semantics_have_one_shared_owner() -> None:
+    desktop = (
+        REPO_ROOT
+        / "mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/settings/DesktopSettingsDatabase.kt"
+    ).read_text(encoding="utf-8")
+    android = (
+        REPO_ROOT
+        / "mobile/androidApp/src/main/kotlin/com/permieware/osmapdigger/settings/AndroidSettingsDatabase.kt"
+    ).read_text(encoding="utf-8")
+    shared = (
+        COMMON_MAIN
+        / "com/permieware/osmapdigger/settings/ApplicationSettingsSchema.kt"
+    ).read_text(encoding="utf-8")
+
+    assert "CREATE TABLE user_preferences" in shared
+    assert "external_search_provider" in shared
+    assert "candidate_scope_json" in shared
+    assert "ALTER TABLE user_preferences" in shared
+    for platform_source in (desktop, android):
+        assert "ApplicationSettingsSchema" in platform_source
+        assert "CREATE TABLE user_preferences" not in platform_source
+        assert "CREATE TABLE external_search_provider" not in platform_source
+        assert "ALTER TABLE user_preferences" not in platform_source
+
+
+def test_dataset_package_layout_and_metadata_parser_are_shared() -> None:
+    contract = (
+        COMMON_MAIN
+        / "com/permieware/osmapdigger/dataset/DatasetPackageContract.kt"
+    ).read_text(encoding="utf-8")
+    assert 'const val METADATA_FILE = "metadata.json"' in contract
+    assert 'const val DATABASE_FILE = "georisk.sqlite"' in contract
+    assert 'const val STYLE_TEMPLATE_FILE = "style.template.json"' in contract
+    assert "DatasetPackageMetadataParser" in contract
+
+    platform_sources = [
+        REPO_ROOT
+        / "mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/runtime/DesktopDataset.kt",
+        REPO_ROOT
+        / "mobile/androidApp/src/main/kotlin/com/permieware/osmapdigger/runtime/AndroidDataset.kt",
+    ]
+    for source in platform_sources:
+        text = source.read_text(encoding="utf-8")
+        assert "DatasetPackageLayout" in text
+        assert "DatasetPackageMetadataParser" in text
+        assert "JSONObject(" not in text
+        assert "Json.parseToJsonElement" not in text
+
+
+def test_meaningful_runtime_paths_do_not_silently_drop_failures() -> None:
+    paths = [
+        COMMON_MAIN / "com/permieware/osmapdigger/workspace/AnalysisWorkspaceController.kt",
+        COMMON_MAIN / "com/permieware/osmapdigger/ui/OsmapDiggerApp.kt",
+        REPO_ROOT / "mobile/androidApp/src/main/kotlin/com/permieware/osmapdigger/MainActivity.kt",
+    ]
+    violations: list[str] = []
+    for path in paths:
+        text = path.read_text(encoding="utf-8")
+        for token in (".getOrNull()", ".getOrDefault("):
+            if token in text:
+                violations.append(f"{path.relative_to(REPO_ROOT)} contains {token}")
+    assert violations == [], violations

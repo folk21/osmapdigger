@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.presentation
 
+import com.permieware.osmapdigger.error.OperationalFailureKind
 import com.permieware.osmapdigger.ui.filterSummaryText
 import com.permieware.osmapdigger.ui.metricFilterText
 import kotlin.test.Test
@@ -23,6 +24,12 @@ class UiLocalizationTest {
         assertEquals("Search", english.searchTab)
         assertEquals("Выбрать центр на карте", russian.pickCenterOnMap)
         assertEquals("Pick center on map", english.pickCenterOnMap)
+        assertEquals("Источник кандидатов", russian.candidateSource)
+        assertEquals("Candidate source", english.candidateSource)
+        assertNotEquals(
+            russian.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),
+            english.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),
+        )
         assertNotEquals(russian.details, english.details)
     }
 

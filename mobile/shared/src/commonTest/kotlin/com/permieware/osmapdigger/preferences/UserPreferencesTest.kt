@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.preferences
 
+import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.MetricPreferenceDefault
@@ -140,6 +141,64 @@ class UserPreferencesTest {
 
         assertEquals(center, restored?.center)
         assertEquals(25.0, restored?.radiusKm)
+    }
+
+
+    @Test
+    fun candidateScopePayloadRoundTripsDatasetAndImportedScopes() {
+        assertEquals(
+            SettlementCandidateScope.Dataset,
+            SettlementCandidateScopePayloadCodec.decode(
+                SettlementCandidateScopePayloadCodec.encode(SettlementCandidateScope.Dataset),
+            ),
+        )
+        val imported = SettlementCandidateScope.Imported(listOf("node:1", "relation:2"))
+        assertEquals(imported, SettlementCandidateScopePayloadCodec.decode(SettlementCandidateScopePayloadCodec.encode(imported)))
+        assertNull(SettlementCandidateScopePayloadCodec.decode("not-json"))
+        assertNull(SettlementCandidateScopePayloadCodec.decode("""{"version":2,"source":"dataset"}"""))
+    }
+
+    @Test
+    fun restoreKeepsImportedScopeBoundedWhenSomeSavedSettlementsDisappear() = runTest {
+        val preferences =
+            UserPreferences(
+                datasetId = "dataset-a",
+                candidateScope = SettlementCandidateScope.Imported(listOf("node:1", "node:gone", "node:2")),
+            )
+
+        val restored =
+            UserPreferencesRestorer.restore(
+                preferences = preferences,
+                datasetId = "dataset-a",
+                definitions = emptyList(),
+                resolveSettlement = { null },
+                availableSettlementIds = setOf("node:1", "node:2"),
+            )
+
+        assertEquals(
+            SettlementCandidateScope.Imported(listOf("node:1", "node:2")),
+            restored?.candidateScope,
+        )
+    }
+
+    @Test
+    fun restoreNeverBroadensAnImportedScopeWhenAllSavedSettlementsDisappear() = runTest {
+        val preferences =
+            UserPreferences(
+                datasetId = "dataset-a",
+                candidateScope = SettlementCandidateScope.Imported(listOf("node:gone")),
+            )
+
+        val restored =
+            UserPreferencesRestorer.restore(
+                preferences = preferences,
+                datasetId = "dataset-a",
+                definitions = emptyList(),
+                resolveSettlement = { null },
+                availableSettlementIds = emptySet(),
+            )
+
+        assertEquals(SettlementCandidateScope.Imported(emptyList()), restored?.candidateScope)
     }
 
     @Test

@@ -74,6 +74,7 @@ class JdbcGeoRepositoryTest {
                     latitudeRange = null,
                     longitudeRange = null,
                     scoringMetricIds = setOf("forest.distance_km", "school.distance_km"),
+                    candidateSettlementIds = null,
                 )
 
             assertEquals(listOf("a", "b"), result.map { it.settlement.id })
@@ -86,6 +87,66 @@ class JdbcGeoRepositoryTest {
             )
             assertEquals(mapOf("school.distance_km" to 2.0), result[1].metricValues)
             assertTrue(result.none { "water.distance_km" in it.metricValues })
+        }
+    }
+
+    @Test
+    fun analysisCandidatesRestrictsByStableSettlementIdsBeforeScoring() = runBlocking {
+        val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite::memory:" }
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                createAnalysisTables(statement)
+                statement.execute("INSERT INTO settlement VALUES ('a','Alpha',NULL,NULL,'village',NULL,42.5,1.5)")
+                statement.execute("INSERT INTO settlement VALUES ('b','Beta',NULL,NULL,'village',NULL,42.6,1.6)")
+                statement.execute("INSERT INTO settlement VALUES ('c','Gamma',NULL,NULL,'village',NULL,42.7,1.7)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('a','forest.distance_km',1.0)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('b','forest.distance_km',2.0)")
+                statement.execute("INSERT INTO settlement_metric VALUES ('c','forest.distance_km',3.0)")
+            }
+
+            val result =
+                repository(connection).analysisCandidates(
+                    conditions = emptyList(),
+                    latitudeRange = null,
+                    longitudeRange = null,
+                    scoringMetricIds = setOf("forest.distance_km"),
+                    candidateSettlementIds = setOf("c", "a"),
+                )
+
+            assertEquals(listOf("a", "c"), result.map { it.settlement.id })
+            assertEquals(mapOf("forest.distance_km" to 1.0), result[0].metricValues)
+            assertEquals(mapOf("forest.distance_km" to 3.0), result[1].metricValues)
+        }
+    }
+
+    @Test
+    fun analysisCandidatesChunksLargeImportedIdSetsDeterministically() = runBlocking {
+        val dataSource = SQLiteDataSource().apply { url = "jdbc:sqlite::memory:" }
+        dataSource.connection.use { connection ->
+            connection.createStatement().use { statement ->
+                createAnalysisTables(statement)
+                repeat(905) { index ->
+                    val id = "id%04d".format(index)
+                    statement.execute(
+                        "INSERT INTO settlement VALUES ('$id','Name $index',NULL,NULL,'village',NULL,42.5,1.5)",
+                    )
+                }
+            }
+            val requestedIds = (0 until 901).map { "id%04d".format(it) }.toSet()
+
+            val result =
+                repository(connection).analysisCandidates(
+                    conditions = emptyList(),
+                    latitudeRange = null,
+                    longitudeRange = null,
+                    scoringMetricIds = emptySet(),
+                    candidateSettlementIds = requestedIds,
+                )
+
+            assertEquals(901, result.size)
+            assertEquals("id0000", result.first().settlement.id)
+            assertEquals("id0900", result.last().settlement.id)
+            assertTrue(result.all { it.settlement.id in requestedIds })
         }
     }
 
@@ -109,6 +170,7 @@ class JdbcGeoRepositoryTest {
                     latitudeRange = null,
                     longitudeRange = null,
                     scoringMetricIds = emptySet(),
+                    candidateSettlementIds = null,
                 )
 
             assertEquals(listOf("a", "b"), result.map { it.settlement.id })

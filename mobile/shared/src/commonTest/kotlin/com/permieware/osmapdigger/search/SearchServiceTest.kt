@@ -81,6 +81,7 @@ class SearchServiceTest {
             latitudeRange: ClosedFloatingPointRange<Double>?,
             longitudeRange: ClosedFloatingPointRange<Double>?,
             scoringMetricIds: Set<String>,
+            candidateSettlementIds: Set<String>?,
         ): List<SettlementAnalysisCandidate> = error("not used")
 
         override suspend fun details(settlementId: String): SettlementDetails =

@@ -1,10 +1,12 @@
 package com.permieware.osmapdigger.preferences
 
 import com.permieware.osmapdigger.analysis.MetricPreference
+import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.MetricPreferenceDefault
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.domain.Settlement
+import com.permieware.osmapdigger.settings.ApplicationSettingsSchema
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -17,6 +19,7 @@ data class UserPreferences(
     val radiusKm: Double? = null,
     val conditions: List<SearchCondition> = emptyList(),
     val preferenceOverrides: List<MetricPreferenceOverride> = emptyList(),
+    val candidateScope: SettlementCandidateScope = SettlementCandidateScope.Dataset,
 )
 
 /** User-owned changes layered over one dataset-provided preference default. */
@@ -55,11 +58,12 @@ interface UserPreferencesRepository {
     suspend fun save(preferences: UserPreferences)
 }
 
-/** Search state returned after validating persisted preferences against an opened dataset. */
+/** Restored analysis state after validating persisted preferences against an opened dataset. */
 data class RestoredSearchContext(
     val center: Settlement?,
     val radiusKm: Double?,
     val conditions: List<SearchCondition>,
+    val candidateScope: SettlementCandidateScope,
 )
 
 /**
@@ -74,6 +78,7 @@ object UserPreferencesRestorer {
         datasetId: String,
         definitions: List<MetricDefinition>,
         resolveSettlement: suspend (String) -> Settlement?,
+        availableSettlementIds: Set<String> = emptySet(),
     ): RestoredSearchContext? {
         if (preferences == null || preferences.datasetId != datasetId) {
             return null
@@ -87,12 +92,22 @@ object UserPreferencesRestorer {
                 .distinctBy { it.metricId }
                 .toList()
 
+        val restoredCandidateScope =
+            when (val savedScope = preferences.candidateScope) {
+                SettlementCandidateScope.Dataset -> SettlementCandidateScope.Dataset
+                is SettlementCandidateScope.Imported ->
+                    SettlementCandidateScope.Imported(
+                        savedScope.settlementIds.filter { it in availableSettlementIds },
+                    )
+            }
+
         val centerId = preferences.centerSettlementId
         if (centerId == null) {
             return RestoredSearchContext(
                 center = null,
                 radiusKm = null,
                 conditions = restoredConditions,
+                candidateScope = restoredCandidateScope,
             )
         }
 
@@ -105,6 +120,7 @@ object UserPreferencesRestorer {
             center = center,
             radiusKm = if (center != null) radius else null,
             conditions = restoredConditions,
+            candidateScope = restoredCandidateScope,
         )
     }
 }
@@ -150,6 +166,58 @@ object MetricPreferenceOverrideResolver {
     }
 }
 
+/** Versioned JSON representation for the dataset-wide or reviewed imported candidate scope. */
+object SettlementCandidateScopePayloadCodec {
+    private const val CURRENT_VERSION = 1
+
+    private val json = Json {
+        encodeDefaults = true
+        ignoreUnknownKeys = true
+    }
+
+    fun encode(scope: SettlementCandidateScope): String =
+        when (scope) {
+            SettlementCandidateScope.Dataset -> ApplicationSettingsSchema.DEFAULT_CANDIDATE_SCOPE_PAYLOAD
+            is SettlementCandidateScope.Imported ->
+                json.encodeToString(
+                    CandidateScopePayload(
+                        version = CURRENT_VERSION,
+                        source = SOURCE_IMPORTED,
+                        settlementIds = scope.settlementIds,
+                    ),
+                )
+        }
+
+    /** Return null for malformed, unsupported, or semantically invalid payloads. */
+    fun decode(payload: String): SettlementCandidateScope? =
+        try {
+            val decoded = json.decodeFromString<CandidateScopePayload>(payload)
+            if (decoded.version != CURRENT_VERSION) {
+                null
+            } else {
+                when (decoded.source) {
+                    SOURCE_DATASET -> SettlementCandidateScope.Dataset
+                    SOURCE_IMPORTED -> SettlementCandidateScope.Imported(decoded.settlementIds)
+                    else -> null
+                }
+            }
+        } catch (_: SerializationException) {
+            null
+        } catch (_: IllegalArgumentException) {
+            null
+        }
+
+    @Serializable
+    private data class CandidateScopePayload(
+        val version: Int,
+        val source: String,
+        val settlementIds: List<String> = emptyList(),
+    )
+
+    private const val SOURCE_DATASET = "dataset"
+    private const val SOURCE_IMPORTED = "imported"
+}
+
 /** Versioned JSON representation used for dynamic hard-filter state. */
 object SearchConditionPayloadCodec {
     private const val CURRENT_VERSION = 1
@@ -174,7 +242,7 @@ object SearchConditionPayloadCodec {
             ),
         )
 
-    /** Return null for malformed or unsupported payloads so callers can use defaults. */
+    /** Return null for malformed or unsupported payloads so the storage boundary can classify the failure. */
     fun decode(payload: String): List<SearchCondition>? =
         try {
             val decoded = json.decodeFromString<FilterPayload>(payload)

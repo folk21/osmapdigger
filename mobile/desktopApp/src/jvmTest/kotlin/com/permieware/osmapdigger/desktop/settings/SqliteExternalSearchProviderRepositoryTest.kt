@@ -1,5 +1,7 @@
 package com.permieware.osmapdigger.desktop.settings
 
+import com.permieware.osmapdigger.settings.ApplicationSettingsSchema
+
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import java.sql.DriverManager
@@ -129,7 +131,7 @@ class SqliteExternalSearchProviderRepositoryTest {
 
             DriverManager.getConnection("jdbc:sqlite:${path.toAbsolutePath()}").use { connection ->
                 assertEquals(
-                    DesktopSettingsDatabase.SCHEMA_VERSION,
+                    ApplicationSettingsSchema.VERSION,
                     connection.createStatement().use { statement ->
                         statement.executeQuery("PRAGMA user_version").use { result ->
                             result.next()
@@ -157,6 +159,7 @@ class SqliteExternalSearchProviderRepositoryTest {
                         }
                     }
                 assertTrue("preferences_json" in columns)
+                assertTrue("candidate_scope_json" in columns)
             }
         } finally {
             path.parent.toFile().deleteRecursively()

@@ -5,6 +5,7 @@ import com.permieware.osmapdigger.analysis.ScoredSettlement
 import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.analysis.SettlementAnalysisRequest
 import com.permieware.osmapdigger.analysis.SettlementAnalysisService
+import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.MetricPreferenceDefault
@@ -18,6 +19,9 @@ import com.permieware.osmapdigger.preferences.UserPreferences
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
 import com.permieware.osmapdigger.preferences.UserPreferencesRestorer
 import com.permieware.osmapdigger.dataset.GeoRepository
+import com.permieware.osmapdigger.error.OperationalFailure
+import com.permieware.osmapdigger.error.OperationalFailureKind
+import com.permieware.osmapdigger.error.toOperationalFailure
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -40,9 +44,10 @@ data class AnalysisWorkspaceState(
     val effectivePreferences: List<EffectiveMetricPreference> = emptyList(),
     val center: Settlement? = null,
     val radiusKm: Double? = null,
+    val candidateScope: SettlementCandidateScope = SettlementCandidateScope.Dataset,
     val rankedResults: List<ScoredSettlement> = emptyList(),
     val analyzing: Boolean = false,
-    val errorMessage: String? = null,
+    val failure: OperationalFailure? = null,
 )
 
 /**
@@ -76,15 +81,21 @@ class AnalysisWorkspaceController(
             val info = repository.datasetInfo()
             val definitions = repository.metricDefinitions()
             val preferenceDefaults = repository.preferenceDefaults()
-            val saved = runCatching { userPreferences.load() }.getOrNull()
+            val saved = userPreferences.load()
+            val savedForDataset = saved?.takeIf { it.datasetId == info.id }
+            val needsSettlementIndex =
+                savedForDataset?.centerSettlementId != null ||
+                    savedForDataset?.candidateScope is SettlementCandidateScope.Imported
+            val settlementEntries =
+                if (needsSettlementIndex) repository.settlementSearchEntries() else emptyList()
+            val settlementById = settlementEntries.associateBy { it.settlement.id }
             val restoredSearch =
                 UserPreferencesRestorer.restore(
                     preferences = saved,
                     datasetId = info.id,
                     definitions = definitions,
-                    resolveSettlement = { settlementId ->
-                        runCatching { repository.details(settlementId).settlement }.getOrNull()
-                    },
+                    resolveSettlement = { settlementId -> settlementById[settlementId]?.settlement },
+                    availableSettlementIds = settlementById.keys,
                 )
             val defaultConditions =
                 definitions
@@ -111,6 +122,7 @@ class AnalysisWorkspaceController(
                     effectivePreferences = effectivePreferences,
                     center = restoredSearch?.center,
                     radiusKm = restoredSearch?.radiusKm,
+                    candidateScope = restoredSearch?.candidateScope ?: SettlementCandidateScope.Dataset,
                 )
             persistCurrentState()
             scheduleAnalysis(immediate = true)
@@ -120,16 +132,27 @@ class AnalysisWorkspaceController(
                 mutableState.value.copy(
                     initialized = false,
                     analyzing = false,
-                    errorMessage = error.message ?: error.toString(),
+                    failure = error.toOperationalFailure(OperationalFailureKind.UNKNOWN, "Analysis workspace operation failed"),
                 )
         }
+    }
+
+
+    fun updateCandidateScope(candidateScope: SettlementCandidateScope) {
+        if (mutableState.value.candidateScope == candidateScope) return
+        mutableState.value =
+            mutableState.value.copy(
+                candidateScope = candidateScope,
+                failure = null,
+            )
+        persistAndSchedule()
     }
 
     fun updateConditions(conditions: List<SearchCondition>) {
         require(conditions.map { it.metricId }.distinct().size == conditions.size) {
             "Search conditions must contain unique metric IDs"
         }
-        mutableState.value = mutableState.value.copy(conditions = conditions, errorMessage = null)
+        mutableState.value = mutableState.value.copy(conditions = conditions, failure = null)
         persistAndSchedule()
     }
 
@@ -139,7 +162,7 @@ class AnalysisWorkspaceController(
             current.copy(
                 center = center,
                 radiusKm = if (center == null) null else current.radiusKm,
-                errorMessage = null,
+                failure = null,
             )
         persistAndSchedule()
     }
@@ -151,7 +174,7 @@ class AnalysisWorkspaceController(
         require(radiusKm == null || mutableState.value.center != null) {
             "Radius requires a selected center settlement"
         }
-        mutableState.value = mutableState.value.copy(radiusKm = radiusKm, errorMessage = null)
+        mutableState.value = mutableState.value.copy(radiusKm = radiusKm, failure = null)
         persistAndSchedule()
     }
 
@@ -169,7 +192,7 @@ class AnalysisWorkspaceController(
             mutableState.value.copy(
                 preferenceOverrides = overrides,
                 effectivePreferences = resolved,
-                errorMessage = null,
+                failure = null,
             )
         persistAndSchedule()
     }
@@ -237,7 +260,7 @@ class AnalysisWorkspaceController(
     }
 
     fun clearError() {
-        mutableState.value = mutableState.value.copy(errorMessage = null)
+        mutableState.value = mutableState.value.copy(failure = null)
     }
 
     private fun updatePreferenceOverride(
@@ -292,6 +315,7 @@ class AnalysisWorkspaceController(
                             radiusKm = snapshot.radiusKm,
                             conditions = snapshot.conditions,
                             preferenceOverrides = snapshot.preferenceOverrides,
+                            candidateScope = snapshot.candidateScope,
                         ),
                     )
                 }
@@ -300,7 +324,7 @@ class AnalysisWorkspaceController(
                 if (generation == persistenceGeneration) {
                     mutableState.value =
                         mutableState.value.copy(
-                            errorMessage = "Could not save user preferences: ${error.message ?: error}",
+                            failure = error.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not save user preferences"),
                         )
                 }
             }
@@ -317,14 +341,21 @@ class AnalysisWorkspaceController(
         val hasEnabledPreferences = snapshot.effectivePreferences.any { it.enabled }
         val hasEffectiveHardConstraints = snapshot.conditions.any { it.isEffective }
         val hasRadiusConstraint = snapshot.center != null && snapshot.radiusKm != null
-        if (!force && !hasEnabledPreferences && !hasEffectiveHardConstraints && !hasRadiusConstraint) {
+        val hasCandidateRestriction = snapshot.candidateScope is SettlementCandidateScope.Imported
+        if (
+            !force &&
+            !hasEnabledPreferences &&
+            !hasEffectiveHardConstraints &&
+            !hasRadiusConstraint &&
+            !hasCandidateRestriction
+        ) {
             analysisJob?.cancel()
             analysisGeneration += 1
             mutableState.value =
                 snapshot.copy(
                     rankedResults = emptyList(),
                     analyzing = false,
-                    errorMessage = null,
+                    failure = null,
                 )
             return
         }
@@ -338,7 +369,7 @@ class AnalysisWorkspaceController(
                 }
                 if (generation != analysisGeneration) return@launch
 
-                mutableState.value = mutableState.value.copy(analyzing = true, errorMessage = null)
+                mutableState.value = mutableState.value.copy(analyzing = true, failure = null)
                 try {
                     val enabledPreferences =
                         snapshot.effectivePreferences
@@ -356,6 +387,7 @@ class AnalysisWorkspaceController(
                                         conditions = snapshot.conditions,
                                     ),
                                 preferences = enabledPreferences,
+                                candidateScope = snapshot.candidateScope,
                             ),
                         )
                     if (generation == analysisGeneration) {
@@ -364,7 +396,7 @@ class AnalysisWorkspaceController(
                             mutableState.value.copy(
                                 rankedResults = outcome.results,
                                 analyzing = false,
-                                errorMessage = null,
+                                failure = null,
                             )
                     }
                 } catch (error: Throwable) {
@@ -373,7 +405,7 @@ class AnalysisWorkspaceController(
                         mutableState.value =
                             mutableState.value.copy(
                                 analyzing = false,
-                                errorMessage = error.message ?: error.toString(),
+                                failure = error.toOperationalFailure(OperationalFailureKind.UNKNOWN, "Analysis workspace operation failed"),
                             )
                     }
                 }

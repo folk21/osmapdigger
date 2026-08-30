@@ -74,6 +74,10 @@ Restore is dataset-scoped. Metric conditions are retained only when their stable
 
 `search/SettlementSearch.kt` owns shared center-settlement lookup semantics. It normalizes configured aliases, lazily caches the compact search index for the opened dataset, and ranks exact, prefix, substring, then bounded Levenshtein fuzzy matches. Platform repositories read `settlement_name` when available and synthesize aliases from legacy `name`/`name_local`/`name_en` columns for older format-version-1 datasets. This avoids platform-specific SQLite Unicode/FTS behavior.
 
+`search/SettlementListImport.kt` owns the first candidate-list import core. `SettlementListImportParser` accepts the deliberately small one-name-per-line text format, trims blanks, normalizes names with the same rules as interactive settlement search, and collapses duplicate normalized input while preserving first occurrence order. `SettlementListImportResolver` loads the complete alias index once, builds a reusable exact-alias index, automatically resolves only one exact stable-ID match, leaves multiple exact matches ambiguous, and exposes normal prefix/substring/bounded-Levenshtein results only as review suggestions. Different imported aliases that resolve to the same canonical settlement collapse to one stable ID in the reviewed candidate set.
+
+Wide Desktop now exposes this core through `CandidateSourceUi.kt`: users can paste the one-name-per-line format or load a UTF-8 `.txt` through the platform-owned `DesktopSettlementListFilePicker`, review ambiguous/non-exact rows explicitly, and apply only the reviewed stable IDs. Raw unresolved input is transient; only the resulting candidate scope is persisted.
+
 `search/SearchService.kt` is intentionally small and deterministic.
 
 ```mermaid
@@ -101,7 +105,7 @@ ranking. `PreferenceScorer` rejects implicit `NEUTRAL` direction, calculates lin
 quality, preserves missing metrics as unknown, and fails fast on non-finite present metric values.
 
 `analysis/SettlementAnalysisModels.kt` defines the full ranked-analysis request above the existing
-hard `SearchRequest`. The repository-facing `SettlementAnalysisCandidate` lives in `domain/` so the
+hard `SearchRequest`. `analysis/SettlementCandidateScope.kt` adds either the unrestricted `Dataset` universe or an ordered, validated `Imported` list of stable settlement IDs without encoding identity as a fake numeric metric. The repository-facing `SettlementAnalysisCandidate` lives in `domain/` so the
 `runtime` contract does not depend back on the `analysis` service package; it carries one eligible
 settlement plus only requested metric values.
 
@@ -113,7 +117,7 @@ sequenceDiagram
     participant R as GeoRepository
     participant DB as Dataset SQLite
 
-    A->>R: analysisCandidates(hard conditions, bounds, scoring metric IDs)
+    A->>R: analysisCandidates(hard conditions, bounds, scoring metric IDs, optional candidate IDs)
     R->>DB: EXISTS hard filters + LEFT JOIN active scoring metrics
     DB-->>R: eligible settlements + sparse scoring values
     R-->>A: analysis candidates
@@ -123,11 +127,11 @@ sequenceDiagram
 ```
 
 The repository path intentionally has no unrelated name-based final limit and never hydrates full
-`SettlementDetails` per candidate. Missing joined scoring rows remain absent from the metric map.
+`SettlementDetails` per candidate. Missing joined scoring rows remain absent from the metric map. A null candidate-ID set means the normal dataset universe; a non-null set restricts retrieval before shared scoring, and an empty imported set returns zero candidates without querying or silently broadening to the dataset.
 `search/SearchRequestSemantics.kt` centralizes radius validation, coarse bounds, exact radius matching,
 and effective-condition selection so legacy `SearchService` and ranked analysis cannot drift.
 
-`workspace/AnalysisWorkspaceController` connects `MetricPreferenceDefault`, saved overrides, `SettlementAnalysisService`, and `UserPreferencesRepository` into the active application flow. Input changes schedule a 250 ms debounced recalculation and late stale generations cannot replace newer ranked results. It also exposes explicit generic preference-edit operations for enabled state, weight, target/limit thresholds, and reset-to-dataset-default while keeping persisted overrides sparse. Legacy packages with no enabled preference defaults and no effective hard/radius constraint do not trigger an automatic unbounded candidate scan; explicit refresh remains available through the compatibility SearchPane path.
+`workspace/AnalysisWorkspaceController` connects `MetricPreferenceDefault`, saved overrides, `SettlementAnalysisService`, and `UserPreferencesRepository` into the active application flow. It also carries the current `SettlementCandidateScope`; an imported scope is persisted with the dataset-scoped user context and counts as an explicit bounded analysis constraint, so even a legacy dataset with no preferences may analyze that reviewed ID set without enabling the protected unbounded auto-scan. Input changes schedule a 250 ms debounced recalculation and late stale generations cannot replace newer ranked results. It also exposes explicit generic preference-edit operations for enabled state, weight, target/limit thresholds, and reset-to-dataset-default while keeping persisted overrides sparse. Legacy packages with no enabled preference defaults and no effective hard/radius constraint do not trigger an automatic unbounded candidate scan; explicit refresh remains available through the compatibility SearchPane path.
 
 ## Filter summaries
 
@@ -192,10 +196,7 @@ Uses Xerial SQLite JDBC.
 `searchCandidates()` retains the current UI contract: optional coordinate bounds, one `EXISTS`
 subquery per effective metric condition, deterministic name ordering, and a repository-side limit.
 
-`analysisCandidates()` reuses the same hard predicates but has no final result limit. It performs one
-`LEFT JOIN` restricted to sorted active scoring metric IDs and folds the sparse rows into immutable
-`SettlementAnalysisCandidate` values. Missing scoring rows therefore remain unknown rather than
-excluding the settlement or becoming zero.
+`analysisCandidates()` reuses the same hard predicates but has no final result limit. It performs an active-metric `LEFT JOIN` and folds sparse rows into immutable `SettlementAnalysisCandidate` values. When an imported candidate set is supplied, stable IDs are sorted and partitioned into bounded SQLite parameter batches before adding `settlement_id IN (...)`; batch results remain deterministic and avoid one query per settlement or one unbounded `IN` list. Missing scoring rows therefore remain unknown rather than excluding the settlement or becoming zero.
 
 `preferenceDefaults()` reads `metric_preference_default` ordered by the owning metric's `sort_order`. It first probes `sqlite_master`; a legacy format-v1 database without the additive table returns an empty list. Persisted rows are converted into validated shared `MetricPreferenceDefault` values, so unsupported direction or invalid numeric contracts fail instead of being silently reinterpreted.
 
@@ -205,13 +206,13 @@ excluding the settlement or becoming zero.
 
 `MetricPreferenceOverridePayloadCodec` stores overrides as an independently versioned JSON payload. `MetricPreferenceOverrideResolver` applies them to the currently opened dataset defaults, ignores valid stale overrides whose metric ID is no longer present, rejects duplicate IDs, and reconstructs `MetricPreference` so invalid effective target/limit combinations fail deterministically before scoring. Dataset mismatch produces no restored preference state.
 
-The platform settings schema advances from version 2 to version 3 by adding `user_preferences.preferences_json`. Existing rows receive an empty version-1 override payload, preserving center/radius/hard-filter state while making effective preferences equal to dataset defaults after migration. This schema belongs only to application-owned settings and does not change `geo-format/VERSION`.
+The shared application settings schema now advances through version 4. Version 3 added `user_preferences.preferences_json`; version 4 adds `candidate_scope_json`, a versioned payload that stores either the normal dataset candidate universe or the reviewed ordered stable IDs from an imported settlement list. Existing rows migrate to dataset-wide scope, and the schema remains application-owned without changing `geo-format/VERSION`.
 
 ### `SqliteUserPreferencesRepository`
 
-Stores the current search context at `~/.osmapdigger/settings/preferences.sqlite` using a single-row application-owned schema with `PRAGMA user_version = 1`. Connections are short-lived and preference I/O runs on `Dispatchers.IO`.
+Stores the current search context at `~/.osmapdigger/settings/preferences.sqlite` using the shared application-owned schema currently at `PRAGMA user_version = 4`. Connections are short-lived and preference I/O runs on `Dispatchers.IO`.
 
-The preferences database is application-owned and independent from `geo-format`. It stores dataset identity, the stable center settlement ID plus optional display name, optional radius, and a versioned JSON payload of dynamic metric ID/min/max conditions. Missing or unsupported saved state degrades to normal dataset defaults; unknown metric IDs are ignored and an unavailable saved center clears the center/radius constraint. Search history, favorites, notes, and multiple named saved searches are not part of the current store.
+The preferences database is application-owned and independent from `geo-format`. It stores dataset identity, the stable center settlement ID plus optional display name, optional radius, and a versioned JSON payload of dynamic metric ID/min/max conditions. Missing saved state degrades to normal dataset defaults; malformed stored payloads are typed settings failures, while unknown metric IDs are ignored and an unavailable saved center clears the center/radius constraint. Search history, favorites, notes, and multiple named saved searches are not part of the current store.
 
 ### Desktop storage and dataset lifecycle
 
@@ -264,8 +265,7 @@ loading or native map initialization.
 ### `AndroidGeoRepository`
 
 Implements both legacy hard-filter and batch ranked-analysis candidate semantics through
-`SQLiteDatabase.rawQuery()`. Its `analysisCandidates()` query mirrors Desktop hard predicates and
-active-metric `LEFT JOIN` behavior so shared scoring sees the same sparse metric contract. `preferenceDefaults()` mirrors Desktop's additive-table probe/order/validation and returns an empty list for legacy v1 packages without the table.
+`SQLiteDatabase.rawQuery()`. Its `analysisCandidates()` query mirrors Desktop hard predicates, active-metric `LEFT JOIN`, and bounded stable-ID batching behavior so shared scoring sees the same sparse metric contract. `preferenceDefaults()` mirrors Desktop's additive-table probe/order/validation and returns an empty list for legacy v1 packages without the table.
 
 ### `AndroidDatasetInstaller`
 

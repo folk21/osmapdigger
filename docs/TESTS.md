@@ -77,7 +77,14 @@ make test-desktop
 make test-mobile
 ```
 
-Shared tests cover Haversine distance, search-input parsing, semantic distance/count/coverage filter presentation, deterministic preference scoring/ranking, dataset preference-default contract validation, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, analysis-workspace initialization/restore, debounced input coalescing, stale-analysis suppression, preference override recalculation, generic preference editor mutations/reset, legacy no-default manual fallback, deterministic score-explanation grouping, Desktop workspace layout geometry, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, hard-filter and preference-override payload round trips, dataset scoping, removed metrics, dataset-default/override merging, invalid effective preference contracts, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, unknown scoring values, the no-scoring-metric branch, settings SQLite search/preference round trips, version-2-to-3 preference migration, provider seeding/custom-row preservation, malformed hard-filter/preference payload behavior, and Intel-macOS renderer selection.
+Shared tests cover Haversine distance, search-input parsing, settlement-list normalization/de-duplication and conservative exact/ambiguous/unresolved alias resolution, deterministic stable-ID batching, semantic distance/count/coverage filter presentation, deterministic preference scoring/ranking, dataset preference-default contract validation, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, analysis-workspace initialization/restore, debounced input coalescing, stale-analysis suppression, preference override recalculation, generic preference editor mutations/reset, legacy no-default manual fallback, deterministic score-explanation grouping, Desktop workspace layout geometry, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, hard-filter, preference-override, and candidate-scope payload round trips, dataset scoping, removed metrics/settlements, dataset-default/override merging, invalid effective preference contracts, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests cover legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, imported stable-ID restriction including a >900-ID chunked query case, unknown scoring values, the no-scoring-metric branch, settings SQLite search/preference round trips, version-2-to-3 preference migration, provider seeding/custom-row preservation, malformed hard-filter/preference payload behavior, and Intel-macOS renderer selection.
+
+
+## Imported candidate workflow acceptance
+
+Shared tests cover one-name-per-line parsing, normalized de-duplication, unique exact resolution, ambiguous matches, fuzzy suggestions without auto-selection, explicit reviewed choices, stable-ID candidate restriction, and restore behavior when saved imported IDs become stale. Desktop settings tests cover schema-v4 round-trip/migration and malformed candidate-scope payloads.
+
+On wide Desktop, verify that **Candidate source** can switch between the full dataset and an imported list; paste and UTF-8 `.txt` loading both populate the review surface inside the left pane; ambiguous/non-exact rows require explicit selection; applying the review recalculates only the reviewed stable IDs; restart restores the imported scope; and switching back to **Use full dataset** persists dataset-wide behavior. The import surface must not overlap the native/JCEF map rectangle. Android must continue to compile and migrate the same settings schema even though its document-import UI is deferred.
 
 ## Ranked-analysis performance measurement
 
@@ -114,6 +121,12 @@ make analysis-acceptance \
 ```
 
 A non-zero exit status means no representative sample is available yet. This prevents a small Andorra or zero-preference run from being accidentally recorded as country-scale acceptance evidence. Rapid edits should produce diagnostics only for the latest completed generation; superseded work must not be reported as the accepted measurement. These timings are diagnostic only and must never affect deterministic ranking.
+
+## Operational-failure and storage-hardening checks
+
+Shared Kotlin tests cover operational failure classification, preservation of prior typed failures, cancellation propagation, shared settings migration paths, and common dataset metadata parsing. Desktop JVM tests additionally cover failure-safe package replacement: malformed/traversal/corrupt-SQLite packages must leave the previous installed directory usable, while a validated replacement publishes only after staging.
+
+Root `make check` includes architecture checks proving that settings DDL/migrations remain in one shared owner, Desktop/Android package loaders consume the shared package contract, and selected meaningful runtime paths do not reintroduce silent `getOrNull()`/`getOrDefault()` failure loss.
 
 ## Desktop analysis workspace acceptance
 

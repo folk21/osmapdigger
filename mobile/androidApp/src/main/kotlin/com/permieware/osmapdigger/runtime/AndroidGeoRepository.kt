@@ -1,6 +1,7 @@
 package com.permieware.osmapdigger.runtime
 
 import com.permieware.osmapdigger.dataset.GeoRepository
+import com.permieware.osmapdigger.dataset.StableIdBatches
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import com.permieware.osmapdigger.domain.*
@@ -183,7 +184,7 @@ class AndroidGeoRepository(
     }
 
     /**
-     * Return every hard-filter-eligible settlement with requested scoring metrics in one query.
+     * Return hard-filter-eligible settlements with requested scoring metrics in bounded batch queries.
      * Missing scoring rows remain absent from the candidate metric map rather than becoming zero.
      */
     override suspend fun analysisCandidates(
@@ -191,9 +192,50 @@ class AndroidGeoRepository(
         latitudeRange: ClosedFloatingPointRange<Double>?,
         longitudeRange: ClosedFloatingPointRange<Double>?,
         scoringMetricIds: Set<String>,
+        candidateSettlementIds: Set<String>?,
     ): List<SettlementAnalysisCandidate> {
         require(scoringMetricIds.none { it.isBlank() }) { "Scoring metric IDs must not be blank" }
+        require(candidateSettlementIds == null || candidateSettlementIds.none { it.isBlank() }) {
+            "Candidate settlement IDs must not be blank"
+        }
+        if (candidateSettlementIds != null && candidateSettlementIds.isEmpty()) return emptyList()
+
         val metricIds = scoringMetricIds.sorted()
+        val candidateBatches =
+            candidateSettlementIds?.let { ids ->
+                val fixedParameterCount =
+                    metricIds.size +
+                        rangeParameterCount(latitudeRange) +
+                        rangeParameterCount(longitudeRange) +
+                        conditionParameterCount(conditions)
+                val maxBatchSize = SQLITE_SAFE_BIND_PARAMETER_COUNT - fixedParameterCount
+                require(maxBatchSize > 0) {
+                    "Analysis query leaves no SQLite bind parameters for candidate settlement IDs"
+                }
+                StableIdBatches.partition(ids, maxBatchSize)
+            }
+
+        return if (candidateBatches == null) {
+            queryAnalysisCandidates(
+                conditions, latitudeRange, longitudeRange, metricIds, candidateSettlementIds = null,
+            )
+        } else {
+            candidateBatches.flatMap { batch ->
+                queryAnalysisCandidates(
+                    conditions, latitudeRange, longitudeRange, metricIds, candidateSettlementIds = batch,
+                )
+            }
+        }
+    }
+
+    /** Execute one bounded analysis-candidate SQL batch. */
+    private fun queryAnalysisCandidates(
+        conditions: List<SearchCondition>,
+        latitudeRange: ClosedFloatingPointRange<Double>?,
+        longitudeRange: ClosedFloatingPointRange<Double>?,
+        metricIds: List<String>,
+        candidateSettlementIds: List<String>?,
+    ): List<SettlementAnalysisCandidate> {
         val args = mutableListOf<String>()
         val sql =
             if (metricIds.isEmpty()) {
@@ -224,9 +266,21 @@ class AndroidGeoRepository(
             }
 
         appendCandidatePredicates(sql, args, conditions, latitudeRange, longitudeRange)
+        candidateSettlementIds?.let { ids ->
+            sql.append("\nAND s.settlement_id IN (${ids.joinToString(",") { "?" }})")
+            args.addAll(ids)
+        }
         sql.append("\nORDER BY s.settlement_id, scoring_metric_id")
         return database.rawQuery(sql.toString(), args.toTypedArray()).use(::readAnalysisCandidates)
     }
+
+    private fun rangeParameterCount(range: ClosedFloatingPointRange<Double>?): Int =
+        if (range == null) 0 else 2
+
+    private fun conditionParameterCount(conditions: List<SearchCondition>): Int =
+        conditions.sumOf { condition ->
+            1 + (if (condition.minValue == null) 0 else 1) + (if (condition.maxValue == null) 0 else 1)
+        }
 
     private fun appendCandidatePredicates(
         sql: StringBuilder,
@@ -370,4 +424,9 @@ class AndroidGeoRepository(
 
     private fun Cursor.stringOrNull(index: Int): String? = if (isNull(index)) null else getString(index)
     private fun Cursor.longOrNull(index: Int): Long? = if (isNull(index)) null else getLong(index)
+
+    companion object {
+        // Keep below the historical SQLite 999-variable default to leave room for fixed query bindings.
+        private const val SQLITE_SAFE_BIND_PARAMETER_COUNT: Int = 900
+    }
 }

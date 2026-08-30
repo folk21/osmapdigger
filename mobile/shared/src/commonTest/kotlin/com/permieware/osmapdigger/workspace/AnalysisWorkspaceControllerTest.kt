@@ -1,6 +1,7 @@
 package com.permieware.osmapdigger.workspace
 
 import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
+import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.MetricDefinition
@@ -39,6 +40,7 @@ class AnalysisWorkspaceControllerTest {
             FakeRepository(
                 candidates = listOf(candidate("best", "Best", forestDistance = 1.0)),
                 detailsById = mapOf(center.id to SettlementDetails(center, emptyList())),
+                searchEntries = listOf(SettlementSearchEntry(center, emptyList())),
             )
         val preferences =
             FakePreferencesRepository(
@@ -65,7 +67,7 @@ class AnalysisWorkspaceControllerTest {
         assertEquals(listOf("best"), state.rankedResults.map { it.settlement.id })
         assertEquals(setOf("forest.distance_km"), repository.lastScoringMetricIds)
         assertFalse(state.analyzing)
-        assertNull(state.errorMessage)
+        assertNull(state.failure)
     }
 
     @Test
@@ -277,7 +279,7 @@ class AnalysisWorkspaceControllerTest {
         advanceUntilIdle()
 
         assertEquals(listOf("best"), controller.state.value.rankedResults.map { it.settlement.id })
-        assertNull(controller.state.value.errorMessage)
+        assertNull(controller.state.value.failure)
     }
 
     @Test
@@ -301,6 +303,80 @@ class AnalysisWorkspaceControllerTest {
         advanceUntilIdle()
 
         assertEquals(1, repository.analysisCalls)
+    }
+
+
+    @Test
+    fun importedCandidateScopeRunsBoundedAnalysisEvenWithoutPreferencesOrHardFilters() = runTest {
+        val repository =
+            FakeRepository(
+                candidates =
+                    listOf(
+                        candidate("a", "Alpha", forestDistance = 2.0),
+                        candidate("b", "Beta", forestDistance = 3.0),
+                    ),
+                preferenceDefaults = emptyList(),
+            )
+        val controller =
+            AnalysisWorkspaceController(
+                repository = repository,
+                userPreferences = FakePreferencesRepository(null),
+                scope = this,
+                debounceMillis = 0,
+            )
+
+        controller.initialize()
+        advanceUntilIdle()
+        assertEquals(0, repository.analysisCalls)
+
+        controller.updateCandidateScope(SettlementCandidateScope.Imported(listOf("b")))
+        advanceUntilIdle()
+
+        assertEquals(1, repository.analysisCalls)
+        assertEquals(setOf("b"), repository.lastCandidateSettlementIds)
+        assertEquals(listOf("b"), controller.state.value.rankedResults.map { it.settlement.id })
+        assertEquals(SettlementCandidateScope.Imported(listOf("b")), controller.state.value.candidateScope)
+    }
+
+
+    @Test
+    fun importedCandidateScopeRestoresByStableIdAndDropsOnlyStaleIds() = runTest {
+        val alpha = settlement("a", "Alpha")
+        val beta = settlement("b", "Beta")
+        val repository =
+            FakeRepository(
+                candidates =
+                    listOf(
+                        candidate("a", "Alpha", forestDistance = 2.0),
+                        candidate("b", "Beta", forestDistance = 3.0),
+                    ),
+                searchEntries =
+                    listOf(
+                        SettlementSearchEntry(alpha, emptyList()),
+                        SettlementSearchEntry(beta, emptyList()),
+                    ),
+            )
+        val preferences =
+            FakePreferencesRepository(
+                UserPreferences(
+                    datasetId = "dataset",
+                    candidateScope = SettlementCandidateScope.Imported(listOf("b", "gone", "a")),
+                ),
+            )
+        val controller = AnalysisWorkspaceController(repository, preferences, this, debounceMillis = 0)
+
+        controller.initialize()
+        advanceUntilIdle()
+
+        assertEquals(
+            SettlementCandidateScope.Imported(listOf("b", "a")),
+            controller.state.value.candidateScope,
+        )
+        assertEquals(setOf("a", "b"), repository.lastCandidateSettlementIds)
+        assertEquals(
+            SettlementCandidateScope.Imported(listOf("b", "a")),
+            preferences.saved.last().candidateScope,
+        )
     }
 
     @Test
@@ -356,6 +432,7 @@ class AnalysisWorkspaceControllerTest {
     private class FakeRepository(
         private val candidates: List<SettlementAnalysisCandidate>,
         private val detailsById: Map<String, SettlementDetails> = emptyMap(),
+        private val searchEntries: List<SettlementSearchEntry> = emptyList(),
         private val preferenceDefaults: List<MetricPreferenceDefault> =
             listOf(
                 MetricPreferenceDefault(
@@ -371,6 +448,7 @@ class AnalysisWorkspaceControllerTest {
         var analysisCalls: Int = 0
         var lastConditions: List<SearchCondition> = emptyList()
         var lastScoringMetricIds: Set<String> = emptySet()
+        var lastCandidateSettlementIds: Set<String>? = null
         var analysisHandler: (suspend (List<SearchCondition>) -> List<SettlementAnalysisCandidate>)? = null
 
         override suspend fun datasetInfo() =
@@ -406,7 +484,7 @@ class AnalysisWorkspaceControllerTest {
 
         override suspend fun preferenceDefaults(): List<MetricPreferenceDefault> = preferenceDefaults
 
-        override suspend fun settlementSearchEntries(): List<SettlementSearchEntry> = emptyList()
+        override suspend fun settlementSearchEntries(): List<SettlementSearchEntry> = searchEntries
 
         override suspend fun searchCandidates(
             conditions: List<SearchCondition>,
@@ -420,11 +498,18 @@ class AnalysisWorkspaceControllerTest {
             latitudeRange: ClosedFloatingPointRange<Double>?,
             longitudeRange: ClosedFloatingPointRange<Double>?,
             scoringMetricIds: Set<String>,
+            candidateSettlementIds: Set<String>?,
         ): List<SettlementAnalysisCandidate> {
             analysisCalls += 1
             lastConditions = conditions
             lastScoringMetricIds = scoringMetricIds
-            return analysisHandler?.invoke(conditions) ?: candidates
+            lastCandidateSettlementIds = candidateSettlementIds
+            val resolved = analysisHandler?.invoke(conditions) ?: candidates
+            return if (candidateSettlementIds == null) {
+                resolved
+            } else {
+                resolved.filter { it.settlement.id in candidateSettlementIds }
+            }
         }
 
         override suspend fun details(settlementId: String): SettlementDetails =

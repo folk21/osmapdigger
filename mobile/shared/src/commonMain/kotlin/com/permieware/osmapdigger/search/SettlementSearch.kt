@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.search
 
+import com.permieware.osmapdigger.dataset.GeoRepository
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.domain.SettlementMatchKind
@@ -7,7 +8,6 @@ import com.permieware.osmapdigger.domain.SettlementName
 import com.permieware.osmapdigger.domain.SettlementSearchEntry
 import com.permieware.osmapdigger.domain.SettlementSearchMatch
 import com.permieware.osmapdigger.geo.GeoMath
-import com.permieware.osmapdigger.dataset.GeoRepository
 
 /** Shared normalization rules mirrored by the Geo Builder settlement-name writer. */
 object SettlementNameNormalizer {
@@ -43,26 +43,8 @@ class SettlementSearchService(
     suspend fun find(query: String, limit: Int = 20): List<SettlementSearchMatch> {
         val normalizedQuery = SettlementNameNormalizer.normalize(query)
         if (normalizedQuery.isBlank() || limit <= 0) return emptyList()
-
-        val entries = entries()
-        return entries
-            .mapNotNull { entry -> bestMatch(entry, normalizedQuery) }
-            .sortedWith(matchComparator)
-            .take(limit)
-            .map { ranked ->
-                SettlementSearchMatch(
-                    settlement = ranked.entry.settlement,
-                    matchedName = ranked.name.value,
-                    aliases =
-                        ranked.entry.names
-                            .map { it.value }
-                            .filterNot { it == ranked.entry.settlement.name }
-                            .distinct(),
-                    kind = ranked.kind,
-                )
-            }
+        return SettlementSearchMatcher.find(entries(), normalizedQuery, limit)
     }
-
 
     /** Return the geographically nearest settlement from the complete dataset settlement index. */
     suspend fun nearestTo(location: GeoPoint): Settlement? =
@@ -76,6 +58,50 @@ class SettlementSearchService(
 
     private suspend fun entries(): List<SettlementSearchEntry> =
         cachedEntries ?: repository.settlementSearchEntries().also { cachedEntries = it }
+}
+
+/** Pure deterministic alias ranking shared by interactive lookup and bulk import review. */
+internal object SettlementSearchMatcher {
+    fun find(
+        entries: List<SettlementSearchEntry>,
+        normalizedQuery: String,
+        limit: Int,
+    ): List<SettlementSearchMatch> {
+        if (normalizedQuery.isBlank() || limit <= 0) return emptyList()
+        return rankedMatches(entries, normalizedQuery)
+            .take(limit)
+            .map(::toSearchMatch)
+    }
+
+    /** Build a reusable exact-alias index for conservative bulk import resolution. */
+    fun exactAliasIndex(entries: List<SettlementSearchEntry>): Map<String, List<SettlementSearchMatch>> {
+        val rankedByAlias = linkedMapOf<String, MutableList<RankedMatch>>()
+        entries.forEach { entry ->
+            entry.names
+                .groupBy { name ->
+                    name.normalizedValue.ifBlank { SettlementNameNormalizer.normalize(name.value) }
+                }
+                .forEach { (normalizedName, names) ->
+                    if (normalizedName.isNotBlank()) {
+                        val representative = names.minBy { it.value }
+                        rankedByAlias
+                            .getOrPut(normalizedName) { mutableListOf() }
+                            .add(RankedMatch(entry, representative, SettlementMatchKind.EXACT, 0))
+                    }
+                }
+        }
+        return rankedByAlias.mapValues { (_, matches) ->
+            matches.sortedWith(matchComparator).map(::toSearchMatch)
+        }
+    }
+
+    private fun rankedMatches(
+        entries: List<SettlementSearchEntry>,
+        query: String,
+    ): List<RankedMatch> =
+        entries
+            .mapNotNull { entry -> bestMatch(entry, query) }
+            .sortedWith(matchComparator)
 
     private fun bestMatch(entry: SettlementSearchEntry, query: String): RankedMatch? =
         entry.names
@@ -143,6 +169,18 @@ class SettlementSearchService(
         }
         return previous[right.length]
     }
+
+    private fun toSearchMatch(ranked: RankedMatch): SettlementSearchMatch =
+        SettlementSearchMatch(
+            settlement = ranked.entry.settlement,
+            matchedName = ranked.name.value,
+            aliases =
+                ranked.entry.names
+                    .map { it.value }
+                    .filterNot { it == ranked.entry.settlement.name }
+                    .distinct(),
+            kind = ranked.kind,
+        )
 
     private data class RankedMatch(
         val entry: SettlementSearchEntry,

@@ -142,7 +142,11 @@ Platform hosts own:
 
 Generated dataset SQLite remains read-only analytical data. Mutable user search context is stored in a separate application-owned settings database through the shared `UserPreferencesRepository` contract.
 
-Persisted search state is dataset-scoped and references stable settlement/metric IDs. Restore occurs only after the matching dataset and metric catalog are available; removed metrics are ignored and an unavailable saved center clears the radius constraint. The settings schema has its own lifecycle and is not part of `geo-format`.
+Persisted analysis state is dataset-scoped and references stable settlement/metric IDs. It may also contain a reviewed imported candidate scope as an ordered set of stable settlement IDs; this identity restriction remains separate from numeric `SearchCondition` values. Restore occurs only after the matching dataset and metric catalog are available; removed metrics are ignored and an unavailable saved center clears the radius constraint. The settings schema has its own lifecycle and is not part of `geo-format`. Its logical version/DDL/migration sequence has one shared Kotlin owner, while Android and Desktop execute that contract through their platform SQLite APIs.
+
+## Runtime operational failures
+
+Kotlin runtime boundaries distinguish programmer/domain invariant violations from expected operational failures and coroutine cancellation. Expected package, database, settings, storage, external-action, and recoverable map failures cross migrated application boundaries as stable typed failure kinds. Presentation maps those kinds to localized application text; raw platform exception messages remain diagnostics rather than user-facing contracts. Coroutine cancellation is always propagated.
 
 ## Search semantics
 

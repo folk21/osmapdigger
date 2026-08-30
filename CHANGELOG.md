@@ -8,6 +8,10 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Add a persisted Desktop candidate-source workflow for reviewed settlement-name lists, including paste/UTF-8 file import, conservative alias resolution, explicit ambiguity review, and settings-schema v4 stable-ID restoration.
+
+- Harden KMP runtime boundaries with typed operational failures, one shared settings migration contract, shared dataset package metadata/layout parsing, and failure-safe staged dataset replacement on Desktop and Android.
+- Add the imported-candidate core: deterministic one-name-per-line parsing, conservative multilingual alias review, stable-ID candidate scopes, and bounded repository-side candidate restriction before scoring.
 - Establish an acyclic logical dependency graph inside KMP `shared`, move workspace/presentation/dataset/map/external contracts to semantic owners, remove unused legacy dataset-manager abstractions, and add a network-free architecture dependency check.
 - Highlight the selected ranked settlement, show active criteria in two rows, and resolve settlement/map display names from persisted aliases matching the selected UI language.
 

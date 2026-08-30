@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.analysis.ScoredSettlement
+import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.analysis.SettlementScore
 import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.external.ExternalSearchProvider
@@ -35,10 +36,15 @@ import com.permieware.osmapdigger.presentation.SettlementCriteriaSummaryBuilder
 import com.permieware.osmapdigger.presentation.TwoRowLayout
 import com.permieware.osmapdigger.external.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
+import com.permieware.osmapdigger.search.SettlementListImportResolver
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
 import com.permieware.osmapdigger.presentation.MetricFilterPresentationBuilder
+
+
+// Header, center, candidate source, Required, summary, Preferences, and ranked-results heading precede result rows.
+private const val DESKTOP_SIDEBAR_STATIC_ITEMS_BEFORE_RESULTS = 7
 
 /** Map-first wide Desktop workspace for required constraints, preferences, and ranked results. */
 @Composable
@@ -61,6 +67,10 @@ internal fun DesktopAnalysisWorkspace(
     radiusError: String?,
     summary: String,
     rankedResults: List<ScoredSettlement>,
+    candidateScope: SettlementCandidateScope,
+    onCandidateScopeChanged: (SettlementCandidateScope) -> Unit,
+    settlementImportResolver: SettlementListImportResolver,
+    onImportSettlementListFile: ((String) -> String?)?,
     selected: SettlementDetails?,
     running: Boolean,
     error: String?,
@@ -74,6 +84,7 @@ internal fun DesktopAnalysisWorkspace(
     mapContent: @Composable (Modifier, (String) -> Unit, ((GeoPoint) -> Unit)?) -> Unit,
 ) {
     var filterPickerOpen by remember { mutableStateOf(false) }
+    var candidateImportOpen by remember { mutableStateOf(false) }
     var mapCenterPickerActive by remember { mutableStateOf(false) }
     var mapCenterPickerResolving by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
@@ -152,6 +163,13 @@ internal fun DesktopAnalysisWorkspace(
                     onRadiusChanged = onRadiusChanged,
                     radiusError = radiusError,
                     summary = summary,
+                    candidateScope = candidateScope,
+                    onCandidateImportRequested = {
+                        mapCenterPickerActive = false
+                        filterPickerOpen = false
+                        candidateImportOpen = true
+                    },
+                    onUseDatasetScope = { onCandidateScopeChanged(SettlementCandidateScope.Dataset) },
                     rankedResults = rankedResults,
                     selectedId = selected?.settlement?.id,
                     running = running,
@@ -161,6 +179,7 @@ internal fun DesktopAnalysisWorkspace(
                     onImportDataset = onImportDataset,
                     onAddFilterRequested = {
                         mapCenterPickerActive = false
+                        candidateImportOpen = false
                         filterPickerOpen = true
                     },
                     settlementDisplayName = settlementDisplayName,
@@ -178,6 +197,20 @@ internal fun DesktopAnalysisWorkspace(
                             filterPickerOpen = false
                         },
                         onClose = { filterPickerOpen = false },
+                    )
+                }
+
+                if (candidateImportOpen) {
+                    CandidateImportPanel(
+                        modifier = Modifier.fillMaxSize(),
+                        resolver = settlementImportResolver,
+                        onLoadTextFile = onImportSettlementListFile,
+                        onApply = { importedScope ->
+                            onCandidateScopeChanged(importedScope)
+                            candidateImportOpen = false
+                        },
+                        onClose = { candidateImportOpen = false },
+                        settlementDisplayName = settlementDisplayName,
                     )
                 }
             }
@@ -293,6 +326,9 @@ private fun DesktopAnalysisSidebar(
     onRadiusChanged: (String) -> Unit,
     radiusError: String?,
     summary: String,
+    candidateScope: SettlementCandidateScope,
+    onCandidateImportRequested: () -> Unit,
+    onUseDatasetScope: () -> Unit,
     rankedResults: List<ScoredSettlement>,
     selectedId: String?,
     running: Boolean,
@@ -308,7 +344,10 @@ private fun DesktopAnalysisSidebar(
     LaunchedEffect(selectedId) {
         val resultIndex = rankedResults.indexOfFirst { it.settlement.id == selectedId }
         if (resultIndex >= 0) {
-            val firstResultItemIndex = 6 + (if (running) 1 else 0) + (if (error != null) 1 else 0)
+            val firstResultItemIndex =
+                DESKTOP_SIDEBAR_STATIC_ITEMS_BEFORE_RESULTS +
+                    (if (running) 1 else 0) +
+                    (if (error != null) 1 else 0)
             listState.animateScrollToItem(firstResultItemIndex + resultIndex)
         }
     }
@@ -344,6 +383,14 @@ private fun DesktopAnalysisSidebar(
                 onRadiusChanged = onRadiusChanged,
                 radiusError = radiusError,
                 settlementDisplayName = settlementDisplayName,
+            )
+        }
+
+        item {
+            CandidateSourceSummary(
+                candidateScope = candidateScope,
+                onImportRequested = onCandidateImportRequested,
+                onUseDatasetScope = onUseDatasetScope,
             )
         }
 

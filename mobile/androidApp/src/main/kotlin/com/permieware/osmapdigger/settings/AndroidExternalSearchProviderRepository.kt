@@ -35,7 +35,7 @@ class AndroidExternalSearchProviderRepository(
                     ORDER BY priority, title, provider_id
                     """.trimIndent(),
                     arrayOf(
-                        AndroidSettingsDatabase.GLOBAL_COUNTRY_CODE,
+                        ApplicationSettingsSchema.GLOBAL_COUNTRY_CODE,
                         countryCode?.uppercase() ?: "",
                     ),
                 ).use { cursor ->
@@ -47,7 +47,7 @@ class AndroidExternalSearchProviderRepository(
                                     id = cursor.getString(0),
                                     title = cursor.getString(1),
                                     countryCode = storedCountry.takeUnless {
-                                        it == AndroidSettingsDatabase.GLOBAL_COUNTRY_CODE
+                                        it == ApplicationSettingsSchema.GLOBAL_COUNTRY_CODE
                                     },
                                     urlTemplate = cursor.getString(3),
                                     priority = cursor.getInt(4),
@@ -70,7 +70,7 @@ class AndroidExternalSearchProviderRepository(
                 arrayOf<Any?>(
                     provider.id,
                     provider.title,
-                    provider.countryCode ?: AndroidSettingsDatabase.GLOBAL_COUNTRY_CODE,
+                    provider.countryCode ?: ApplicationSettingsSchema.GLOBAL_COUNTRY_CODE,
                     provider.urlTemplate,
                     provider.priority,
                 ),

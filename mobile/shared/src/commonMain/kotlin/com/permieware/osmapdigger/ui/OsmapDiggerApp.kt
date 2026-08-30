@@ -9,6 +9,9 @@ import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.workspace.AnalysisWorkspaceController
 import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.domain.*
+import com.permieware.osmapdigger.error.OperationalFailure
+import com.permieware.osmapdigger.error.OperationalFailureKind
+import com.permieware.osmapdigger.error.toOperationalFailure
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
 import com.permieware.osmapdigger.map.MapPackage
@@ -22,6 +25,8 @@ import com.permieware.osmapdigger.presentation.FilterSummaryBuilder
 import com.permieware.osmapdigger.search.OptionalRadiusInput
 import com.permieware.osmapdigger.search.SearchInputParser
 import com.permieware.osmapdigger.search.SettlementSearchService
+import com.permieware.osmapdigger.search.SettlementListImportResolver
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 /** Shared OsmapDigger application surface used by Android and Desktop hosts. */
@@ -31,6 +36,8 @@ fun OsmapDiggerApp(
     userPreferences: UserPreferencesRepository,
     externalSearchProviders: ExternalSearchProviderRepository,
     onImportDataset: () -> Unit,
+    onImportSettlementListFile: ((String) -> String?)? = null,
+    hostFailure: OperationalFailure? = null,
     platformMapSurface: PlatformMapSurface? = null,
     presentationMode: AppPresentationMode = AppPresentationMode.RESPONSIVE,
     onAnalysisDiagnostics: (SettlementAnalysisDiagnostics) -> Unit = {},
@@ -47,16 +54,18 @@ fun OsmapDiggerApp(
     ) {
         MaterialTheme {
         if (runtime == null) {
-            MissingDatasetScreen(onImportDataset = onImportDataset, modifier = modifier)
+            MissingDatasetScreen(onImportDataset = onImportDataset, failure = hostFailure, modifier = modifier)
         } else {
             LoadedDatasetApp(
                 runtime = runtime,
                 userPreferences = userPreferences,
                 externalSearchProviders = externalSearchProviders,
                 onImportDataset = onImportDataset,
+                onImportSettlementListFile = onImportSettlementListFile,
                 platformMapSurface = platformMapSurface,
                 presentationMode = presentationMode,
                 onAnalysisDiagnostics = onAnalysisDiagnostics,
+                hostFailure = hostFailure,
                 modifier = modifier,
             )
         }
@@ -67,6 +76,7 @@ fun OsmapDiggerApp(
 @Composable
 private fun MissingDatasetScreen(
     onImportDataset: () -> Unit,
+    failure: OperationalFailure?,
     modifier: Modifier,
 ) {
     val strings = LocalUiStrings.current
@@ -79,6 +89,7 @@ private fun MissingDatasetScreen(
                 Text("OsmapDigger", style = MaterialTheme.typography.headlineMedium)
                 Text(strings.noDatasetInstalled)
                 Text(strings.generateAndImportDataset)
+                failure?.let { Text(strings.operationalFailureMessage(it.kind), color = MaterialTheme.colorScheme.error) }
                 LanguageSelector()
                 Button(onClick = onImportDataset) {
                     Text(strings.importDataset)
@@ -99,9 +110,11 @@ private fun LoadedDatasetApp(
     userPreferences: UserPreferencesRepository,
     externalSearchProviders: ExternalSearchProviderRepository,
     onImportDataset: () -> Unit,
+    onImportSettlementListFile: ((String) -> String?)?,
     platformMapSurface: PlatformMapSurface?,
     presentationMode: AppPresentationMode,
     onAnalysisDiagnostics: (SettlementAnalysisDiagnostics) -> Unit,
+    hostFailure: OperationalFailure?,
     modifier: Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -120,13 +133,20 @@ private fun LoadedDatasetApp(
     var radiusText by remember { mutableStateOf("") }
     var radiusInitializedForDataset by remember { mutableStateOf<String?>(null) }
     var uiError by remember { mutableStateOf<String?>(null) }
+    var uiFailure by remember { mutableStateOf<OperationalFailure?>(null) }
     var searchProviders by remember { mutableStateOf<List<ExternalSearchProvider>>(emptyList()) }
     val strings = LocalUiStrings.current
     val uiLanguage = LocalUiLanguage.current
     var settlementNameEntries by remember(runtime.repository) { mutableStateOf<List<SettlementSearchEntry>>(emptyList()) }
 
     LaunchedEffect(runtime.repository) {
-        settlementNameEntries = runCatching { runtime.repository.settlementSearchEntries() }.getOrDefault(emptyList())
+        try {
+            settlementNameEntries = runtime.repository.settlementSearchEntries()
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (failure: Throwable) {
+            uiFailure = failure.toOperationalFailure(OperationalFailureKind.DATABASE, "Could not load settlement search index")
+        }
     }
 
     val settlementDisplayNames = remember(settlementNameEntries, uiLanguage) {
@@ -141,6 +161,7 @@ private fun LoadedDatasetApp(
         selected = null
         radiusText = ""
         uiError = null
+        uiFailure = null
         searchProviders = emptyList()
         analysisController.initialize()
     }
@@ -155,9 +176,13 @@ private fun LoadedDatasetApp(
 
     LaunchedEffect(analysisState.datasetInfo?.id, analysisState.datasetInfo?.countryCode, externalSearchProviders) {
         val info = analysisState.datasetInfo ?: return@LaunchedEffect
-        runCatching { externalSearchProviders.providersFor(info.countryCode) }
-            .onSuccess { searchProviders = it }
-            .onFailure { uiError = strings.externalProvidersLoadFailed(it.message ?: it.toString()) }
+        try {
+            searchProviders = externalSearchProviders.providersFor(info.countryCode)
+        } catch (failure: CancellationException) {
+            throw failure
+        } catch (failure: Throwable) {
+            uiFailure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not load external search providers")
+        }
     }
 
     val datasetInfo = analysisState.datasetInfo
@@ -182,7 +207,7 @@ private fun LoadedDatasetApp(
             conditions = conditions,
         )
     val summary = FilterSummaryBuilder.build(request, definitionMap, strings.filterSummaryText())
-    val error = uiError ?: analysisState.errorMessage
+    val error = uiError ?: hostFailure?.let { strings.operationalFailureMessage(it.kind) } ?: uiFailure?.let { strings.operationalFailureMessage(it.kind) } ?: analysisState.failure?.let { strings.operationalFailureMessage(it.kind) }
 
     LaunchedEffect(results.map { it.id }) {
         val selectedId = selected?.settlement?.id ?: return@LaunchedEffect
@@ -202,13 +227,18 @@ private fun LoadedDatasetApp(
 
     val selectSettlement: (Settlement) -> Unit = { settlement ->
         scope.launch {
-            runCatching { runtime.repository.details(settlement.id) }
-                .onSuccess { selected = it }
-                .onFailure { uiError = it.message ?: it.toString() }
+            try {
+                selected = runtime.repository.details(settlement.id)
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Throwable) {
+                uiFailure = failure.toOperationalFailure(OperationalFailureKind.DATABASE, "Could not load settlement details")
+            }
         }
     }
 
     val settlementSearch = remember(runtime.repository) { SettlementSearchService(runtime.repository) }
+    val settlementImportResolver = remember(runtime.repository) { SettlementListImportResolver(runtime.repository) }
 
     BoxWithConstraints(modifier.fillMaxSize()) {
         val wide = maxWidth >= 900.dp
@@ -288,6 +318,10 @@ private fun LoadedDatasetApp(
                 radiusError = radiusError,
                 summary = summary,
                 rankedResults = rankedResults,
+                candidateScope = analysisState.candidateScope,
+                onCandidateScopeChanged = analysisController::updateCandidateScope,
+                settlementImportResolver = settlementImportResolver,
+                onImportSettlementListFile = onImportSettlementListFile,
                 selected = selected,
                 running = analysisState.analyzing,
                 error = error,

@@ -6,6 +6,7 @@ import com.permieware.osmapdigger.domain.SearchRequest
 data class SettlementAnalysisRequest(
     val search: SearchRequest,
     val preferences: List<MetricPreference>,
+    val candidateScope: SettlementCandidateScope = SettlementCandidateScope.Dataset,
 ) {
     init {
         require(preferences.map { it.metricId }.distinct().size == preferences.size) {

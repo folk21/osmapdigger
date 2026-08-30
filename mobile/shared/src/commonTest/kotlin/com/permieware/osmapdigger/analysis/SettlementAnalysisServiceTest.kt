@@ -142,6 +142,54 @@ class SettlementAnalysisServiceTest {
         assertEquals(0, repository.analysisCalls)
     }
 
+
+    @Test
+    fun importedCandidateScopeRestrictsRepositoryBeforeScoring() = runTest {
+        val repository =
+            FakeRepository(
+                candidates =
+                    listOf(
+                        candidate("a", "Alpha", forestDistance = 4.0),
+                        candidate("b", "Beta", forestDistance = 1.0),
+                        candidate("c", "Gamma", forestDistance = 2.0),
+                    ),
+            )
+
+        val result =
+            SettlementAnalysisService(repository).analyze(
+                SettlementAnalysisRequest(
+                    search = SearchRequest(limit = 10),
+                    preferences = listOf(forestPreference()),
+                    candidateScope = SettlementCandidateScope.Imported(listOf("a", "c")),
+                ),
+            )
+
+        assertEquals(setOf("a", "c"), repository.requestedCandidateSettlementIds)
+        assertEquals(listOf("c", "a"), result.map { it.settlement.id })
+        assertEquals(1, repository.analysisCalls)
+    }
+
+    @Test
+    fun emptyImportedCandidateScopeDoesNotBroadenOrQueryRepository() = runTest {
+        val repository =
+            FakeRepository(
+                candidates = listOf(candidate("a", "Alpha", forestDistance = 1.0)),
+            )
+
+        val outcome =
+            SettlementAnalysisService(repository).analyzeWithDiagnostics(
+                SettlementAnalysisRequest(
+                    search = SearchRequest(limit = 10),
+                    preferences = listOf(forestPreference()),
+                    candidateScope = SettlementCandidateScope.Imported(emptyList()),
+                ),
+            )
+
+        assertTrue(outcome.results.isEmpty())
+        assertEquals(0, outcome.diagnostics.candidateCount)
+        assertEquals(0, repository.analysisCalls)
+    }
+
     @Test
     fun diagnosticsReportCandidateVolumeAndNonNegativeTimings() = runTest {
         val repository =
@@ -215,6 +263,7 @@ class SettlementAnalysisServiceTest {
         var latitudeRange: ClosedFloatingPointRange<Double>? = null
         var longitudeRange: ClosedFloatingPointRange<Double>? = null
         var requestedScoringMetricIds: Set<String> = emptySet()
+        var requestedCandidateSettlementIds: Set<String>? = null
 
         override suspend fun datasetInfo(): DatasetInfo =
             DatasetInfo("test", "Test", null, GeoPoint(0.0, 0.0), 10.0, false, null, "property")
@@ -237,13 +286,19 @@ class SettlementAnalysisServiceTest {
             latitudeRange: ClosedFloatingPointRange<Double>?,
             longitudeRange: ClosedFloatingPointRange<Double>?,
             scoringMetricIds: Set<String>,
+            candidateSettlementIds: Set<String>?,
         ): List<SettlementAnalysisCandidate> {
             analysisCalls += 1
             this.conditions = conditions
             this.latitudeRange = latitudeRange
             this.longitudeRange = longitudeRange
             requestedScoringMetricIds = scoringMetricIds
-            return candidates
+            requestedCandidateSettlementIds = candidateSettlementIds
+            return if (candidateSettlementIds == null) {
+                candidates
+            } else {
+                candidates.filter { it.settlement.id in candidateSettlementIds }
+            }
         }
 
         override suspend fun details(settlementId: String): SettlementDetails {

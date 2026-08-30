@@ -11,9 +11,12 @@ This roadmap stays intentionally compact. Detailed requirements for significant 
 
 Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
-Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, visual shortlisting, persisted notebook snapshots, export/share, and batch external search.
+Architecture note: KMP architecture hardening iterations 1–3 are implemented between feature checkpoints (dependency direction, typed operational failures, shared settings/package semantics, and atomic dataset installation); later gates remain interleaved backlog.
 
-Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — dependency-direction gate 1 is implemented; later error/storage/DRY/module gates run between completed product increments where they protect the next feature boundary.
+Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, visual shortlisting, persisted notebook snapshots, export/share, and batch external search.
+Candidate-source core plus Desktop import/review and restart-safe scope persistence are implemented; the next product increment is visual shortlist multi-selection.
+
+Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — dependency-direction, typed-error, and shared settings/package/atomic-install gates 1–3 are implemented; later DRY/module gates run between completed product increments where they protect the next feature boundary.
 
 Previously implemented Desktop analysis workspace, Desktop map, and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
 
@@ -45,7 +48,7 @@ Acceptance requires a configured workstation to demonstrate:
 
 ## P1 — user workflow
 
-The queued shortlist sub-spec covers favorites-style notebook entries, notes, imported settlement candidate lists, batch external search, and portable export/share after KMP architecture hardening. Follow-up P1 work remains:
+The active shortlist sub-spec covers favorites-style notebook entries, notes, imported settlement candidate lists, batch external search, and portable export/share, interleaved with bounded KMP architecture-hardening checkpoints. Follow-up P1 work remains:
 
 - named saved filters/searches;
 - richer comparison of multiple settlements;

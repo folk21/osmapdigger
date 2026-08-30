@@ -10,11 +10,13 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Active product sub-spec; current implementation focus after architecture-hardening iteration 1.
+Active product sub-spec; candidate-source core and Desktop candidate-source workflow implemented, with architecture-hardening iterations 1–3 completed between those feature increments.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-Architecture-hardening iteration 1 established the dependency direction needed for this feature. Further architecture gates remain active but are intentionally scheduled between completed, testable product increments when the next feature would benefit from them.
+Architecture-hardening iterations 1–3 established the dependency direction, typed operational-failure policy, shared settings/package contracts, and failure-safe dataset installation needed before the persisted candidate-source workflow. Further architecture gates remain active and will continue to be interleaved only between completed, testable product increments.
+
+The first two bounded feature increments are implemented. Shared/runtime contracts parse and conservatively resolve imported settlement text, ranked analysis carries an imported stable-ID scope, and Desktop/Android dataset adapters restrict candidate retrieval in deterministic bounded batches. Wide Desktop now adds paste/UTF-8 file import plus explicit review of ambiguous/non-exact matches, while application settings schema version 4 persists the reviewed dataset-scoped candidate source. Android shares the persistence and analysis contract; its document/text import UI remains deferred.
 
 The previously current [`desktop-analysis-workspace.md`](desktop-analysis-workspace.md) implementation is
 substantially complete and remains verification-pending until strict country-scale scoring and the
@@ -491,12 +493,7 @@ This increment does not require:
 
 The generated dataset contract does not change in the first implementation.
 
-The application settings database will require a coordinated Desktop/Android schema migration for
-notebook persistence and persisted current candidate scope. The settings database remains independent
-from `geo-format`; both platform schema owners must move from the current version together and retain
-deterministic migration tests. The current repository schema is version 3, so the straightforward first
-implementation is a coordinated version-4 migration unless implementation review finds a concrete
-reason to split the change differently.
+The application settings database remains independent from `geo-format` and uses one shared semantic schema owner executed by both platforms. Candidate-source persistence now uses coordinated schema version 4 with `candidate_scope_json`; legacy rows migrate to dataset-wide scope. This migration was intentionally completed before notebook persistence so the candidate-source workflow can form an independently testable restart-safe increment. Notebook persistence may therefore require a later coordinated settings migration (expected version 5 if new persisted tables/columns are required).
 
 A notebook snapshot/export payload must include its own explicit payload version so later additive or
 incompatible fields can be handled without coupling file format evolution to the SQLite schema version.
@@ -531,18 +528,11 @@ Acceptance requires all of the following:
 
 Implement in small increments:
 
-1. **Candidate-source core** — add immutable candidate-scope/import models, conservative bulk alias
-   resolution, repository candidate-ID restriction, and focused shared/platform tests.
-2. **Visual shortlist** — add compact score indicators and transient multi-selection to the Desktop
-   ranked list without changing the existing single selected-settlement/map contract.
-3. **Notebook persistence** — add shared notebook/snapshot contracts, coordinated settings SQLite
-   migration, Desktop/Android repositories, notes, save/remove/update-snapshot operations, and tests.
-4. **Batch external search** — extend generic query construction to a settlement list with explicit
-   bounded/chunked browser actions and no provider-specific UI branches.
-5. **Export/share** — add versioned deterministic JSON plus human-readable summary export and
-   platform save/share adapters.
-6. **Calibration validation** — rebuild/inspect representative Andorra and Belarus analytical packages
-   if necessary; record score/metric distribution evidence before deliberately changing checked-in
-   `balanced-living` defaults.
-7. **Acceptance/documentation** — run configured shared/Desktop/Android tests, record manual workflow
-   acceptance, update owning current-state docs, and archive this sub-spec when complete.
+1. **Implemented: Candidate-source core** — immutable candidate-scope/import models, conservative bulk alias resolution, repository candidate-ID restriction, bounded stable-ID batching, and focused shared/Desktop tests. The core is wired into `AnalysisWorkspaceController` as transient state, but no user-facing import control or persistence is enabled yet.
+2. **Implemented: Candidate-source workflow** — Desktop paste/file import and full-sidebar review UI now connect explicit reviewed matches to the shared stable-ID scope; application settings schema version 4 persists that dataset-scoped scope and restore drops stale IDs without broadening to the full dataset. The same shared contracts remain available for later Android document/text integration.
+3. **Visual shortlist** — add compact score indicators and transient multi-selection to the Desktop ranked list without changing the existing single selected-settlement/map contract.
+4. **Notebook persistence** — add shared notebook/snapshot contracts, coordinated settings SQLite migration, Desktop/Android repositories, notes, save/remove/update-snapshot operations, and tests.
+5. **Batch external search** — extend generic query construction to a settlement list with explicit bounded/chunked browser actions and no provider-specific UI branches.
+6. **Export/share** — add versioned deterministic JSON plus human-readable summary export and platform save/share adapters.
+7. **Calibration validation** — rebuild/inspect representative Andorra and Belarus analytical packages if necessary; record score/metric distribution evidence before deliberately changing checked-in `balanced-living` defaults.
+8. **Acceptance/documentation** — run configured shared/Desktop/Android tests, record manual workflow acceptance, update owning current-state docs, and archive this sub-spec when complete.

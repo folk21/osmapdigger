@@ -31,6 +31,8 @@ When intentionally adding or changing a top-level shared package dependency, upd
 - Platform repositories perform metric/bounding-box candidate reduction.
 - Shared `SearchService` performs exact radius filtering so Android/Desktop semantics stay aligned.
 - Ranked analysis must batch-load only requested scoring metrics; never call full `details()` once per candidate.
+- Imported candidate scopes are stable-ID restrictions, not synthetic metrics; repository adapters must apply them before shared scoring and must not broaden an empty imported scope to the full dataset.
+- Persist only the reviewed imported stable-ID scope with dataset-scoped preferences; raw/ambiguous/unresolved import text remains transient unless a later specification explicitly introduces saved import drafts.
 - Ranked-analysis repository queries must not apply an unrelated final limit before shared scoring; exact radius, scoring, stable ranking, and final limiting belong in shared analysis orchestration.
 - Search results must not depend on map rendering/style state.
 
@@ -64,3 +66,11 @@ Search-result GeoJSON is transient presentation data; do not persist it as an an
 ## Documentation and KDoc
 
 Important public contracts/platform adapters and security/lifecycle-sensitive methods require useful KDoc. Comments should explain why platform/shared boundaries exist and what assumptions callers can rely on.
+
+## Operational errors and application settings
+
+- Use `require`/`check` for programmer/domain invariants; do not recover them as ordinary UI failures.
+- Expected storage/database/package/settings failures crossing migrated runtime boundaries use `OperationalFailure`; never render raw `Throwable.message` as the user contract.
+- Always propagate coroutine cancellation. Do not use `getOrNull()`/`getOrDefault()` where absence and failure have different semantics.
+- `ApplicationSettingsSchema` is the only logical owner of application settings DDL/version/migrations. Android/Desktop settings classes execute that contract rather than duplicating schema strings.
+- Dataset ZIP replacement must remain staging/validation/publication based and preserve path-traversal checks.

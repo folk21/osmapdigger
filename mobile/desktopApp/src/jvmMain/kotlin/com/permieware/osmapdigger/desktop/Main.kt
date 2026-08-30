@@ -9,48 +9,65 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.desktop.map.IntelMacWebMapSurface
+import com.permieware.osmapdigger.desktop.importing.DesktopSettlementListFilePicker
 import com.permieware.osmapdigger.desktop.preferences.SqliteUserPreferencesRepository
-import com.permieware.osmapdigger.desktop.runtime.DesktopDataset
-import com.permieware.osmapdigger.desktop.settings.SqliteExternalSearchProviderRepository
-import com.permieware.osmapdigger.desktop.runtime.DesktopDatasetChooser
 import com.permieware.osmapdigger.desktop.runtime.DesktopConfigLoader
+import com.permieware.osmapdigger.desktop.runtime.DesktopDataset
+import com.permieware.osmapdigger.desktop.runtime.DesktopDatasetChooser
+import com.permieware.osmapdigger.desktop.settings.SqliteExternalSearchProviderRepository
+import com.permieware.osmapdigger.error.OperationalFailure
+import com.permieware.osmapdigger.error.OperationalFailureKind
+import com.permieware.osmapdigger.error.toOperationalFailure
+import com.permieware.osmapdigger.external.OperationalExternalSearchProviderRepository
+import com.permieware.osmapdigger.preferences.OperationalUserPreferencesRepository
 import com.permieware.osmapdigger.ui.AppPresentationMode
 import com.permieware.osmapdigger.ui.OsmapDiggerApp
 import java.nio.file.Paths
 
+private data class DesktopDatasetLoad(
+    val dataset: DesktopDataset? = null,
+    val failure: OperationalFailure? = null,
+)
 
 /**
- * Loads the default Desktop dataset from configuration.
- *
- * Startup order:
- * 1. explicit OSMAPDIGGER_DATASET_DIR for development;
- * 2. config/desktop-config.json portable package;
- * 3. no dataset.
+ * Load the configured Desktop dataset while keeping "not configured" distinct from an operational failure.
+ * Startup never exposes raw exception text to Compose; technical causes remain in Desktop diagnostics.
  */
-private fun loadConfiguredDataset(): DesktopDataset? {
+private fun loadConfiguredDataset(): DesktopDatasetLoad {
     System.getenv("OSMAPDIGGER_DATASET_DIR")
         ?.takeIf { it.isNotBlank() }
         ?.let { path ->
             DesktopDiagnostics.info("dataset.config", "Using OSMAPDIGGER_DATASET_DIR=$path")
-            return runCatching {
-                DesktopDiagnostics.measure("dataset.open.explicit") {
-                    DesktopDataset.open(Paths.get(path))
-                }
-            }.onFailure { failure ->
+            return try {
+                DesktopDatasetLoad(
+                    dataset =
+                        DesktopDiagnostics.measure("dataset.open.explicit") {
+                            DesktopDataset.open(Paths.get(path))
+                        },
+                )
+            } catch (failure: Throwable) {
                 DesktopDiagnostics.error("dataset.open.explicit", "Could not open explicit dataset", failure)
-            }.getOrNull()
+                DesktopDatasetLoad(
+                    failure = failure.toOperationalFailure(OperationalFailureKind.DATASET_STORAGE, "Could not open explicit dataset"),
+                )
+            }
         }
 
     val config =
-        DesktopConfigLoader.load()
-            ?: return null
-
+        try {
+            DesktopConfigLoader.load()
+        } catch (failure: Throwable) {
+            DesktopDiagnostics.error("desktop.config", "Could not load Desktop config", failure)
+            return DesktopDatasetLoad(
+                failure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not load Desktop config"),
+            )
+        } ?: return DesktopDatasetLoad()
     val packagePath = DesktopConfigLoader.resolvePackage(config)
-
     val absolutePackage = packagePath.toAbsolutePath()
     val packageExists = java.nio.file.Files.exists(packagePath)
     val packageSize =
         if (packageExists && java.nio.file.Files.isRegularFile(packagePath)) {
+            // File size is diagnostics only and does not affect package loading semantics.
             runCatching { java.nio.file.Files.size(packagePath) }.getOrNull()
         } else {
             null
@@ -60,13 +77,19 @@ private fun loadConfiguredDataset(): DesktopDataset? {
         "package=$absolutePackage exists=$packageExists sizeBytes=${packageSize ?: "unknown"}",
     )
 
-    return runCatching {
-        DesktopDiagnostics.measure("dataset.install-open") {
-            DesktopDataset.installAndOpen(packagePath)
-        }
-    }.onFailure { failure ->
+    return try {
+        DesktopDatasetLoad(
+            dataset =
+                DesktopDiagnostics.measure("dataset.install-open") {
+                    DesktopDataset.installAndOpen(packagePath)
+                },
+        )
+    } catch (failure: Throwable) {
         DesktopDiagnostics.error("dataset.install-open", "Dataset installation/open failed", failure)
-    }.getOrNull()
+        DesktopDatasetLoad(
+            failure = failure.toOperationalFailure(OperationalFailureKind.DATASET_STORAGE, "Dataset installation/open failed"),
+        )
+    }
 }
 
 /** Desktop development/product host. */
@@ -75,9 +98,16 @@ fun main() {
     val configured = loadConfiguredDataset()
 
     application {
-        val datasetState = remember { mutableStateOf(configured) }
-        val userPreferences = remember { SqliteUserPreferencesRepository.createDefault() }
-        val externalSearchProviders = remember { SqliteExternalSearchProviderRepository.createDefault() }
+        val datasetState = remember { mutableStateOf(configured.dataset) }
+        val hostFailure = remember { mutableStateOf(configured.failure) }
+        val userPreferences =
+            remember {
+                OperationalUserPreferencesRepository(SqliteUserPreferencesRepository.createDefault())
+            }
+        val externalSearchProviders =
+            remember {
+                OperationalExternalSearchProviderRepository(SqliteExternalSearchProviderRepository.createDefault())
+            }
         val platformMapSurface =
             remember {
                 IntelMacWebMapSurface.createIfSupported().also { surface ->
@@ -92,8 +122,6 @@ fun main() {
                 }
             }
 
-        // The effect belongs to the application lifetime, not to a particular dataset.
-        // When the application is disposed, close whichever dataset is active at that time.
         DisposableEffect(Unit) {
             onDispose {
                 DesktopDiagnostics.info("shutdown", "Closing Desktop resources")
@@ -112,6 +140,7 @@ fun main() {
                 runtime = datasetState.value?.runtime,
                 userPreferences = userPreferences,
                 externalSearchProviders = externalSearchProviders,
+                hostFailure = hostFailure.value,
                 platformMapSurface = platformMapSurface,
                 presentationMode = AppPresentationMode.DESKTOP_ANALYSIS,
                 onAnalysisDiagnostics = { diagnostics ->
@@ -135,17 +164,19 @@ fun main() {
                         },
                     )
                 },
+                onImportSettlementListFile = DesktopSettlementListFilePicker::chooseAndRead,
                 onImportDataset = {
-                    DesktopDatasetChooser.chooseAndOpen()?.let { opened ->
-                        val previous = datasetState.value
-                        datasetState.value = opened
-
-                        // Close only the dataset that has actually been replaced.
-                        // Closing through DisposableEffect(dataset) is incorrect because
-                        // its onDispose callback can observe the newly assigned state value.
-                        if (previous !== opened) {
-                            previous?.close()
+                    try {
+                        DesktopDatasetChooser.chooseAndOpen()?.let { opened ->
+                            val previous = datasetState.value
+                            datasetState.value = opened
+                            hostFailure.value = null
+                            if (previous !== opened) previous?.close()
                         }
+                    } catch (failure: Throwable) {
+                        DesktopDiagnostics.error("dataset.import", "Dataset import failed", failure)
+                        hostFailure.value =
+                            failure.toOperationalFailure(OperationalFailureKind.DATASET_STORAGE, "Dataset import failed")
                     }
                 },
             )

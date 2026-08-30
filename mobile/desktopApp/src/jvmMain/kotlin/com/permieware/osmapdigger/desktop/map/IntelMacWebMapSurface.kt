@@ -13,7 +13,10 @@ import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.Settlement
+import com.permieware.osmapdigger.error.OperationalFailureKind
+import com.permieware.osmapdigger.error.toOperationalFailure
 import com.permieware.osmapdigger.map.MapPackage
+import com.permieware.osmapdigger.ui.LocalUiStrings
 import com.permieware.osmapdigger.ui.PlatformMapSurface
 import me.friwi.jcefmaven.CefAppBuilder
 import me.friwi.jcefmaven.MavenCefAppHandlerAdapter
@@ -55,10 +58,11 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
         onSettlementActivated: ((String) -> Unit)?,
         onMapLocationActivated: ((GeoPoint) -> Unit)?,
     ) {
+        val strings = LocalUiStrings.current
         if (datasetInfo == null || mapPackage.styleJson == null || mapPackage.localMapUri == null) {
             MapUnavailable(
                 modifier = modifier,
-                message = if (datasetInfo == null) "Loading dataset…" else "This package has no generated map.",
+                message = if (datasetInfo == null) strings.loadingMap else strings.noGeneratedMap,
             )
             return
         }
@@ -66,9 +70,11 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
         val runtimeResult = remember { cefRuntime }
         val runtime = runtimeResult.getOrNull()
         if (runtime == null) {
+            val failure = runtimeResult.exceptionOrNull()
+                ?.toOperationalFailure(OperationalFailureKind.MAP, "JCEF initialization failed")
             MapUnavailable(
                 modifier = modifier,
-                message = "Intel macOS web map could not start: ${runtimeResult.exceptionOrNull()?.message ?: "unknown JCEF error"}",
+                message = strings.operationalFailureMessage(failure?.kind ?: OperationalFailureKind.MAP),
             )
             return
         }
@@ -92,9 +98,11 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
             }
         val session = sessionResult.getOrNull()
         if (session == null) {
+            val failure = sessionResult.exceptionOrNull()
+                ?.toOperationalFailure(OperationalFailureKind.MAP, "Could not open Intel macOS map session")
             MapUnavailable(
                 modifier = modifier,
-                message = "Intel macOS web map could not open this dataset: ${sessionResult.exceptionOrNull()?.message ?: "unknown error"}",
+                message = strings.operationalFailureMessage(failure?.kind ?: OperationalFailureKind.MAP),
             )
             return
         }

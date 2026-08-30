@@ -1,5 +1,7 @@
 package com.permieware.osmapdigger.desktop.settings
 
+import com.permieware.osmapdigger.settings.ApplicationSettingsSchema
+
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
 import kotlinx.coroutines.Dispatchers
@@ -27,7 +29,7 @@ class SqliteExternalSearchProviderRepository(
                     ORDER BY priority, title, provider_id
                     """.trimIndent(),
                 ).use { statement ->
-                    statement.setString(1, DesktopSettingsDatabase.GLOBAL_COUNTRY_CODE)
+                    statement.setString(1, ApplicationSettingsSchema.GLOBAL_COUNTRY_CODE)
                     statement.setString(2, countryCode?.uppercase() ?: "")
                     statement.executeQuery().use { result ->
                         buildList {
@@ -38,7 +40,7 @@ class SqliteExternalSearchProviderRepository(
                                         id = result.getString("provider_id"),
                                         title = result.getString("title"),
                                         countryCode = storedCountry.takeUnless {
-                                            it == DesktopSettingsDatabase.GLOBAL_COUNTRY_CODE
+                                            it == ApplicationSettingsSchema.GLOBAL_COUNTRY_CODE
                                         },
                                         urlTemplate = result.getString("url_template"),
                                         priority = result.getInt("priority"),
@@ -64,7 +66,7 @@ class SqliteExternalSearchProviderRepository(
                 statement.setString(2, provider.title)
                 statement.setString(
                     3,
-                    provider.countryCode ?: DesktopSettingsDatabase.GLOBAL_COUNTRY_CODE,
+                    provider.countryCode ?: ApplicationSettingsSchema.GLOBAL_COUNTRY_CODE,
                 )
                 statement.setString(4, provider.urlTemplate)
                 statement.setInt(5, provider.priority)

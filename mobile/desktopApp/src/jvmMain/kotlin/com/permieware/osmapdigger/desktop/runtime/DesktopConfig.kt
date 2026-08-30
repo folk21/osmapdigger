@@ -1,6 +1,8 @@
 package com.permieware.osmapdigger.desktop.runtime
 
 import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
+import com.permieware.osmapdigger.error.OperationalFailureKind
+import com.permieware.osmapdigger.error.operationalBoundary
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.nio.file.Files
@@ -69,12 +71,10 @@ object DesktopConfigLoader {
             ?: configured
     }
 
-    private fun parse(path: Path): DesktopConfig? =
-        runCatching {
+    private fun parse(path: Path): DesktopConfig =
+        operationalBoundary(OperationalFailureKind.SETTINGS, "Could not parse Desktop config: $path") {
             json.decodeFromString<DesktopConfig>(Files.readString(path))
-        }.onFailure { failure ->
-            DesktopDiagnostics.error("desktop.config", "Cannot parse config $path", failure)
-        }.getOrNull()
+        }
 
     private fun userConfig(): Path =
         Paths.get(
@@ -102,8 +102,8 @@ object DesktopConfigLoader {
             .getResourceAsStream("desktop-config.json")
             ?.bufferedReader()
             ?.use { reader ->
-                runCatching {
+                operationalBoundary(OperationalFailureKind.SETTINGS, "Could not parse packaged Desktop config") {
                     json.decodeFromString<DesktopConfig>(reader.readText())
-                }.getOrNull()
+                }
             }
 }

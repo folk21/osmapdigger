@@ -1,5 +1,9 @@
 package com.permieware.osmapdigger.desktop.preferences
 
+import com.permieware.osmapdigger.analysis.SettlementCandidateScope
+import com.permieware.osmapdigger.error.OperationalFailureException
+import com.permieware.osmapdigger.error.OperationalFailureKind
+
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.preferences.UserPreferences
@@ -9,6 +13,7 @@ import java.sql.DriverManager
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
+import kotlin.test.assertFailsWith
 
 class SqliteUserPreferencesRepositoryTest {
     @Test
@@ -37,6 +42,7 @@ class SqliteUserPreferencesRepositoryTest {
                             SearchCondition("forest.distance_km", maxValue = 2.0),
                             SearchCondition("farmyard.distance_km", minValue = 5.0),
                         ),
+                    candidateScope = SettlementCandidateScope.Imported(listOf("node:42", "node:99")),
                     preferenceOverrides =
                         listOf(
                             MetricPreferenceOverride(
@@ -102,6 +108,7 @@ class SqliteUserPreferencesRepositoryTest {
 
             assertEquals("andorra", loaded?.datasetId)
             assertEquals(emptyList(), loaded?.preferenceOverrides)
+            assertEquals(SettlementCandidateScope.Dataset, loaded?.candidateScope)
             DriverManager.getConnection("jdbc:sqlite:${database.toAbsolutePath()}").use { connection ->
                 val version = connection.createStatement().use { statement ->
                     statement.executeQuery("PRAGMA user_version").use { result ->
@@ -109,7 +116,7 @@ class SqliteUserPreferencesRepositoryTest {
                         result.getInt(1)
                     }
                 }
-                assertEquals(3, version)
+                assertEquals(4, version)
             }
         } finally {
             database.parent.toFile().deleteRecursively()
@@ -117,7 +124,7 @@ class SqliteUserPreferencesRepositoryTest {
     }
 
     @Test
-    fun malformedPreferencePayloadMakesSavedStateUnavailable() = runTest {
+    fun malformedPreferencePayloadIsTypedSettingsFailure() = runTest {
         val database = Files.createTempDirectory("osmapdigger-preferences-").resolve("preferences.sqlite")
         try {
             val repository = SqliteUserPreferencesRepository(database)
@@ -131,14 +138,17 @@ class SqliteUserPreferencesRepositoryTest {
                 }
             }
 
-            assertNull(SqliteUserPreferencesRepository(database).load())
+            val failure = assertFailsWith<OperationalFailureException> {
+                SqliteUserPreferencesRepository(database).load()
+            }
+            assertEquals(OperationalFailureKind.SETTINGS, failure.failure.kind)
         } finally {
             database.parent.toFile().deleteRecursively()
         }
     }
 
     @Test
-    fun malformedFilterPayloadMakesSavedStateUnavailable() = runTest {
+    fun malformedFilterPayloadIsTypedSettingsFailure() = runTest {
         val database = Files.createTempDirectory("osmapdigger-preferences-").resolve("preferences.sqlite")
         try {
             val repository = SqliteUserPreferencesRepository(database)
@@ -152,9 +162,36 @@ class SqliteUserPreferencesRepositoryTest {
                 }
             }
 
-            assertNull(SqliteUserPreferencesRepository(database).load())
+            val failure = assertFailsWith<OperationalFailureException> {
+                SqliteUserPreferencesRepository(database).load()
+            }
+            assertEquals(OperationalFailureKind.SETTINGS, failure.failure.kind)
         } finally {
             database.parent.toFile().deleteRecursively()
         }
     }
+    @Test
+    fun malformedCandidateScopePayloadIsTypedSettingsFailure() = runTest {
+        val database = Files.createTempDirectory("osmapdigger-preferences-").resolve("preferences.sqlite")
+        try {
+            val repository = SqliteUserPreferencesRepository(database)
+            repository.save(UserPreferences(datasetId = "andorra"))
+
+            DriverManager.getConnection("jdbc:sqlite:${database.toAbsolutePath()}").use { connection ->
+                connection.createStatement().use { statement ->
+                    statement.executeUpdate(
+                        "UPDATE user_preferences SET candidate_scope_json = 'malformed' WHERE id = 1",
+                    )
+                }
+            }
+
+            val failure = assertFailsWith<OperationalFailureException> {
+                SqliteUserPreferencesRepository(database).load()
+            }
+            assertEquals(OperationalFailureKind.SETTINGS, failure.failure.kind)
+        } finally {
+            database.parent.toFile().deleteRecursively()
+        }
+    }
+
 }

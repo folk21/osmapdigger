@@ -27,14 +27,20 @@ class SettlementAnalysisService(
 
         val bounds = SearchRequestSemantics.boundingBox(search)
         val scoringMetricIds = request.preferences.mapTo(linkedSetOf()) { it.metricId }
+        val candidateSettlementIds = request.candidateScope.restrictedSettlementIds()
         val retrievalMark = TimeSource.Monotonic.markNow()
         val candidates =
-            repository.analysisCandidates(
-                conditions = SearchRequestSemantics.effectiveConditions(search),
-                latitudeRange = bounds?.first,
-                longitudeRange = bounds?.second,
-                scoringMetricIds = scoringMetricIds,
-            )
+            if (candidateSettlementIds != null && candidateSettlementIds.isEmpty()) {
+                emptyList()
+            } else {
+                repository.analysisCandidates(
+                    conditions = SearchRequestSemantics.effectiveConditions(search),
+                    latitudeRange = bounds?.first,
+                    longitudeRange = bounds?.second,
+                    scoringMetricIds = scoringMetricIds,
+                    candidateSettlementIds = candidateSettlementIds,
+                )
+            }
         val batchRetrievalMillis = retrievalMark.elapsedNow().inWholeNanoseconds / 1_000_000.0
 
         val sharedMark = TimeSource.Monotonic.markNow()

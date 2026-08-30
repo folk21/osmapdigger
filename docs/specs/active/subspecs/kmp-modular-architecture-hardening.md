@@ -26,6 +26,8 @@ dependency direction. The shortlist workflow is now the current product implemen
 The remaining work must continue as independently reviewable PATCH iterations. Each iteration must leave the repository
 in a coherent, testable state; this specification deliberately rejects a single repository-wide rewrite.
 
+The first shortlist feature checkpoint is complete at the candidate-source core boundary. Hardening iterations 2 and 3 are now also implemented: selected meaningful runtime paths use the shared typed operational-failure contract, settings schema/migrations have one shared semantic owner, package metadata/layout parsing is shared, and Desktop/Android replacement installation is staging-based and failure-safe. Configured Gradle validation remains pending in environments without an available Gradle distribution. The imported-list workflow remains the current product implementation focus.
+
 ## Goal
 
 Prepare the Kotlin Multiplatform runtime for continued growth by making architecture boundaries enforceable rather
@@ -88,9 +90,7 @@ Iteration 1 removes those targeted cycles without adding Gradle modules. `Analys
 belongs to `map`, and `ExternalLinkOpener` belongs to `external`; `runtime` retains only the platform composition bundle.
 The unused legacy `DatasetManager`/`DatasetMetadata`/`DatasetConfig` API and its unread `config/app-config.yaml` companion are removed. `mobile/README.md` documents the current logical DAG and `tests/test_mobile_architecture.py` enforces allowed commonMain package directions during network-free checks.
 
-Cross-platform implementations intentionally use different platform APIs, but some compatibility-sensitive semantics
-are duplicated manually between Desktop and Android, notably dataset SQL behavior and application settings schema/
-migrations.
+Cross-platform implementations intentionally use different platform APIs. Iterations 2 and 3 removed the previous settings-schema and package-metadata duplication by introducing shared semantic owners; compatibility-sensitive analytical SQL still remains duplicated between Desktop and Android and is reserved for iteration 4.
 
 Current source-size hot spots include approximately:
 
@@ -567,7 +567,7 @@ Iteration acceptance:
 - no product behavior or persisted format changes;
 - mobile documentation records the cleaned logical ownership graph.
 
-### Iteration 2 — unified Kotlin error contract
+### Iteration 2 — unified Kotlin error contract — implementation complete, configured validation pending
 
 Scope:
 
@@ -585,7 +585,15 @@ Iteration acceptance:
 - tests distinguish missing/absent state from operational failure;
 - UI behavior remains usable and deterministic.
 
-### Iteration 3 — shared persistence/package semantics and atomic installation
+Implemented result:
+
+- `error/OperationalFailure.kt` owns stable failure kinds and exception-based boundary adaptation;
+- runtime dataset repositories, user-preference storage, provider storage, dataset open/import, workspace analysis/persistence, and selected-detail loading classify expected failures consistently;
+- coroutine cancellation is rethrown by the shared operational boundary and controller/UI catch paths;
+- malformed persisted preference payloads are now a typed settings failure rather than being confused with missing saved state;
+- application-owned UI maps stable failure kinds to localized text and no longer renders raw platform exception messages on migrated paths.
+
+### Iteration 3 — shared persistence/package semantics and atomic installation — implementation complete, configured validation pending
 
 Scope:
 
@@ -601,6 +609,14 @@ Iteration acceptance:
 - corrupt replacement import cannot destroy the existing usable package;
 - legacy/current settings remain readable;
 - no `geo-format` compatibility change unless explicitly justified.
+
+Implemented result:
+
+- `settings/ApplicationSettingsSchema.kt` is the single logical schema/migration owner used by both platform SQLite executors;
+- `dataset/DatasetPackageContract.kt` owns runtime package filenames, PMTiles placeholder, and the common `metadata.json` parser;
+- Desktop and Android loaders retain platform filesystem/SQLite ownership while consuming the same package metadata semantics;
+- both ZIP installers extract and validate in staging before replacing the installed target and preserve/restore the previous package around publication;
+- Iteration 3 completed while the application settings schema was version 3 and left `geo-format` unchanged. The subsequent candidate-source feature increment advances the same shared-owned settings schema to version 4 without changing the ownership established by this gate.
 
 ### Iteration 4 — DRY analytical repository semantics
 

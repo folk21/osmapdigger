@@ -2,6 +2,7 @@ package com.permieware.osmapdigger.desktop.runtime
 
 import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.dataset.GeoRepository
+import com.permieware.osmapdigger.dataset.StableIdBatches
 import com.permieware.osmapdigger.search.SettlementNameNormalizer
 import java.sql.Connection
 import java.sql.ResultSet
@@ -194,7 +195,7 @@ class JdbcGeoRepository(
     }
 
     /**
-     * Return every hard-filter-eligible settlement with requested scoring metrics in one query.
+     * Return hard-filter-eligible settlements with requested scoring metrics in bounded batch queries.
      *
      * The LEFT JOIN deliberately preserves candidates whose requested metric is missing;
      * absence remains unknown and is represented by a missing entry in [SettlementAnalysisCandidate.metricValues].
@@ -204,9 +205,50 @@ class JdbcGeoRepository(
         latitudeRange: ClosedFloatingPointRange<Double>?,
         longitudeRange: ClosedFloatingPointRange<Double>?,
         scoringMetricIds: Set<String>,
+        candidateSettlementIds: Set<String>?,
     ): List<SettlementAnalysisCandidate> {
         require(scoringMetricIds.none { it.isBlank() }) { "Scoring metric IDs must not be blank" }
+        require(candidateSettlementIds == null || candidateSettlementIds.none { it.isBlank() }) {
+            "Candidate settlement IDs must not be blank"
+        }
+        if (candidateSettlementIds != null && candidateSettlementIds.isEmpty()) return emptyList()
+
         val metricIds = scoringMetricIds.sorted()
+        val candidateBatches =
+            candidateSettlementIds?.let { ids ->
+                val fixedParameterCount =
+                    metricIds.size +
+                        rangeParameterCount(latitudeRange) +
+                        rangeParameterCount(longitudeRange) +
+                        conditionParameterCount(conditions)
+                val maxBatchSize = SQLITE_SAFE_BIND_PARAMETER_COUNT - fixedParameterCount
+                require(maxBatchSize > 0) {
+                    "Analysis query leaves no SQLite bind parameters for candidate settlement IDs"
+                }
+                StableIdBatches.partition(ids, maxBatchSize)
+            }
+
+        return if (candidateBatches == null) {
+            queryAnalysisCandidates(
+                conditions, latitudeRange, longitudeRange, metricIds, candidateSettlementIds = null,
+            )
+        } else {
+            candidateBatches.flatMap { batch ->
+                queryAnalysisCandidates(
+                    conditions, latitudeRange, longitudeRange, metricIds, candidateSettlementIds = batch,
+                )
+            }
+        }
+    }
+
+    /** Execute one bounded analysis-candidate SQL batch. */
+    private fun queryAnalysisCandidates(
+        conditions: List<SearchCondition>,
+        latitudeRange: ClosedFloatingPointRange<Double>?,
+        longitudeRange: ClosedFloatingPointRange<Double>?,
+        metricIds: List<String>,
+        candidateSettlementIds: List<String>?,
+    ): List<SettlementAnalysisCandidate> {
         val parameters = mutableListOf<Any>()
         val sql =
             if (metricIds.isEmpty()) {
@@ -237,6 +279,10 @@ class JdbcGeoRepository(
             }
 
         appendCandidatePredicates(sql, parameters, conditions, latitudeRange, longitudeRange)
+        candidateSettlementIds?.let { ids ->
+            sql.append("\nAND s.settlement_id IN (${ids.joinToString(",") { "?" }})")
+            parameters.addAll(ids)
+        }
         sql.append("\nORDER BY s.settlement_id, scoring_metric_id")
 
         return connection.prepareStatement(sql.toString()).use { statement ->
@@ -244,6 +290,14 @@ class JdbcGeoRepository(
             statement.executeQuery().use(::readAnalysisCandidates)
         }
     }
+
+    private fun rangeParameterCount(range: ClosedFloatingPointRange<Double>?): Int =
+        if (range == null) 0 else 2
+
+    private fun conditionParameterCount(conditions: List<SearchCondition>): Int =
+        conditions.sumOf { condition ->
+            1 + (if (condition.minValue == null) 0 else 1) + (if (condition.maxValue == null) 0 else 1)
+        }
 
     private fun appendCandidatePredicates(
         sql: StringBuilder,
@@ -404,4 +458,9 @@ class JdbcGeoRepository(
             population = rows.getLong(6).let { if (rows.wasNull()) null else it },
             location = GeoPoint(rows.getDouble(7), rows.getDouble(8)),
         )
+
+    companion object {
+        // Keep below the historical SQLite 999-variable default to leave room for fixed query bindings.
+        private const val SQLITE_SAFE_BIND_PARAMETER_COUNT: Int = 900
+    }
 }
