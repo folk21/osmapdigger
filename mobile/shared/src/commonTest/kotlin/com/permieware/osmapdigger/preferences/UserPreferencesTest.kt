@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.preferences
 
+import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.MetricDefinition
@@ -145,17 +146,60 @@ class UserPreferencesTest {
 
 
     @Test
-    fun candidateScopePayloadRoundTripsDatasetAndImportedScopes() {
+    fun candidateSourcePayloadRoundTripsActiveAndRetainedImportState() {
+        val datasetSource =
+            PersistedCandidateSource(
+                candidateScope = SettlementCandidateScope.Dataset,
+                importedCandidateList = null,
+            )
         assertEquals(
-            SettlementCandidateScope.Dataset,
+            datasetSource,
             SettlementCandidateScopePayloadCodec.decode(
-                SettlementCandidateScopePayloadCodec.encode(SettlementCandidateScope.Dataset),
+                SettlementCandidateScopePayloadCodec.encode(
+                    datasetSource.candidateScope,
+                    datasetSource.importedCandidateList,
+                ),
             ),
         )
-        val imported = SettlementCandidateScope.Imported(listOf("node:1", "relation:2"))
-        assertEquals(imported, SettlementCandidateScopePayloadCodec.decode(SettlementCandidateScopePayloadCodec.encode(imported)))
+
+        val importedList = ImportedCandidateList("Alpha\nBeta", listOf("node:1", "relation:2"))
+        val inactiveImport =
+            PersistedCandidateSource(
+                candidateScope = SettlementCandidateScope.Dataset,
+                importedCandidateList = importedList,
+            )
+        assertEquals(
+            inactiveImport,
+            SettlementCandidateScopePayloadCodec.decode(
+                SettlementCandidateScopePayloadCodec.encode(
+                    inactiveImport.candidateScope,
+                    inactiveImport.importedCandidateList,
+                ),
+            ),
+        )
+
+        val activeImport = inactiveImport.copy(candidateScope = SettlementCandidateScope.Imported(importedList.settlementIds))
+        assertEquals(
+            activeImport,
+            SettlementCandidateScopePayloadCodec.decode(
+                SettlementCandidateScopePayloadCodec.encode(
+                    activeImport.candidateScope,
+                    activeImport.importedCandidateList,
+                ),
+            ),
+        )
+
+        assertEquals(
+            PersistedCandidateSource(
+                candidateScope = SettlementCandidateScope.Imported(listOf("node:1")),
+                importedCandidateList = null,
+            ),
+            SettlementCandidateScopePayloadCodec.decode(
+                """{"version":1,"source":"imported","settlementIds":["node:1"]}""",
+            ),
+        )
         assertNull(SettlementCandidateScopePayloadCodec.decode("not-json"))
-        assertNull(SettlementCandidateScopePayloadCodec.decode("""{"version":2,"source":"dataset"}"""))
+        assertNull(SettlementCandidateScopePayloadCodec.decode("""{"version":3,"activeSource":"dataset"}"""))
     }
 
     @Test
@@ -164,6 +208,11 @@ class UserPreferencesTest {
             UserPreferences(
                 datasetId = "dataset-a",
                 candidateScope = SettlementCandidateScope.Imported(listOf("node:1", "node:gone", "node:2")),
+                importedCandidateList =
+                    ImportedCandidateList(
+                        sourceText = "One\nGone\nTwo",
+                        settlementIds = listOf("node:1", "node:gone", "node:2"),
+                    ),
             )
 
         val restored =
@@ -178,6 +227,10 @@ class UserPreferencesTest {
         assertEquals(
             SettlementCandidateScope.Imported(listOf("node:1", "node:2")),
             restored?.candidateScope,
+        )
+        assertEquals(
+            ImportedCandidateList("One\nGone\nTwo", listOf("node:1", "node:2")),
+            restored?.importedCandidateList,
         )
     }
 

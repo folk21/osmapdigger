@@ -208,13 +208,20 @@ Bulk resolution must reuse the dataset settlement alias index. Automatic resolut
 
 - one exact normalized alias match -> resolved;
 - no exact match -> unresolved with ranked suggestions available for user correction;
-- multiple exact matches -> ambiguous and requires explicit user choice.
+- multiple exact matches -> ambiguous and requires explicit user choice;
+- when a center and positive radius are active, exact alternatives and non-exact suggestions shown
+  during import review are limited to settlements inside that same radius using shared Haversine
+  semantics;
+- an ambiguous exact-name row may select one, several, or all displayed settlements.
 
 Fuzzy matching may generate suggestions but must not silently assign an imported name to a settlement.
-The reviewed result is a deterministic ordered set of stable settlement IDs. The resolved imported
-candidate scope should be persisted as part of the current dataset-scoped analysis context so an
-application restart cannot silently broaden the analysis back to the whole dataset. Raw unresolved
-input lines do not need to persist after the review flow is completed.
+The reviewed analytical result is a deterministic ordered set of stable settlement IDs. The imported
+source text is retained only as editing provenance so **Edit list** reopens the user's previous lines;
+it never becomes settlement identity. Import activation is independent from retention: users can
+disable the imported restriction and analyze the full dataset with Required/Preferences, then re-enable
+the retained reviewed IDs without resolving names again. Clearing the saved import removes both the
+retained text/IDs and the active restriction. The candidate-source payload remains dataset-scoped so an
+application restart cannot silently broaden an active imported analysis back to the whole dataset.
 
 ### SS-R4 — candidate restriction must scale without N+1 lookup
 
@@ -503,8 +510,9 @@ incompatible fields can be handled without coupling file format evolution to the
 Acceptance requires all of the following:
 
 1. Shared tests prove existing scoring results are unchanged by shortlist/notebook additions.
-2. Imported candidate lists resolve stable IDs deterministically and never auto-select fuzzy/ambiguous
-   matches.
+2. Imported candidate lists resolve stable IDs deterministically, never auto-select fuzzy/ambiguous
+   matches, restrict review alternatives to the active center/radius when present, and support explicit
+   multi/select-all for duplicate exact names.
 3. Ranked analysis of an imported set considers no settlement outside the resolved candidate IDs.
 4. Candidate restriction uses batch repository access and has no per-candidate details hydration.
 5. Desktop visually exposes score/coverage plus multi-selection without conflating shortlist and details
@@ -529,7 +537,7 @@ Acceptance requires all of the following:
 Implement in small increments:
 
 1. **Implemented: Candidate-source core** — immutable candidate-scope/import models, conservative bulk alias resolution, repository candidate-ID restriction, bounded stable-ID batching, and focused shared/Desktop tests. The core is wired into `AnalysisWorkspaceController` as transient state, but no user-facing import control or persistence is enabled yet.
-2. **Implemented: Candidate-source workflow** — Desktop paste/file import and full-sidebar review UI now connect explicit reviewed matches to the shared stable-ID scope; application settings schema version 4 persists that dataset-scoped scope and restore drops stale IDs without broadening to the full dataset. The same shared contracts remain available for later Android document/text integration.
+2. **Implemented: Candidate-source workflow** — Desktop paste/file import and full-sidebar review UI connect explicit reviewed matches to the shared stable-ID scope; active center/radius bounds the review alternatives, ambiguous exact matches support multi/select-all, the previous source text reopens for editing, and import can be disabled/re-enabled independently from deleting the retained list. Application settings schema version 4 keeps the same SQLite column while candidate-source payload version 2 stores active source plus retained reviewed IDs/source text; restore drops stale IDs without broadening an active import. The same shared contracts remain available for later Android document/text integration.
 3. **Visual shortlist** — add compact score indicators and transient multi-selection to the Desktop ranked list without changing the existing single selected-settlement/map contract.
 4. **Notebook persistence** — add shared notebook/snapshot contracts, coordinated settings SQLite migration, Desktop/Android repositories, notes, save/remove/update-snapshot operations, and tests.
 5. **Batch external search** — extend generic query construction to a settlement list with explicit bounded/chunked browser actions and no provider-specific UI branches.

@@ -12,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -29,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.domain.SettlementSearchMatch
@@ -46,8 +48,11 @@ import kotlinx.coroutines.launch
 @Composable
 internal fun CandidateSourceSummary(
     candidateScope: SettlementCandidateScope,
+    importedCandidateList: ImportedCandidateList?,
     onImportRequested: () -> Unit,
-    onUseDatasetScope: () -> Unit,
+    onActivateImported: () -> Unit,
+    onDeactivateImported: () -> Unit,
+    onClearImported: () -> Unit,
 ) {
     val strings = LocalUiStrings.current
     Card(Modifier.fillMaxWidth()) {
@@ -58,9 +63,27 @@ internal fun CandidateSourceSummary(
             Text(strings.candidateSource, style = MaterialTheme.typography.titleSmall)
             when (candidateScope) {
                 SettlementCandidateScope.Dataset -> {
-                    Text(strings.candidateSourceDataset, style = MaterialTheme.typography.bodyMedium)
-                    OutlinedButton(onClick = onImportRequested) {
-                        Text(strings.importSettlementList)
+                    if (importedCandidateList == null) {
+                        Text(strings.candidateSourceDataset, style = MaterialTheme.typography.bodyMedium)
+                        OutlinedButton(onClick = onImportRequested) {
+                            Text(strings.importSettlementList)
+                        }
+                    } else {
+                        Text(
+                            strings.candidateSourceImportedDisabled(importedCandidateList.settlementIds.size),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(onClick = onActivateImported) {
+                                Text(strings.activateImportedCandidates)
+                            }
+                            OutlinedButton(onClick = onImportRequested) {
+                                Text(strings.replaceSettlementList)
+                            }
+                        }
+                        TextButton(onClick = onClearImported) {
+                            Text(strings.clearImportedList)
+                        }
                     }
                 }
                 is SettlementCandidateScope.Imported -> {
@@ -72,9 +95,12 @@ internal fun CandidateSourceSummary(
                         OutlinedButton(onClick = onImportRequested) {
                             Text(strings.replaceSettlementList)
                         }
-                        TextButton(onClick = onUseDatasetScope) {
-                            Text(strings.useFullDataset)
+                        Button(onClick = onDeactivateImported) {
+                            Text(strings.deactivateImportedCandidates)
                         }
+                    }
+                    TextButton(onClick = onClearImported) {
+                        Text(strings.clearImportedList)
                     }
                 }
             }
@@ -87,19 +113,30 @@ internal fun CandidateSourceSummary(
 internal fun CandidateImportPanel(
     modifier: Modifier,
     resolver: SettlementListImportResolver,
+    initialText: String,
+    center: Settlement?,
+    radiusKm: Double?,
     onLoadTextFile: ((String) -> String?)?,
-    onApply: (SettlementCandidateScope.Imported) -> Unit,
+    onApply: (String, List<String>) -> Unit,
     onClose: () -> Unit,
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
     val coroutineScope = rememberCoroutineScope()
-    var inputText by remember { mutableStateOf("") }
+    var inputText by remember(initialText) { mutableStateOf(initialText) }
     var review by remember { mutableStateOf<SettlementImportReview?>(null) }
-    var selections by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    var selections by remember { mutableStateOf<Map<String, Set<String>>>(emptyMap()) }
     var resolving by remember { mutableStateOf(false) }
     var failure by remember { mutableStateOf<OperationalFailure?>(null) }
     var validationMessage by remember { mutableStateOf<String?>(null) }
+
+    fun replaceInput(nextText: String) {
+        inputText = nextText
+        review = null
+        selections = emptyMap()
+        validationMessage = null
+        failure = null
+    }
 
     fun startReview() {
         val lines = SettlementListImportParser.parse(inputText)
@@ -114,7 +151,12 @@ internal fun CandidateImportPanel(
         resolving = true
         coroutineScope.launch {
             try {
-                val nextReview = resolver.resolve(lines)
+                val nextReview =
+                    resolver.resolve(
+                        lines = lines,
+                        center = center?.location,
+                        radiusKm = radiusKm,
+                    )
                 review = nextReview
                 selections = emptyMap()
             } catch (error: CancellationException) {
@@ -149,15 +191,15 @@ internal fun CandidateImportPanel(
                 TextButton(onClick = onClose) { Text(strings.close) }
             }
             Text(strings.settlementListImportInstructions, style = MaterialTheme.typography.bodySmall)
+            if (center != null && radiusKm != null) {
+                Text(
+                    strings.importReviewUsesRadius(settlementDisplayName(center), radiusKm),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             OutlinedTextField(
                 value = inputText,
-                onValueChange = { value ->
-                    inputText = value
-                    review = null
-                    selections = emptyMap()
-                    validationMessage = null
-                    failure = null
-                },
+                onValueChange = ::replaceInput,
                 modifier = Modifier.fillMaxWidth().heightIn(min = 120.dp, max = 220.dp),
                 label = { Text(strings.settlementListTextLabel) },
                 enabled = !resolving,
@@ -169,13 +211,7 @@ internal fun CandidateImportPanel(
                         enabled = !resolving,
                         onClick = {
                             try {
-                                loadFile(strings.settlementListImportTitle)?.let { loaded ->
-                                    inputText = loaded
-                                    review = null
-                                    selections = emptyMap()
-                                    validationMessage = null
-                                    failure = null
-                                }
+                                loadFile(strings.settlementListImportTitle)?.let(::replaceInput)
                             } catch (error: Throwable) {
                                 failure = error.toOperationalFailure(
                                     OperationalFailureKind.FILE_ACCESS,
@@ -186,6 +222,12 @@ internal fun CandidateImportPanel(
                     ) {
                         Text(strings.loadTextFile)
                     }
+                }
+                OutlinedButton(
+                    enabled = !resolving && inputText.isNotEmpty(),
+                    onClick = { replaceInput("") },
+                ) {
+                    Text(strings.clear)
                 }
                 Button(enabled = !resolving, onClick = ::startReview) {
                     Text(if (resolving) strings.resolvingNames else strings.resolveNames)
@@ -209,14 +251,14 @@ internal fun CandidateImportPanel(
                     itemsIndexed(currentReview.resolutions) { _, resolution ->
                         ImportResolutionCard(
                             resolution = resolution,
-                            selectedSettlementId = selections[resolution.line.normalizedText],
-                            onSelectionChanged = { settlementId ->
+                            selectedSettlementIds = selections[resolution.line.normalizedText].orEmpty(),
+                            onSelectionChanged = { settlementIds ->
                                 selections =
                                     selections.toMutableMap().apply {
-                                        if (settlementId == null) {
+                                        if (settlementIds.isEmpty()) {
                                             remove(resolution.line.normalizedText)
                                         } else {
-                                            put(resolution.line.normalizedText, settlementId)
+                                            put(resolution.line.normalizedText, settlementIds)
                                         }
                                     }
                             },
@@ -225,7 +267,7 @@ internal fun CandidateImportPanel(
                     }
                 }
                 Button(
-                    onClick = { onApply(SettlementCandidateScope.Imported(reviewedIds)) },
+                    onClick = { onApply(inputText, reviewedIds) },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(strings.applyImportedCandidates(reviewedIds.size))
@@ -238,8 +280,8 @@ internal fun CandidateImportPanel(
 @Composable
 private fun ImportResolutionCard(
     resolution: SettlementImportResolution,
-    selectedSettlementId: String?,
-    onSelectionChanged: (String?) -> Unit,
+    selectedSettlementIds: Set<String>,
+    onSelectionChanged: (Set<String>) -> Unit,
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
@@ -256,9 +298,9 @@ private fun ImportResolutionCard(
                 }
                 is SettlementImportResolution.Ambiguous -> {
                     Text(strings.ambiguousMatch, style = MaterialTheme.typography.labelMedium)
-                    SelectableMatches(
+                    MultiSelectableMatches(
                         matches = resolution.matches,
-                        selectedSettlementId = selectedSettlementId,
+                        selectedSettlementIds = selectedSettlementIds,
                         onSelectionChanged = onSelectionChanged,
                         settlementDisplayName = settlementDisplayName,
                     )
@@ -268,10 +310,14 @@ private fun ImportResolutionCard(
                     if (resolution.suggestions.isNotEmpty()) {
                         Text(strings.suggestions, style = MaterialTheme.typography.labelSmall)
                     }
-                    SelectableMatches(
+                    SingleSelectableMatches(
                         matches = resolution.suggestions,
-                        selectedSettlementId = selectedSettlementId,
-                        onSelectionChanged = onSelectionChanged,
+                        selectedSettlementId = selectedSettlementIds.singleOrNull(),
+                        onSelectionChanged = { settlementId ->
+                            onSelectionChanged(
+                                if (settlementId == null) emptySet() else setOf(settlementId),
+                            )
+                        },
                         settlementDisplayName = settlementDisplayName,
                     )
                 }
@@ -281,7 +327,54 @@ private fun ImportResolutionCard(
 }
 
 @Composable
-private fun SelectableMatches(
+private fun MultiSelectableMatches(
+    matches: List<SettlementSearchMatch>,
+    selectedSettlementIds: Set<String>,
+    onSelectionChanged: (Set<String>) -> Unit,
+    settlementDisplayName: (Settlement) -> String,
+) {
+    val strings = LocalUiStrings.current
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        TextButton(onClick = { onSelectionChanged(matches.mapTo(linkedSetOf()) { it.settlement.id }) }) {
+            Text(strings.selectAll)
+        }
+        TextButton(onClick = { onSelectionChanged(emptySet()) }) {
+            Text(strings.clearSelection)
+        }
+    }
+    matches.forEach { match ->
+        val selected = match.settlement.id in selectedSettlementIds
+        Row(
+            Modifier.fillMaxWidth().clickable {
+                onSelectionChanged(
+                    if (selected) {
+                        selectedSettlementIds - match.settlement.id
+                    } else {
+                        selectedSettlementIds + match.settlement.id
+                    },
+                )
+            },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(
+                checked = selected,
+                onCheckedChange = { checked ->
+                    onSelectionChanged(
+                        if (checked) {
+                            selectedSettlementIds + match.settlement.id
+                        } else {
+                            selectedSettlementIds - match.settlement.id
+                        },
+                    )
+                },
+            )
+            MatchLabel(match, settlementDisplayName)
+        }
+    }
+}
+
+@Composable
+private fun SingleSelectableMatches(
     matches: List<SettlementSearchMatch>,
     selectedSettlementId: String?,
     onSelectionChanged: (String?) -> Unit,

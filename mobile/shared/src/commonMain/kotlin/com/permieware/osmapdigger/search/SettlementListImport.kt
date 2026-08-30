@@ -1,7 +1,10 @@
 package com.permieware.osmapdigger.search
 
 import com.permieware.osmapdigger.dataset.GeoRepository
+import com.permieware.osmapdigger.domain.GeoPoint
+import com.permieware.osmapdigger.domain.SettlementSearchEntry
 import com.permieware.osmapdigger.domain.SettlementSearchMatch
+import com.permieware.osmapdigger.geo.GeoMath
 
 /** One normalized, de-duplicated line from a UTF-8 settlement-name import. */
 data class SettlementImportLine(
@@ -52,49 +55,54 @@ data class SettlementImportReview(
         }
 }
 
-
 /** Apply explicit user choices to ambiguous/unresolved import rows without auto-accepting suggestions. */
 object SettlementImportReviewer {
     fun reviewedSettlementIds(
         review: SettlementImportReview,
-        selectedSettlementIdByNormalizedLine: Map<String, String>,
+        selectedSettlementIdsByNormalizedLine: Map<String, Set<String>>,
     ): List<String> {
         val seen = hashSetOf<String>()
         val result = mutableListOf<String>()
         review.resolutions.forEach { resolution ->
-            val settlementId =
+            val settlementIds =
                 when (resolution) {
-                    is SettlementImportResolution.Resolved -> resolution.match.settlement.id
+                    is SettlementImportResolution.Resolved -> listOf(resolution.match.settlement.id)
                     is SettlementImportResolution.Ambiguous ->
-                        selectedChoice(
+                        selectedChoices(
                             resolution.line,
                             resolution.matches,
-                            selectedSettlementIdByNormalizedLine,
+                            selectedSettlementIdsByNormalizedLine,
                         )
                     is SettlementImportResolution.Unresolved ->
-                        selectedChoice(
+                        selectedChoices(
                             resolution.line,
                             resolution.suggestions,
-                            selectedSettlementIdByNormalizedLine,
+                            selectedSettlementIdsByNormalizedLine,
                         )
                 }
-            if (settlementId != null && seen.add(settlementId)) {
-                result += settlementId
+            settlementIds.forEach { settlementId ->
+                if (seen.add(settlementId)) {
+                    result += settlementId
+                }
             }
         }
         return result
     }
 
-    private fun selectedChoice(
+    private fun selectedChoices(
         line: SettlementImportLine,
         allowedMatches: List<SettlementSearchMatch>,
-        selections: Map<String, String>,
-    ): String? {
-        val selectedId = selections[line.normalizedText] ?: return null
-        require(allowedMatches.any { it.settlement.id == selectedId }) {
-            "Imported settlement choice must reference one of the reviewed matches"
+        selections: Map<String, Set<String>>,
+    ): List<String> {
+        val selectedIds = selections[line.normalizedText].orEmpty()
+        if (selectedIds.isEmpty()) return emptyList()
+
+        val allowedIds = allowedMatches.mapTo(hashSetOf()) { it.settlement.id }
+        require(selectedIds.all { it in allowedIds }) {
+            "Imported settlement choices must reference reviewed matches"
         }
-        return selectedId
+        // Preserve the deterministic match order rather than Set iteration order.
+        return allowedMatches.map { it.settlement.id }.filter { it in selectedIds }
     }
 }
 
@@ -121,6 +129,10 @@ object SettlementListImportParser {
 /**
  * Resolve imported names against the complete dataset alias index without silently fuzzy-matching.
  *
+ * When [center] and [radiusKm] are both provided, the existing shared Haversine distance algorithm
+ * limits the resolution index before exact/partial/fuzzy matching. This keeps duplicate-name review
+ * consistent with the active search area while retaining deterministic matching semantics.
+ *
  * Only one exact normalized alias match is accepted automatically. Multiple exact matches remain
  * ambiguous, while prefix/substring/bounded-Levenshtein matches are suggestions for explicit review.
  */
@@ -132,8 +144,19 @@ class SettlementListImportResolver(
         require(suggestionLimit >= 0) { "Suggestion limit must not be negative" }
     }
 
-    suspend fun resolve(lines: List<SettlementImportLine>): SettlementImportReview {
-        val entries = repository.settlementSearchEntries()
+    suspend fun resolve(
+        lines: List<SettlementImportLine>,
+        center: GeoPoint? = null,
+        radiusKm: Double? = null,
+    ): SettlementImportReview {
+        require(radiusKm == null || radiusKm.isFinite() && radiusKm > 0.0) {
+            "Import review radius must be null or a positive finite value"
+        }
+        require(radiusKm == null || center != null) {
+            "Import review radius requires a center"
+        }
+
+        val entries = repository.settlementSearchEntries().withinRadius(center, radiusKm)
         val exactAliasIndex = SettlementSearchMatcher.exactAliasIndex(entries)
         val resolutions =
             lines.map { line ->
@@ -154,6 +177,16 @@ class SettlementListImportResolver(
                 }
             }
         return SettlementImportReview(resolutions)
+    }
+
+    private fun List<SettlementSearchEntry>.withinRadius(
+        center: GeoPoint?,
+        radiusKm: Double?,
+    ): List<SettlementSearchEntry> {
+        if (center == null || radiusKm == null) return this
+        return filter { entry ->
+            GeoMath.distanceKm(center, entry.settlement.location) <= radiusKm
+        }
     }
 
     companion object {

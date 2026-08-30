@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.workspace
 
+import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.MetricPreference
 import com.permieware.osmapdigger.analysis.ScoredSettlement
 import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
@@ -45,6 +46,7 @@ data class AnalysisWorkspaceState(
     val center: Settlement? = null,
     val radiusKm: Double? = null,
     val candidateScope: SettlementCandidateScope = SettlementCandidateScope.Dataset,
+    val importedCandidateList: ImportedCandidateList? = null,
     val rankedResults: List<ScoredSettlement> = emptyList(),
     val analyzing: Boolean = false,
     val failure: OperationalFailure? = null,
@@ -85,7 +87,8 @@ class AnalysisWorkspaceController(
             val savedForDataset = saved?.takeIf { it.datasetId == info.id }
             val needsSettlementIndex =
                 savedForDataset?.centerSettlementId != null ||
-                    savedForDataset?.candidateScope is SettlementCandidateScope.Imported
+                    savedForDataset?.candidateScope is SettlementCandidateScope.Imported ||
+                    savedForDataset?.importedCandidateList != null
             val settlementEntries =
                 if (needsSettlementIndex) repository.settlementSearchEntries() else emptyList()
             val settlementById = settlementEntries.associateBy { it.settlement.id }
@@ -123,6 +126,7 @@ class AnalysisWorkspaceController(
                     center = restoredSearch?.center,
                     radiusKm = restoredSearch?.radiusKm,
                     candidateScope = restoredSearch?.candidateScope ?: SettlementCandidateScope.Dataset,
+                    importedCandidateList = restoredSearch?.importedCandidateList,
                 )
             persistCurrentState()
             scheduleAnalysis(immediate = true)
@@ -143,6 +147,59 @@ class AnalysisWorkspaceController(
         mutableState.value =
             mutableState.value.copy(
                 candidateScope = candidateScope,
+                failure = null,
+            )
+        persistAndSchedule()
+    }
+
+    /** Store a reviewed imported list and activate it as the current candidate restriction. */
+    fun applyImportedCandidates(
+        sourceText: String,
+        settlementIds: List<String>,
+    ) {
+        val importedList = ImportedCandidateList(sourceText = sourceText, settlementIds = settlementIds)
+        mutableState.value =
+            mutableState.value.copy(
+                candidateScope = SettlementCandidateScope.Imported(importedList.settlementIds),
+                importedCandidateList = importedList,
+                failure = null,
+            )
+        persistAndSchedule()
+    }
+
+    /** Disable the imported restriction without discarding the retained list or its source text. */
+    fun deactivateImportedCandidates() {
+        if (mutableState.value.candidateScope == SettlementCandidateScope.Dataset) return
+        mutableState.value =
+            mutableState.value.copy(
+                candidateScope = SettlementCandidateScope.Dataset,
+                failure = null,
+            )
+        persistAndSchedule()
+    }
+
+    /** Reactivate the last reviewed imported list without resolving its names again. */
+    fun activateImportedCandidates() {
+        val importedList = mutableState.value.importedCandidateList ?: return
+        val nextScope = SettlementCandidateScope.Imported(importedList.settlementIds)
+        if (mutableState.value.candidateScope == nextScope) return
+        mutableState.value =
+            mutableState.value.copy(
+                candidateScope = nextScope,
+                failure = null,
+            )
+        persistAndSchedule()
+    }
+
+    /** Remove the retained imported list and return to unrestricted dataset candidates. */
+    fun clearImportedCandidates() {
+        if (mutableState.value.importedCandidateList == null && mutableState.value.candidateScope == SettlementCandidateScope.Dataset) {
+            return
+        }
+        mutableState.value =
+            mutableState.value.copy(
+                candidateScope = SettlementCandidateScope.Dataset,
+                importedCandidateList = null,
                 failure = null,
             )
         persistAndSchedule()
@@ -316,6 +373,7 @@ class AnalysisWorkspaceController(
                             conditions = snapshot.conditions,
                             preferenceOverrides = snapshot.preferenceOverrides,
                             candidateScope = snapshot.candidateScope,
+                            importedCandidateList = snapshot.importedCandidateList,
                         ),
                     )
                 }

@@ -41,7 +41,7 @@ class SqliteUserPreferencesRepository(
                         val preferenceOverrides =
                             MetricPreferenceOverridePayloadCodec.decode(result.getString("preferences_json"))
                                 ?: operationalFailure(OperationalFailureKind.SETTINGS, "Stored preference payload is invalid")
-                        val candidateScope =
+                        val candidateSource =
                             SettlementCandidateScopePayloadCodec.decode(result.getString("candidate_scope_json"))
                                 ?: operationalFailure(OperationalFailureKind.SETTINGS, "Stored candidate scope payload is invalid")
                         val radius = result.getDouble("radius_km").let { if (result.wasNull()) null else it }
@@ -53,7 +53,8 @@ class SqliteUserPreferencesRepository(
                             radiusKm = radius,
                             conditions = conditions,
                             preferenceOverrides = preferenceOverrides,
-                            candidateScope = candidateScope,
+                            candidateScope = candidateSource.candidateScope,
+                            importedCandidateList = candidateSource.importedCandidateList,
                         )
                     }
                 }
@@ -82,7 +83,10 @@ class SqliteUserPreferencesRepository(
                     }
                     statement.setString(5, SearchConditionPayloadCodec.encode(preferences.conditions))
                     statement.setString(6, MetricPreferenceOverridePayloadCodec.encode(preferences.preferenceOverrides))
-                    statement.setString(7, SettlementCandidateScopePayloadCodec.encode(preferences.candidateScope))
+                    statement.setString(7, SettlementCandidateScopePayloadCodec.encode(
+                            preferences.candidateScope,
+                            preferences.importedCandidateList,
+                        ))
                     statement.executeUpdate()
                 }
             }

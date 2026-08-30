@@ -10,13 +10,24 @@ sealed interface SettlementCandidateScope {
         val settlementIds: List<String>,
     ) : SettlementCandidateScope {
         init {
-            require(settlementIds.none { it.isBlank() }) {
-                "Imported candidate settlement IDs must not be blank"
-            }
-            require(settlementIds.distinct().size == settlementIds.size) {
-                "Imported candidate settlement IDs must be unique"
-            }
+            validateImportedCandidateIds(settlementIds)
         }
+    }
+}
+
+/**
+ * Reviewed imported candidate list retained independently from whether the import is currently active.
+ *
+ * [sourceText] is user-authored editing provenance only. Analytical identity always comes from
+ * [settlementIds], so aliases, fuzzy suggestions, and unresolved text never become candidate keys.
+ */
+data class ImportedCandidateList(
+    val sourceText: String,
+    val settlementIds: List<String>,
+) {
+    init {
+        require(sourceText.isNotBlank()) { "Imported candidate source text must not be blank" }
+        validateImportedCandidateIds(settlementIds)
     }
 }
 
@@ -26,3 +37,12 @@ internal fun SettlementCandidateScope.restrictedSettlementIds(): Set<String>? =
         SettlementCandidateScope.Dataset -> null
         is SettlementCandidateScope.Imported -> settlementIds.toCollection(linkedSetOf())
     }
+
+private fun validateImportedCandidateIds(settlementIds: List<String>) {
+    require(settlementIds.none { it.isBlank() }) {
+        "Imported candidate settlement IDs must not be blank"
+    }
+    require(settlementIds.distinct().size == settlementIds.size) {
+        "Imported candidate settlement IDs must be unique"
+    }
+}

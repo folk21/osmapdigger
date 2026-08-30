@@ -26,6 +26,10 @@ class UiLocalizationTest {
         assertEquals("Pick center on map", english.pickCenterOnMap)
         assertEquals("Источник кандидатов", russian.candidateSource)
         assertEquals("Candidate source", english.candidateSource)
+        assertEquals("Отключить импорт", russian.deactivateImportedCandidates)
+        assertEquals("Disable import", english.deactivateImportedCandidates)
+        assertEquals("Выбрать всех", russian.selectAll)
+        assertEquals("Select all", english.selectAll)
         assertNotEquals(
             russian.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),
             english.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),

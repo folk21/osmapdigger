@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.desktop.preferences
 
+import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.error.OperationalFailureException
 import com.permieware.osmapdigger.error.OperationalFailureKind
@@ -43,6 +44,11 @@ class SqliteUserPreferencesRepositoryTest {
                             SearchCondition("farmyard.distance_km", minValue = 5.0),
                         ),
                     candidateScope = SettlementCandidateScope.Imported(listOf("node:42", "node:99")),
+                    importedCandidateList =
+                        ImportedCandidateList(
+                            sourceText = "Ordino\nCanillo",
+                            settlementIds = listOf("node:42", "node:99"),
+                        ),
                     preferenceOverrides =
                         listOf(
                             MetricPreferenceOverride(

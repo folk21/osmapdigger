@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.workspace
 
+import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.domain.DatasetInfo
@@ -338,6 +339,45 @@ class AnalysisWorkspaceControllerTest {
         assertEquals(SettlementCandidateScope.Imported(listOf("b")), controller.state.value.candidateScope)
     }
 
+
+    @Test
+    fun importedCandidateListCanBeDeactivatedReactivatedAndClearedWithoutLosingSourceText() = runTest {
+        val repository =
+            FakeRepository(
+                candidates =
+                    listOf(
+                        candidate("a", "Alpha", forestDistance = 2.0),
+                        candidate("b", "Beta", forestDistance = 3.0),
+                    ),
+            )
+        val preferences = FakePreferencesRepository(null)
+        val controller = AnalysisWorkspaceController(repository, preferences, this, debounceMillis = 0)
+
+        controller.initialize()
+        advanceUntilIdle()
+        controller.applyImportedCandidates("Alpha\nBeta", listOf("a", "b"))
+        advanceUntilIdle()
+
+        assertEquals(SettlementCandidateScope.Imported(listOf("a", "b")), controller.state.value.candidateScope)
+        assertEquals(ImportedCandidateList("Alpha\nBeta", listOf("a", "b")), controller.state.value.importedCandidateList)
+
+        controller.deactivateImportedCandidates()
+        advanceUntilIdle()
+        assertEquals(SettlementCandidateScope.Dataset, controller.state.value.candidateScope)
+        assertEquals(ImportedCandidateList("Alpha\nBeta", listOf("a", "b")), controller.state.value.importedCandidateList)
+        assertEquals(null, repository.lastCandidateSettlementIds)
+
+        controller.activateImportedCandidates()
+        advanceUntilIdle()
+        assertEquals(SettlementCandidateScope.Imported(listOf("a", "b")), controller.state.value.candidateScope)
+        assertEquals(setOf("a", "b"), repository.lastCandidateSettlementIds)
+
+        controller.clearImportedCandidates()
+        advanceUntilIdle()
+        assertEquals(SettlementCandidateScope.Dataset, controller.state.value.candidateScope)
+        assertEquals(null, controller.state.value.importedCandidateList)
+        assertEquals(null, preferences.saved.last().importedCandidateList)
+    }
 
     @Test
     fun importedCandidateScopeRestoresByStableIdAndDropsOnlyStaleIds() = runTest {

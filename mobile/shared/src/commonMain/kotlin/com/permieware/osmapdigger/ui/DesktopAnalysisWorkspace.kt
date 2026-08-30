@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
+import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.ScoredSettlement
 import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.analysis.SettlementScore
@@ -63,12 +64,17 @@ internal fun DesktopAnalysisWorkspace(
     center: Settlement?,
     onCenterChanged: (Settlement?) -> Unit,
     radiusText: String,
+    activeRadiusKm: Double?,
     onRadiusChanged: (String) -> Unit,
     radiusError: String?,
     summary: String,
     rankedResults: List<ScoredSettlement>,
     candidateScope: SettlementCandidateScope,
-    onCandidateScopeChanged: (SettlementCandidateScope) -> Unit,
+    importedCandidateList: ImportedCandidateList?,
+    onImportedCandidatesApplied: (String, List<String>) -> Unit,
+    onImportedCandidatesActivated: () -> Unit,
+    onImportedCandidatesDeactivated: () -> Unit,
+    onImportedCandidatesCleared: () -> Unit,
     settlementImportResolver: SettlementListImportResolver,
     onImportSettlementListFile: ((String) -> String?)?,
     selected: SettlementDetails?,
@@ -164,12 +170,15 @@ internal fun DesktopAnalysisWorkspace(
                     radiusError = radiusError,
                     summary = summary,
                     candidateScope = candidateScope,
+                    importedCandidateList = importedCandidateList,
                     onCandidateImportRequested = {
                         mapCenterPickerActive = false
                         filterPickerOpen = false
                         candidateImportOpen = true
                     },
-                    onUseDatasetScope = { onCandidateScopeChanged(SettlementCandidateScope.Dataset) },
+                    onActivateImported = onImportedCandidatesActivated,
+                    onDeactivateImported = onImportedCandidatesDeactivated,
+                    onClearImported = onImportedCandidatesCleared,
                     rankedResults = rankedResults,
                     selectedId = selected?.settlement?.id,
                     running = running,
@@ -204,9 +213,12 @@ internal fun DesktopAnalysisWorkspace(
                     CandidateImportPanel(
                         modifier = Modifier.fillMaxSize(),
                         resolver = settlementImportResolver,
+                        initialText = importedCandidateList?.sourceText.orEmpty(),
+                        center = center,
+                        radiusKm = activeRadiusKm,
                         onLoadTextFile = onImportSettlementListFile,
-                        onApply = { importedScope ->
-                            onCandidateScopeChanged(importedScope)
+                        onApply = { sourceText, settlementIds ->
+                            onImportedCandidatesApplied(sourceText, settlementIds)
                             candidateImportOpen = false
                         },
                         onClose = { candidateImportOpen = false },
@@ -327,8 +339,11 @@ private fun DesktopAnalysisSidebar(
     radiusError: String?,
     summary: String,
     candidateScope: SettlementCandidateScope,
+    importedCandidateList: ImportedCandidateList?,
     onCandidateImportRequested: () -> Unit,
-    onUseDatasetScope: () -> Unit,
+    onActivateImported: () -> Unit,
+    onDeactivateImported: () -> Unit,
+    onClearImported: () -> Unit,
     rankedResults: List<ScoredSettlement>,
     selectedId: String?,
     running: Boolean,
@@ -389,8 +404,11 @@ private fun DesktopAnalysisSidebar(
         item {
             CandidateSourceSummary(
                 candidateScope = candidateScope,
+                importedCandidateList = importedCandidateList,
                 onImportRequested = onCandidateImportRequested,
-                onUseDatasetScope = onUseDatasetScope,
+                onActivateImported = onActivateImported,
+                onDeactivateImported = onDeactivateImported,
+                onClearImported = onClearImported,
             )
         }
 

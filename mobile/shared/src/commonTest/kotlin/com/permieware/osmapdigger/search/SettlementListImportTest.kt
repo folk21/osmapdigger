@@ -98,21 +98,52 @@ class SettlementListImportTest {
             SettlementImportReviewer.reviewedSettlementIds(
                 review,
                 mapOf(
-                    "beta" to "beta-b",
-                    "alph" to "alpha",
+                    "beta" to setOf("beta-a", "beta-b"),
+                    "alph" to setOf("alpha"),
                 ),
             )
 
-        assertEquals(listOf("alpha", "beta-b"), reviewed)
+        assertEquals(listOf("alpha", "beta-a", "beta-b"), reviewed)
         assertFailsWith<IllegalArgumentException> {
             SettlementImportReviewer.reviewedSettlementIds(
                 review,
-                mapOf("beta" to "not-a-reviewed-match"),
+                mapOf("beta" to setOf("not-a-reviewed-match")),
             )
         }
     }
 
-    private fun settlement(id: String, name: String, population: Long?) =
+
+    @Test
+    fun resolverLimitsDuplicateNameChoicesToTheConfiguredRadius() = runTest {
+        val center = settlement("center", "Center", population = 1, location = GeoPoint(0.0, 0.0))
+        val near = settlement("near", "Dubrovka", population = 20, location = GeoPoint(0.05, 0.0))
+        val far = settlement("far", "Dubrovka", population = 200, location = GeoPoint(2.0, 0.0))
+        val repository =
+            FakeRepository(
+                listOf(
+                    entry(center, "Center"),
+                    entry(near, "Dubrovka"),
+                    entry(far, "Dubrovka"),
+                ),
+            )
+
+        val review =
+            SettlementListImportResolver(repository).resolve(
+                lines = SettlementListImportParser.parse("Dubrovka"),
+                center = center.location,
+                radiusKm = 20.0,
+            )
+
+        val resolved = assertIs<SettlementImportResolution.Resolved>(review.resolutions.single())
+        assertEquals("near", resolved.match.settlement.id)
+    }
+
+    private fun settlement(
+        id: String,
+        name: String,
+        population: Long?,
+        location: GeoPoint = GeoPoint(0.0, 0.0),
+    ) =
         Settlement(
             id = id,
             name = name,
@@ -120,7 +151,7 @@ class SettlementListImportTest {
             englishName = null,
             placeType = "village",
             population = population,
-            location = GeoPoint(0.0, 0.0),
+            location = location,
         )
 
     private fun entry(settlement: Settlement, vararg names: String) =

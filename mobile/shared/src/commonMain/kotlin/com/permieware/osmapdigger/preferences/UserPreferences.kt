@@ -1,12 +1,12 @@
 package com.permieware.osmapdigger.preferences
 
+import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.MetricPreference
 import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.MetricPreferenceDefault
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.domain.Settlement
-import com.permieware.osmapdigger.settings.ApplicationSettingsSchema
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -20,6 +20,7 @@ data class UserPreferences(
     val conditions: List<SearchCondition> = emptyList(),
     val preferenceOverrides: List<MetricPreferenceOverride> = emptyList(),
     val candidateScope: SettlementCandidateScope = SettlementCandidateScope.Dataset,
+    val importedCandidateList: ImportedCandidateList? = null,
 )
 
 /** User-owned changes layered over one dataset-provided preference default. */
@@ -64,13 +65,15 @@ data class RestoredSearchContext(
     val radiusKm: Double?,
     val conditions: List<SearchCondition>,
     val candidateScope: SettlementCandidateScope,
+    val importedCandidateList: ImportedCandidateList?,
 )
 
 /**
  * Validate persisted state against the currently opened dataset and metric catalog.
  *
- * Dataset identity and stable IDs are authoritative. Display names are never used as
- * fallback identity, and removed metrics are ignored deterministically.
+ * Dataset identity and stable IDs are authoritative. Display names and retained import source text
+ * are presentation/editing metadata only. Removed metric and settlement IDs are ignored
+ * deterministically without broadening an active imported scope back to the full dataset.
  */
 object UserPreferencesRestorer {
     suspend fun restore(
@@ -92,13 +95,23 @@ object UserPreferencesRestorer {
                 .distinctBy { it.metricId }
                 .toList()
 
+        val savedImportedIds =
+            preferences.importedCandidateList?.settlementIds
+                ?: (preferences.candidateScope as? SettlementCandidateScope.Imported)?.settlementIds
+                ?: emptyList()
+        val restoredImportedIds = savedImportedIds.filter { it in availableSettlementIds }
+        val restoredImportedList =
+            preferences.importedCandidateList?.let { saved ->
+                ImportedCandidateList(
+                    sourceText = saved.sourceText,
+                    settlementIds = restoredImportedIds,
+                )
+            } ?: restoreLegacyImportedList(restoredImportedIds, resolveSettlement)
         val restoredCandidateScope =
-            when (val savedScope = preferences.candidateScope) {
+            when (preferences.candidateScope) {
                 SettlementCandidateScope.Dataset -> SettlementCandidateScope.Dataset
                 is SettlementCandidateScope.Imported ->
-                    SettlementCandidateScope.Imported(
-                        savedScope.settlementIds.filter { it in availableSettlementIds },
-                    )
+                    SettlementCandidateScope.Imported(restoredImportedIds)
             }
 
         val centerId = preferences.centerSettlementId
@@ -108,6 +121,7 @@ object UserPreferencesRestorer {
                 radiusKm = null,
                 conditions = restoredConditions,
                 candidateScope = restoredCandidateScope,
+                importedCandidateList = restoredImportedList,
             )
         }
 
@@ -121,7 +135,22 @@ object UserPreferencesRestorer {
             radiusKm = if (center != null) radius else null,
             conditions = restoredConditions,
             candidateScope = restoredCandidateScope,
+            importedCandidateList = restoredImportedList,
         )
+    }
+
+    private suspend fun restoreLegacyImportedList(
+        settlementIds: List<String>,
+        resolveSettlement: suspend (String) -> Settlement?,
+    ): ImportedCandidateList? {
+        if (settlementIds.isEmpty()) return null
+        val sourceText =
+            settlementIds
+                .mapNotNull { resolveSettlement(it)?.name }
+                .joinToString("\n")
+        return sourceText
+            .takeIf { it.isNotBlank() }
+            ?.let { ImportedCandidateList(sourceText = it, settlementIds = settlementIds) }
     }
 }
 
@@ -166,40 +195,47 @@ object MetricPreferenceOverrideResolver {
     }
 }
 
-/** Versioned JSON representation for the dataset-wide or reviewed imported candidate scope. */
+/** Active candidate source plus the retained reviewed import stored in one versioned JSON payload. */
+data class PersistedCandidateSource(
+    val candidateScope: SettlementCandidateScope,
+    val importedCandidateList: ImportedCandidateList?,
+)
+
+/** Versioned JSON representation for active and retained imported candidate-source state. */
 object SettlementCandidateScopePayloadCodec {
-    private const val CURRENT_VERSION = 1
+    private const val CURRENT_VERSION = 2
+    private const val LEGACY_VERSION = 1
 
     private val json = Json {
         encodeDefaults = true
         ignoreUnknownKeys = true
     }
 
-    fun encode(scope: SettlementCandidateScope): String =
-        when (scope) {
-            SettlementCandidateScope.Dataset -> ApplicationSettingsSchema.DEFAULT_CANDIDATE_SCOPE_PAYLOAD
-            is SettlementCandidateScope.Imported ->
-                json.encodeToString(
-                    CandidateScopePayload(
-                        version = CURRENT_VERSION,
-                        source = SOURCE_IMPORTED,
-                        settlementIds = scope.settlementIds,
-                    ),
-                )
-        }
+    fun encode(
+        scope: SettlementCandidateScope,
+        importedCandidateList: ImportedCandidateList?,
+    ): String {
+        val retainedIds =
+            importedCandidateList?.settlementIds
+                ?: (scope as? SettlementCandidateScope.Imported)?.settlementIds
+                ?: emptyList()
+        return json.encodeToString(
+            CandidateSourcePayload(
+                version = CURRENT_VERSION,
+                activeSource = if (scope is SettlementCandidateScope.Imported) SOURCE_IMPORTED else SOURCE_DATASET,
+                importedSettlementIds = retainedIds,
+                sourceText = importedCandidateList?.sourceText,
+            ),
+        )
+    }
 
     /** Return null for malformed, unsupported, or semantically invalid payloads. */
-    fun decode(payload: String): SettlementCandidateScope? =
+    fun decode(payload: String): PersistedCandidateSource? =
         try {
-            val decoded = json.decodeFromString<CandidateScopePayload>(payload)
-            if (decoded.version != CURRENT_VERSION) {
-                null
-            } else {
-                when (decoded.source) {
-                    SOURCE_DATASET -> SettlementCandidateScope.Dataset
-                    SOURCE_IMPORTED -> SettlementCandidateScope.Imported(decoded.settlementIds)
-                    else -> null
-                }
+            when (json.decodeFromString<PayloadVersion>(payload).version) {
+                LEGACY_VERSION -> decodeLegacy(payload)
+                CURRENT_VERSION -> decodeCurrent(payload)
+                else -> null
             }
         } catch (_: SerializationException) {
             null
@@ -207,11 +243,54 @@ object SettlementCandidateScopePayloadCodec {
             null
         }
 
+    private fun decodeLegacy(payload: String): PersistedCandidateSource? {
+        val decoded = json.decodeFromString<LegacyCandidateScopePayload>(payload)
+        val scope =
+            when (decoded.source) {
+                SOURCE_DATASET -> SettlementCandidateScope.Dataset
+                SOURCE_IMPORTED -> SettlementCandidateScope.Imported(decoded.settlementIds)
+                else -> return null
+            }
+        return PersistedCandidateSource(scope, importedCandidateList = null)
+    }
+
+    private fun decodeCurrent(payload: String): PersistedCandidateSource? {
+        val decoded = json.decodeFromString<CandidateSourcePayload>(payload)
+        val sourceText = decoded.sourceText?.takeIf { it.isNotBlank() }
+        val importedList =
+            sourceText?.let {
+                ImportedCandidateList(
+                    sourceText = it,
+                    settlementIds = decoded.importedSettlementIds,
+                )
+            }
+        val scope =
+            when (decoded.activeSource) {
+                SOURCE_DATASET -> SettlementCandidateScope.Dataset
+                SOURCE_IMPORTED -> SettlementCandidateScope.Imported(decoded.importedSettlementIds)
+                else -> return null
+            }
+        return PersistedCandidateSource(scope, importedList)
+    }
+
     @Serializable
-    private data class CandidateScopePayload(
+    private data class PayloadVersion(
+        val version: Int,
+    )
+
+    @Serializable
+    private data class LegacyCandidateScopePayload(
         val version: Int,
         val source: String,
         val settlementIds: List<String> = emptyList(),
+    )
+
+    @Serializable
+    private data class CandidateSourcePayload(
+        val version: Int,
+        val activeSource: String,
+        val importedSettlementIds: List<String> = emptyList(),
+        val sourceText: String? = null,
     )
 
     private const val SOURCE_DATASET = "dataset"

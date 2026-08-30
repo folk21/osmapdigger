@@ -37,7 +37,7 @@ class AndroidUserPreferencesRepository(
                         ?: operationalFailure(OperationalFailureKind.SETTINGS, "Stored filter payload is invalid")
                     val preferenceOverrides = MetricPreferenceOverridePayloadCodec.decode(cursor.getString(5))
                         ?: operationalFailure(OperationalFailureKind.SETTINGS, "Stored preference payload is invalid")
-                    val candidateScope = SettlementCandidateScopePayloadCodec.decode(cursor.getString(6))
+                    val candidateSource = SettlementCandidateScopePayloadCodec.decode(cursor.getString(6))
                         ?: operationalFailure(OperationalFailureKind.SETTINGS, "Stored candidate scope payload is invalid")
 
                     UserPreferences(
@@ -47,7 +47,8 @@ class AndroidUserPreferencesRepository(
                         radiusKm = if (cursor.isNull(3)) null else cursor.getDouble(3),
                         conditions = conditions,
                         preferenceOverrides = preferenceOverrides,
-                        candidateScope = candidateScope,
+                        candidateScope = candidateSource.candidateScope,
+                        importedCandidateList = candidateSource.importedCandidateList,
                     )
                 }
             }
@@ -70,7 +71,10 @@ class AndroidUserPreferencesRepository(
                         preferences.radiusKm,
                         SearchConditionPayloadCodec.encode(preferences.conditions),
                         MetricPreferenceOverridePayloadCodec.encode(preferences.preferenceOverrides),
-                        SettlementCandidateScopePayloadCodec.encode(preferences.candidateScope),
+                        SettlementCandidateScopePayloadCodec.encode(
+                            preferences.candidateScope,
+                            preferences.importedCandidateList,
+                        ),
                     ),
                 )
             }

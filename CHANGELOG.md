@@ -8,6 +8,7 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Refine imported candidate review with active-radius duplicate filtering, multi/select-all exact-name choices, retained editable source text, and explicit enable/disable/delete lifecycle for the saved import.
 - Add a persisted Desktop candidate-source workflow for reviewed settlement-name lists, including paste/UTF-8 file import, conservative alias resolution, explicit ambiguity review, and settings-schema v4 stable-ID restoration.
 
 - Harden KMP runtime boundaries with typed operational failures, one shared settings migration contract, shared dataset package metadata/layout parsing, and failure-safe staged dataset replacement on Desktop and Android.

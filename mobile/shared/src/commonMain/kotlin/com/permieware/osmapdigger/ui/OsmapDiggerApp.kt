@@ -305,6 +305,7 @@ private fun LoadedDatasetApp(
                     }
                 },
                 radiusText = radiusText,
+                activeRadiusKm = analysisState.radiusKm,
                 onRadiusChanged = { value ->
                     radiusText = value
                     uiError = null
@@ -319,7 +320,11 @@ private fun LoadedDatasetApp(
                 summary = summary,
                 rankedResults = rankedResults,
                 candidateScope = analysisState.candidateScope,
-                onCandidateScopeChanged = analysisController::updateCandidateScope,
+                importedCandidateList = analysisState.importedCandidateList,
+                onImportedCandidatesApplied = analysisController::applyImportedCandidates,
+                onImportedCandidatesActivated = analysisController::activateImportedCandidates,
+                onImportedCandidatesDeactivated = analysisController::deactivateImportedCandidates,
+                onImportedCandidatesCleared = analysisController::clearImportedCandidates,
                 settlementImportResolver = settlementImportResolver,
                 onImportSettlementListFile = onImportSettlementListFile,
                 selected = selected,
