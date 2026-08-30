@@ -32,7 +32,8 @@ When intentionally adding or changing a top-level shared package dependency, upd
 - Shared `SearchService` performs exact radius filtering so Android/Desktop semantics stay aligned.
 - Ranked analysis must batch-load only requested scoring metrics; never call full `details()` once per candidate.
 - Imported candidate scopes are stable-ID restrictions, not synthetic metrics; repository adapters must apply them before shared scoring and must not broaden an empty imported scope to the full dataset.
-- Persist only the reviewed imported stable-ID scope with dataset-scoped preferences; raw/ambiguous/unresolved import text remains transient unless a later specification explicitly introduces saved import drafts.
+- Persist reviewed imported stable IDs as analytical identity; retained source text may be stored only as editing provenance and must never replace stable settlement identity.
+- Transient shortlist membership is stable-ID application state independent from single map/details selection and must not trigger ranked recalculation or settings persistence.
 - Ranked-analysis repository queries must not apply an unrelated final limit before shared scoring; exact radius, scoring, stable ranking, and final limiting belong in shared analysis orchestration.
 - Search results must not depend on map rendering/style state.
 

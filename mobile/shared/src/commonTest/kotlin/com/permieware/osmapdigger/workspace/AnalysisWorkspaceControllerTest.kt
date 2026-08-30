@@ -420,6 +420,31 @@ class AnalysisWorkspaceControllerTest {
     }
 
     @Test
+    fun shortlistChangesAreTransientAndDoNotRecalculateOrPersistPreferences() = runTest {
+        val repository = FakeRepository(candidates = listOf(candidate("best", "Best", 1.0)))
+        val preferences = FakePreferencesRepository(null)
+        val controller = AnalysisWorkspaceController(repository, preferences, this, debounceMillis = 0)
+
+        controller.initialize()
+        advanceUntilIdle()
+        val analysisCallsBefore = repository.analysisCalls
+        val savesBefore = preferences.saved.size
+
+        controller.updateShortlistMembership("best", included = true)
+        controller.updateShortlistMembership("other", included = true)
+        advanceUntilIdle()
+
+        assertEquals(setOf("best", "other"), controller.state.value.shortlist.settlementIds)
+        assertEquals(analysisCallsBefore, repository.analysisCalls)
+        assertEquals(savesBefore, preferences.saved.size)
+
+        controller.clearShortlist()
+        assertTrue(controller.state.value.shortlist.settlementIds.isEmpty())
+        assertEquals(analysisCallsBefore, repository.analysisCalls)
+        assertEquals(savesBefore, preferences.saved.size)
+    }
+
+    @Test
     fun clearingCenterAlsoClearsRadiusAndPersistsThatInvariant() = runTest {
         val repository = FakeRepository(candidates = emptyList())
         val preferences = FakePreferencesRepository(null)

@@ -8,6 +8,8 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Add transient Desktop visual shortlisting with 0–100 score bars, strongest/weakest contribution cues, independent multi-selection, shortlist count, and clear action without changing map/details selection or persistence.
+
 - Refine imported candidate review with active-radius duplicate filtering, multi/select-all exact-name choices, retained editable source text, and explicit enable/disable/delete lifecycle for the saved import.
 - Add a persisted Desktop candidate-source workflow for reviewed settlement-name lists, including paste/UTF-8 file import, conservative alias resolution, explicit ambiguity review, and settings-schema v4 stable-ID restoration.
 

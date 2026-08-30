@@ -1,6 +1,5 @@
 package com.permieware.osmapdigger.ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -38,6 +37,7 @@ import com.permieware.osmapdigger.presentation.TwoRowLayout
 import com.permieware.osmapdigger.external.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
 import com.permieware.osmapdigger.search.SettlementListImportResolver
+import com.permieware.osmapdigger.workspace.SettlementShortlist
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
@@ -69,6 +69,9 @@ internal fun DesktopAnalysisWorkspace(
     radiusError: String?,
     summary: String,
     rankedResults: List<ScoredSettlement>,
+    shortlist: SettlementShortlist,
+    onShortlistMembershipChanged: (String, Boolean) -> Unit,
+    onShortlistCleared: () -> Unit,
     candidateScope: SettlementCandidateScope,
     importedCandidateList: ImportedCandidateList?,
     onImportedCandidatesApplied: (String, List<String>) -> Unit,
@@ -180,6 +183,9 @@ internal fun DesktopAnalysisWorkspace(
                     onDeactivateImported = onImportedCandidatesDeactivated,
                     onClearImported = onImportedCandidatesCleared,
                     rankedResults = rankedResults,
+                    shortlist = shortlist,
+                    onShortlistMembershipChanged = onShortlistMembershipChanged,
+                    onShortlistCleared = onShortlistCleared,
                     selectedId = selected?.settlement?.id,
                     running = running,
                     error = error,
@@ -345,6 +351,9 @@ private fun DesktopAnalysisSidebar(
     onDeactivateImported: () -> Unit,
     onClearImported: () -> Unit,
     rankedResults: List<ScoredSettlement>,
+    shortlist: SettlementShortlist,
+    onShortlistMembershipChanged: (String, Boolean) -> Unit,
+    onShortlistCleared: () -> Unit,
     selectedId: String?,
     running: Boolean,
     error: String?,
@@ -355,6 +364,11 @@ private fun DesktopAnalysisSidebar(
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
+    val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
+    val visibleShortlistIds =
+        remember(shortlist, rankedResults) {
+            shortlist.orderedVisibleResults(rankedResults).mapTo(hashSetOf()) { it.settlement.id }
+        }
     val listState = rememberLazyListState()
     LaunchedEffect(selectedId) {
         val resultIndex = rankedResults.indexOfFirst { it.settlement.id == selectedId }
@@ -447,22 +461,24 @@ private fun DesktopAnalysisSidebar(
         }
 
         item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(strings.rankedResults, style = MaterialTheme.typography.titleMedium)
-                Text(rankedResults.size.toString(), style = MaterialTheme.typography.labelLarge)
-            }
+            RankedResultsHeader(
+                rankedResultCount = rankedResults.size,
+                shortlist = shortlist,
+                onClearShortlist = onShortlistCleared,
+            )
         }
 
         itemsIndexed(rankedResults, key = { _, item -> item.settlement.id }) { index, result ->
             RankedSettlementCard(
                 rank = index + 1,
                 result = result,
+                definitions = definitionMap,
                 selected = result.settlement.id == selectedId,
+                shortlisted = result.settlement.id in visibleShortlistIds,
                 onClick = { onSelect(result.settlement) },
+                onShortlistChanged = { included ->
+                    onShortlistMembershipChanged(result.settlement.id, included)
+                },
                 displayName = settlementDisplayName(result.settlement),
             )
         }
@@ -705,60 +721,6 @@ private fun PreferenceRow(
 
                 if (overridden) {
                     TextButton(onClick = onReset) { Text(strings.resetDatasetDefault) }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RankedSettlementCard(
-    rank: Int,
-    result: ScoredSettlement,
-    selected: Boolean,
-    onClick: () -> Unit,
-    displayName: String,
-) {
-    val strings = LocalUiStrings.current
-    OutlinedCard(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.outlinedCardColors(
-            containerColor = if (selected) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
-        ),
-        border = if (selected) BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-    ) {
-        Row(
-            modifier = Modifier.padding(10.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text("#$rank", style = MaterialTheme.typography.labelLarge)
-            Column(Modifier.weight(1f)) {
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(displayName, style = MaterialTheme.typography.titleSmall)
-                    Text(scoreLabel(result.score, strings), style = MaterialTheme.typography.titleSmall)
-                }
-                val context =
-                    listOfNotNull(
-                        result.settlement.placeType,
-                        result.settlement.population?.let(strings.population),
-                    ).joinToString(" · ")
-                if (context.isNotBlank()) {
-                    Text(context, style = MaterialTheme.typography.bodySmall)
-                }
-                if (result.score.coverage < 99.5) {
-                    Text(
-                        strings.dataCoverage(result.score.coverage.roundToInt()),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-                if (selected) {
-                    Text(strings.selected, style = MaterialTheme.typography.labelSmall)
                 }
             }
         }
@@ -1045,9 +1007,6 @@ private fun formatCompactMetric(value: Double?, unit: String, strings: UiStrings
     val formatted = value?.let(NumberFormatter::compact) ?: strings.unknownValue
     return if (value == null || unit.isBlank() || unit == "count") formatted else "$formatted $unit"
 }
-
-private fun scoreLabel(score: SettlementScore, strings: UiStrings): String =
-    strings.scoreValue(score.value?.roundToInt())
 
 private fun contributionLabel(
     title: String,

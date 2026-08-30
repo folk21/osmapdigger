@@ -87,7 +87,7 @@ flowchart TD
 | `analysis` | Preference scoring, candidate-scope/imported-list contracts, contributions, ranked-analysis orchestration | `domain`, `search`, `dataset` | `SettlementCandidateScope`, `ImportedCandidateList`, `PreferenceScorer`, `SettlementRanker`, `SettlementAnalysisService` |
 | `preferences` | Application-owned persisted search/preference/candidate-scope models, payload codecs, restore/override logic, and operational storage wrapper | `domain`, `analysis`, `error`, `settings` | `UserPreferencesRepository`, `MetricPreferenceOverrideResolver` |
 | `presentation` | Deterministic formatting, localized operational failures, and human-readable analysis/search presentation | `domain`, `analysis`, `preferences`, `error` | `FilterSummaryBuilder`, `ScoreExplanationBuilder`, metric/localization presentation |
-| `workspace` | Application orchestration for one opened analysis workspace, including transient candidate scope and typed failure state | `domain`, `analysis`, `preferences`, `dataset`, `error` | `AnalysisWorkspaceController` |
+| `workspace` | Application orchestration for one opened analysis workspace, including candidate scope, transient shortlist state, and typed failure state | `domain`, `analysis`, `preferences`, `dataset`, `error` | `AnalysisWorkspaceController`, `SettlementShortlist` |
 | `runtime` | Dataset-scoped dependency bundle assembled only by platform composition roots | `dataset`, `map`, `external` | `OsmapDiggerRuntime` |
 | `ui` | Shared Compose presentation and feature composition | `domain`, `analysis`, `preferences`, `presentation`, `search`, `workspace`, `runtime`, `map`, `external`, `error` | `OsmapDiggerApp`, `DesktopAnalysisWorkspace`, `SearchPane`, `PlatformMapSurface` |
 

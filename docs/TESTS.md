@@ -135,7 +135,8 @@ With a dataset that contains preference defaults, verify on a wide Desktop windo
 - the left analysis panel is resizable and the map occupies the remaining majority of the window;
 - Required and Preferences are visually separate and preference rows remain metric-generic;
 - only one preference row expands at a time, weight/target/limit edits recalculate rankings automatically, and reset restores dataset defaults;
-- ranked result cards show score plus incomplete data coverage when applicable;
+- ranked result cards show the numeric score plus a matching 0–100 score bar, incomplete data coverage when applicable, and deterministic strongest/weakest contribution cues;
+- shortlist checkboxes support independent multi-selection without changing the single selected map/details settlement; shortlist changes do not trigger recalculation, and the results heading exposes count plus clear action;
 - the Desktop analysis sidebar starts at roughly one third of a normal wide window and remains resizable within bounded limits;
 - **Add filter** opens a full-height chooser inside the left analysis pane and never overlaps the map rectangle;
 - with no selected settlement, the shallow pane beneath the map shows the current ranked-result count and updating state without requiring the user to inspect the left results list;

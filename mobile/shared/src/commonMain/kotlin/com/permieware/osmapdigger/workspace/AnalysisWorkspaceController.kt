@@ -47,6 +47,7 @@ data class AnalysisWorkspaceState(
     val radiusKm: Double? = null,
     val candidateScope: SettlementCandidateScope = SettlementCandidateScope.Dataset,
     val importedCandidateList: ImportedCandidateList? = null,
+    val shortlist: SettlementShortlist = SettlementShortlist(),
     val rankedResults: List<ScoredSettlement> = emptyList(),
     val analyzing: Boolean = false,
     val failure: OperationalFailure? = null,
@@ -314,6 +315,25 @@ class AnalysisWorkspaceController(
 
     fun refreshNow() {
         scheduleAnalysis(immediate = true, force = true)
+    }
+
+    /** Update transient shortlist membership without changing analysis inputs or persisted state. */
+    fun updateShortlistMembership(
+        settlementId: String,
+        included: Boolean,
+    ) {
+        val current = mutableState.value
+        val nextShortlist = current.shortlist.withSettlement(settlementId, included)
+        if (nextShortlist == current.shortlist) return
+        mutableState.value = current.copy(shortlist = nextShortlist)
+    }
+
+    /** Clear transient shortlist selection without changing ranked results or map/details focus. */
+    fun clearShortlist() {
+        val current = mutableState.value
+        val nextShortlist = current.shortlist.clear()
+        if (nextShortlist == current.shortlist) return
+        mutableState.value = current.copy(shortlist = nextShortlist)
     }
 
     fun clearError() {

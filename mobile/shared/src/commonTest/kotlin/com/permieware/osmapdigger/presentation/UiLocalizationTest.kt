@@ -30,6 +30,10 @@ class UiLocalizationTest {
         assertEquals("Disable import", english.deactivateImportedCandidates)
         assertEquals("Выбрать всех", russian.selectAll)
         assertEquals("Select all", english.selectAll)
+        assertEquals("В список", russian.shortlist)
+        assertEquals("Shortlist", english.shortlist)
+        assertEquals("В списке: 3", russian.shortlistCount(3))
+        assertEquals("Shortlisted: 3", english.shortlistCount(3))
         assertNotEquals(
             russian.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),
             english.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),
