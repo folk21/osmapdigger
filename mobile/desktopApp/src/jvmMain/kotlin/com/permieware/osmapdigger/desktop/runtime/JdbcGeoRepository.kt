@@ -1,8 +1,10 @@
 package com.permieware.osmapdigger.desktop.runtime
 
 import com.permieware.osmapdigger.domain.*
+import com.permieware.osmapdigger.dataset.DatasetCandidateQueries
+import com.permieware.osmapdigger.dataset.DatasetQueryArgument
+import com.permieware.osmapdigger.dataset.DatasetQuerySpec
 import com.permieware.osmapdigger.dataset.GeoRepository
-import com.permieware.osmapdigger.dataset.StableIdBatches
 import com.permieware.osmapdigger.search.SettlementNameNormalizer
 import java.sql.Connection
 import java.sql.ResultSet
@@ -160,45 +162,22 @@ class JdbcGeoRepository(
                 },
         )
 
-    /**
-     * Build the legacy dynamic SQL candidate query from generic metric ranges.
-     *
-     * This method retains the current hard-filter UI behavior, including deterministic
-     * name ordering and its repository-side pre-limit. Ranked analysis uses
-     * [analysisCandidates] instead so scoring can happen before the final result limit.
-     */
+    /** Execute the shared legacy hard-filter query through JDBC. */
     override suspend fun searchCandidates(
         conditions: List<SearchCondition>,
         latitudeRange: ClosedFloatingPointRange<Double>?,
         longitudeRange: ClosedFloatingPointRange<Double>?,
         limit: Int,
-    ): List<Settlement> {
-        val sql =
-            StringBuilder(
-                """
-                SELECT s.settlement_id, s.name, s.name_local, s.name_en, s.place_type,
-                       s.population, s.latitude, s.longitude
-                FROM settlement s
-                WHERE 1 = 1
-                """.trimIndent(),
-            )
-        val parameters = mutableListOf<Any>()
-        appendCandidatePredicates(sql, parameters, conditions, latitudeRange, longitudeRange)
-
-        sql.append("\nORDER BY s.name\nLIMIT ?")
-        parameters += limit
-
-        return connection.prepareStatement(sql.toString()).use { statement ->
-            bindParameters(statement, parameters)
-            statement.executeQuery().use(::readSettlements)
-        }
-    }
+    ): List<Settlement> =
+        executeSettlementQuery(
+            DatasetCandidateQueries.searchCandidates(conditions, latitudeRange, longitudeRange, limit),
+        )
 
     /**
-     * Return hard-filter-eligible settlements with requested scoring metrics in bounded batch queries.
+     * Execute the shared ranked-analysis query specifications through JDBC.
      *
-     * The LEFT JOIN deliberately preserves candidates whose requested metric is missing;
-     * absence remains unknown and is represented by a missing entry in [SettlementAnalysisCandidate.metricValues].
+     * SQL semantics and deterministic candidate batching are owned by [DatasetCandidateQueries];
+     * JDBC remains responsible only for typed binding, execution, and row mapping.
      */
     override suspend fun analysisCandidates(
         conditions: List<SearchCondition>,
@@ -206,151 +185,37 @@ class JdbcGeoRepository(
         longitudeRange: ClosedFloatingPointRange<Double>?,
         scoringMetricIds: Set<String>,
         candidateSettlementIds: Set<String>?,
-    ): List<SettlementAnalysisCandidate> {
-        require(scoringMetricIds.none { it.isBlank() }) { "Scoring metric IDs must not be blank" }
-        require(candidateSettlementIds == null || candidateSettlementIds.none { it.isBlank() }) {
-            "Candidate settlement IDs must not be blank"
+    ): List<SettlementAnalysisCandidate> =
+        DatasetCandidateQueries
+            .analysisCandidates(
+                conditions,
+                latitudeRange,
+                longitudeRange,
+                scoringMetricIds,
+                candidateSettlementIds,
+            ).flatMap(::executeAnalysisQuery)
+
+    private fun executeSettlementQuery(query: DatasetQuerySpec): List<Settlement> =
+        connection.prepareStatement(query.sql).use { statement ->
+            bindParameters(statement, query.arguments)
+            statement.executeQuery().use(::readSettlements)
         }
-        if (candidateSettlementIds != null && candidateSettlementIds.isEmpty()) return emptyList()
 
-        val metricIds = scoringMetricIds.sorted()
-        val candidateBatches =
-            candidateSettlementIds?.let { ids ->
-                val fixedParameterCount =
-                    metricIds.size +
-                        rangeParameterCount(latitudeRange) +
-                        rangeParameterCount(longitudeRange) +
-                        conditionParameterCount(conditions)
-                val maxBatchSize = SQLITE_SAFE_BIND_PARAMETER_COUNT - fixedParameterCount
-                require(maxBatchSize > 0) {
-                    "Analysis query leaves no SQLite bind parameters for candidate settlement IDs"
-                }
-                StableIdBatches.partition(ids, maxBatchSize)
-            }
-
-        return if (candidateBatches == null) {
-            queryAnalysisCandidates(
-                conditions, latitudeRange, longitudeRange, metricIds, candidateSettlementIds = null,
-            )
-        } else {
-            candidateBatches.flatMap { batch ->
-                queryAnalysisCandidates(
-                    conditions, latitudeRange, longitudeRange, metricIds, candidateSettlementIds = batch,
-                )
-            }
-        }
-    }
-
-    /** Execute one bounded analysis-candidate SQL batch. */
-    private fun queryAnalysisCandidates(
-        conditions: List<SearchCondition>,
-        latitudeRange: ClosedFloatingPointRange<Double>?,
-        longitudeRange: ClosedFloatingPointRange<Double>?,
-        metricIds: List<String>,
-        candidateSettlementIds: List<String>?,
-    ): List<SettlementAnalysisCandidate> {
-        val parameters = mutableListOf<Any>()
-        val sql =
-            if (metricIds.isEmpty()) {
-                StringBuilder(
-                    """
-                    SELECT s.settlement_id, s.name, s.name_local, s.name_en, s.place_type,
-                           s.population, s.latitude, s.longitude,
-                           NULL AS scoring_metric_id, NULL AS scoring_metric_value
-                    FROM settlement s
-                    WHERE 1 = 1
-                    """.trimIndent(),
-                )
-            } else {
-                parameters.addAll(metricIds)
-                StringBuilder(
-                    """
-                    SELECT s.settlement_id, s.name, s.name_local, s.name_en, s.place_type,
-                           s.population, s.latitude, s.longitude,
-                           sm_score.metric_id AS scoring_metric_id,
-                           sm_score.value AS scoring_metric_value
-                    FROM settlement s
-                    LEFT JOIN settlement_metric sm_score
-                      ON sm_score.settlement_id = s.settlement_id
-                     AND sm_score.metric_id IN (${metricIds.joinToString(",") { "?" }})
-                    WHERE 1 = 1
-                    """.trimIndent(),
-                )
-            }
-
-        appendCandidatePredicates(sql, parameters, conditions, latitudeRange, longitudeRange)
-        candidateSettlementIds?.let { ids ->
-            sql.append("\nAND s.settlement_id IN (${ids.joinToString(",") { "?" }})")
-            parameters.addAll(ids)
-        }
-        sql.append("\nORDER BY s.settlement_id, scoring_metric_id")
-
-        return connection.prepareStatement(sql.toString()).use { statement ->
-            bindParameters(statement, parameters)
+    private fun executeAnalysisQuery(query: DatasetQuerySpec): List<SettlementAnalysisCandidate> =
+        connection.prepareStatement(query.sql).use { statement ->
+            bindParameters(statement, query.arguments)
             statement.executeQuery().use(::readAnalysisCandidates)
         }
-    }
-
-    private fun rangeParameterCount(range: ClosedFloatingPointRange<Double>?): Int =
-        if (range == null) 0 else 2
-
-    private fun conditionParameterCount(conditions: List<SearchCondition>): Int =
-        conditions.sumOf { condition ->
-            1 + (if (condition.minValue == null) 0 else 1) + (if (condition.maxValue == null) 0 else 1)
-        }
-
-    private fun appendCandidatePredicates(
-        sql: StringBuilder,
-        parameters: MutableList<Any>,
-        conditions: List<SearchCondition>,
-        latitudeRange: ClosedFloatingPointRange<Double>?,
-        longitudeRange: ClosedFloatingPointRange<Double>?,
-    ) {
-        latitudeRange?.let {
-            sql.append("\nAND s.latitude BETWEEN ? AND ?")
-            parameters += it.start
-            parameters += it.endInclusive
-        }
-        longitudeRange?.let {
-            sql.append("\nAND s.longitude BETWEEN ? AND ?")
-            parameters += it.start
-            parameters += it.endInclusive
-        }
-
-        conditions.forEachIndexed { index, condition ->
-            sql.append(
-                """
-
-                AND EXISTS (
-                    SELECT 1
-                    FROM settlement_metric sm$index
-                    WHERE sm$index.settlement_id = s.settlement_id
-                      AND sm$index.metric_id = ?
-                """.trimIndent(),
-            )
-            parameters += condition.metricId
-            condition.minValue?.let {
-                sql.append("\n  AND sm$index.value >= ?")
-                parameters += it
-            }
-            condition.maxValue?.let {
-                sql.append("\n  AND sm$index.value <= ?")
-                parameters += it
-            }
-            sql.append("\n)")
-        }
-    }
 
     private fun bindParameters(
         statement: java.sql.PreparedStatement,
-        parameters: List<Any>,
+        parameters: List<DatasetQueryArgument>,
     ) {
         parameters.forEachIndexed { index, value ->
             when (value) {
-                is String -> statement.setString(index + 1, value)
-                is Double -> statement.setDouble(index + 1, value)
-                is Int -> statement.setInt(index + 1, value)
-                else -> statement.setObject(index + 1, value)
+                is DatasetQueryArgument.Text -> statement.setString(index + 1, value.value)
+                is DatasetQueryArgument.Real -> statement.setDouble(index + 1, value.value)
+                is DatasetQueryArgument.Integer -> statement.setInt(index + 1, value.value)
             }
         }
     }
@@ -459,8 +324,4 @@ class JdbcGeoRepository(
             location = GeoPoint(rows.getDouble(7), rows.getDouble(8)),
         )
 
-    companion object {
-        // Keep below the historical SQLite 999-variable default to leave room for fixed query bindings.
-        private const val SQLITE_SAFE_BIND_PARAMETER_COUNT: Int = 900
-    }
 }

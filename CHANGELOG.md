@@ -8,6 +8,7 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Centralize compatibility-sensitive hard-filter and ranked-analysis candidate SQL in shared `DatasetCandidateQueries`, leaving JDBC/Android adapters responsible only for platform binding, execution, and row mapping.
 - Add persistent dataset-scoped Favorites with 0–100 ranked score bars, strongest/weakest contribution cues, independent favorite toggles, and a Desktop notebook pane for browse/open/remove/clear without changing candidate-source or map/details selection.
 
 - Refine imported candidate review with active-radius duplicate filtering, multi/select-all exact-name choices, retained editable source text, and explicit enable/disable/delete lifecycle for the saved import.

@@ -220,3 +220,29 @@ def test_meaningful_runtime_paths_do_not_silently_drop_failures() -> None:
             if token in text:
                 violations.append(f"{path.relative_to(REPO_ROOT)} contains {token}")
     assert violations == [], violations
+
+
+def test_candidate_query_semantics_have_one_shared_owner() -> None:
+    shared_path = (
+        COMMON_MAIN
+        / "com/permieware/osmapdigger/dataset/DatasetCandidateQueries.kt"
+    )
+    shared = shared_path.read_text(encoding="utf-8")
+    assert "object DatasetCandidateQueries" in shared
+    assert "FROM settlement_metric sm$index" in shared
+    assert "LEFT JOIN settlement_metric sm_score" in shared
+    assert "SQLITE_SAFE_BIND_PARAMETER_COUNT" in shared
+
+    platform_sources = [
+        REPO_ROOT
+        / "mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/runtime/JdbcGeoRepository.kt",
+        REPO_ROOT
+        / "mobile/androidApp/src/main/kotlin/com/permieware/osmapdigger/runtime/AndroidGeoRepository.kt",
+    ]
+    for source in platform_sources:
+        text = source.read_text(encoding="utf-8")
+        assert "DatasetCandidateQueries" in text
+        assert "appendCandidatePredicates" not in text
+        assert "FROM settlement_metric sm$index" not in text
+        assert "LEFT JOIN settlement_metric sm_score" not in text
+        assert "SQLITE_SAFE_BIND_PARAMETER_COUNT" not in text

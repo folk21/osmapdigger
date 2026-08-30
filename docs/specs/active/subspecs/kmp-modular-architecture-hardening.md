@@ -26,7 +26,7 @@ dependency direction. The Favorites/import/notebook workflow is now the current 
 The remaining work must continue as independently reviewable PATCH iterations. Each iteration must leave the repository
 in a coherent, testable state; this specification deliberately rejects a single repository-wide rewrite.
 
-The first Favorites/import/notebook feature checkpoint is complete at the candidate-source core boundary. Hardening iterations 2 and 3 are now also implemented: selected meaningful runtime paths use the shared typed operational-failure contract, settings schema/migrations have one shared semantic owner, package metadata/layout parsing is shared, and Desktop/Android replacement installation is staging-based and failure-safe. Configured Gradle validation remains pending in environments without an available Gradle distribution. The imported-list workflow remains the current product implementation focus.
+The first Favorites/import/notebook feature checkpoints are complete through persistent Favorites. Hardening iterations 2–4 are now also implemented: selected meaningful runtime paths use the shared typed operational-failure contract, settings schema/migrations have one shared semantic owner, package metadata/layout parsing is shared, Desktop/Android replacement installation is staging-based and failure-safe, and compatibility-sensitive candidate SQL is produced once by shared `DatasetCandidateQueries`. Configured Gradle validation remains pending in environments without an available Gradle distribution. Favorites enrichment remains the current product implementation focus.
 
 ## Goal
 
@@ -90,7 +90,7 @@ Iteration 1 removes those targeted cycles without adding Gradle modules. `Analys
 belongs to `map`, and `ExternalLinkOpener` belongs to `external`; `runtime` retains only the platform composition bundle.
 The unused legacy `DatasetManager`/`DatasetMetadata`/`DatasetConfig` API and its unread `config/app-config.yaml` companion are removed. `mobile/README.md` documents the current logical DAG and `tests/test_mobile_architecture.py` enforces allowed commonMain package directions during network-free checks.
 
-Cross-platform implementations intentionally use different platform APIs. Iterations 2 and 3 removed the previous settings-schema and package-metadata duplication by introducing shared semantic owners; compatibility-sensitive analytical SQL still remains duplicated between Desktop and Android and is reserved for iteration 4.
+Cross-platform implementations intentionally use different platform APIs. Iterations 2 and 3 removed the previous settings-schema and package-metadata duplication by introducing shared semantic owners. Iteration 4 now also centralizes compatibility-sensitive hard-filter/ranked-candidate SQL and deterministic bind/batching semantics in shared `DatasetCandidateQueries`, while JDBC/Android execution and row mapping remain platform-owned.
 
 Current source-size hot spots include approximately:
 
@@ -632,6 +632,14 @@ Iteration acceptance:
 - hard filtering and batch analysis have one authoritative query semantic representation for migrated operations;
 - Desktop regression tests pass and Android compile/host validation covers the matching contract;
 - missing-metric and rank-before-limit semantics are unchanged.
+
+Implemented result:
+
+- `dataset/DatasetCandidateQueries.kt` now owns the legacy hard-filter candidate SQL, ranked-analysis `LEFT JOIN`, shared `EXISTS` predicates, typed ordered bind arguments, and conservative SQLite candidate-ID batching;
+- `JdbcGeoRepository` and `AndroidGeoRepository` execute those query specifications while retaining platform-specific binding/cursor/result mapping and resource ownership;
+- explicit empty imported scopes still produce no query, scoring-metric rows still use a `LEFT JOIN`, and final ranking/limit remains in shared analysis;
+- network-free architecture checks prevent the migrated SQL fragments/bind-budget constant from returning to platform repositories;
+- focused shared query tests cover range/filter argument ordering, sparse-scoring `LEFT JOIN`, no-scoring-metric behavior, empty imported scopes, and >900-ID deterministic batching.
 
 ### Iteration 5 — source responsibility/size cleanup
 

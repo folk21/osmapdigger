@@ -28,7 +28,8 @@ When intentionally adding or changing a top-level shared package dependency, upd
 - `SearchCondition` uses generic metric IDs and optional min/max values.
 - Missing metric rows are unknown, not zero.
 - Dataset scoring defaults come from `GeoRepository.preferenceDefaults()`; UI/shared code must not read builder preference TOML or infer defaults from metric IDs.
-- Platform repositories perform metric/bounding-box candidate reduction.
+- Shared `DatasetCandidateQueries` owns compatibility-sensitive hard-filter/ranked-candidate SQL, ordered bind semantics, and bounded imported-ID query partitioning; platform repositories own only JDBC/Android execution and row mapping for those migrated operations.
+- Platform repositories perform metric/bounding-box candidate reduction by executing those shared query specifications.
 - Shared `SearchService` performs exact radius filtering so Android/Desktop semantics stay aligned.
 - Ranked analysis must batch-load only requested scoring metrics; never call full `details()` once per candidate.
 - Imported candidate scopes are stable-ID restrictions, not synthetic metrics; repository adapters must apply them before shared scoring and must not broaden an empty imported scope to the full dataset.

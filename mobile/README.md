@@ -84,7 +84,7 @@ flowchart TD
 | `settings` | Platform-independent application settings schema and ordered migrations | none | `ApplicationSettingsSchema`, `SettingsMigration` |
 | `domain` | Immutable runtime data models and persisted-contract values | none | `DatasetInfo`, `Settlement`, `MetricDefinition`, `SearchRequest` |
 | `geo` | Platform-independent geographic calculations | `domain` | `GeoMath` |
-| `dataset` | Read-only analytical dataset boundary, package metadata/layout semantics, and deterministic stable-ID batching | `domain`, `error` | `GeoRepository`, `DatasetPackageLayout`, `DatasetPackageMetadataParser`, `StableIdBatches` |
+| `dataset` | Read-only analytical dataset boundary, shared candidate-query semantics, package metadata/layout semantics, and deterministic stable-ID batching | `domain`, `error` | `GeoRepository`, `DatasetCandidateQueries`, `DatasetPackageLayout`, `DatasetPackageMetadataParser`, `StableIdBatches` |
 | `map` | Renderer-neutral map data/assets and overlay serialization | `domain` | `MapPackage`, `MapOverlayGeoJson` |
 | `external` | External-search provider model, URL expansion, explicit platform link action | `domain`, `error` | `ExternalSearchProviderRepository`, `ExternalSearchUrlBuilder`, `ExternalLinkOpener` |
 | `notebook` | Dataset-scoped persistent favorites contract and typed storage wrapper | `domain`, `error` | `FavoriteSettlement`, `FavoriteSettlementRepository` |

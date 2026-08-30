@@ -127,7 +127,7 @@ sequenceDiagram
 ```
 
 The repository path intentionally has no unrelated name-based final limit and never hydrates full
-`SettlementDetails` per candidate. Missing joined scoring rows remain absent from the metric map. A null candidate-ID set means the normal dataset universe; a non-null set restricts retrieval before shared scoring, and an empty imported set returns zero candidates without querying or silently broadening to the dataset.
+`SettlementDetails` per candidate. Missing joined scoring rows remain absent from the metric map. A null candidate-ID set means the normal dataset universe; a non-null set restricts retrieval before shared scoring, and an empty imported set returns zero candidates without querying or silently broadening to the dataset. `dataset/DatasetCandidateQueries.kt` is the single shared owner of the legacy hard-filter query, ranked-analysis LEFT JOIN/predicates, ordered typed bind values, and conservative SQLite candidate-ID batching. Platform repositories execute those specs through JDBC/Android SQLite and retain only platform binding/result-mapping responsibilities.
 `search/SearchRequestSemantics.kt` centralizes radius validation, coarse bounds, exact radius matching,
 and effective-condition selection so legacy `SearchService` and ranked analysis cannot drift.
 
@@ -193,10 +193,9 @@ The UI never constructs SQL.
 
 Uses Xerial SQLite JDBC.
 
-`searchCandidates()` retains the current UI contract: optional coordinate bounds, one `EXISTS`
-subquery per effective metric condition, deterministic name ordering, and a repository-side limit.
+`searchCandidates()` executes the shared `DatasetCandidateQueries.searchCandidates()` specification through JDBC. The shared spec preserves the current UI contract: optional coordinate bounds, one `EXISTS` subquery per effective metric condition, deterministic name ordering, and a repository-side limit.
 
-`analysisCandidates()` reuses the same hard predicates but has no final result limit. It performs an active-metric `LEFT JOIN` and folds sparse rows into immutable `SettlementAnalysisCandidate` values. When an imported candidate set is supplied, stable IDs are sorted and partitioned into bounded SQLite parameter batches before adding `settlement_id IN (...)`; batch results remain deterministic and avoid one query per settlement or one unbounded `IN` list. Missing scoring rows therefore remain unknown rather than excluding the settlement or becoming zero.
+`analysisCandidates()` executes one or more shared ranked-analysis query specs with no final result limit. `DatasetCandidateQueries` owns the active-metric `LEFT JOIN`, shared hard predicates, ordered bind values, and deterministic stable-ID batching; JDBC owns typed parameter binding and row folding into immutable `SettlementAnalysisCandidate` values. Missing scoring rows therefore remain unknown rather than excluding the settlement or becoming zero.
 
 `preferenceDefaults()` reads `metric_preference_default` ordered by the owning metric's `sort_order`. It first probes `sqlite_master`; a legacy format-v1 database without the additive table returns an empty list. Persisted rows are converted into validated shared `MetricPreferenceDefault` values, so unsupported direction or invalid numeric contracts fail instead of being silently reinterpreted.
 
@@ -264,8 +263,7 @@ loading or native map initialization.
 
 ### `AndroidGeoRepository`
 
-Implements both legacy hard-filter and batch ranked-analysis candidate semantics through
-`SQLiteDatabase.rawQuery()`. Its `analysisCandidates()` query mirrors Desktop hard predicates, active-metric `LEFT JOIN`, and bounded stable-ID batching behavior so shared scoring sees the same sparse metric contract. `preferenceDefaults()` mirrors Desktop's additive-table probe/order/validation and returns an empty list for legacy v1 packages without the table.
+Executes both legacy hard-filter and batch ranked-analysis `DatasetCandidateQueries` specifications through `SQLiteDatabase.rawQuery()`. Android converts the shared typed bind arguments to selection strings and retains cursor/result mapping locally; hard predicates, active-metric `LEFT JOIN`, stable-ID batching, and query ordering are no longer duplicated from Desktop. `preferenceDefaults()` mirrors Desktop's additive-table probe/order/validation and returns an empty list for legacy v1 packages without the table.
 
 ### `AndroidDatasetInstaller`
 
