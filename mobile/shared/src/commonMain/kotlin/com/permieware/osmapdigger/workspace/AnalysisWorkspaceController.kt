@@ -334,18 +334,16 @@ class AnalysisWorkspaceController(
         scheduleAnalysis(immediate = true, force = true)
     }
 
-    /** Add one settlement to the persistent dataset-scoped favorites collection without recalculating analysis. */
-    fun addFavorite(settlement: Settlement) {
-        val datasetId = mutableState.value.datasetInfo?.id ?: return
-        if (mutableState.value.favorites.any { it.settlementId == settlement.id }) return
+    /** Add one ranked settlement with a frozen snapshot of the current authoritative analysis state. */
+    fun addFavorite(result: ScoredSettlement) {
+        val snapshot = mutableState.value
+        val datasetId = snapshot.datasetInfo?.id ?: return
+        if (snapshot.favorites.any { it.settlementId == result.settlement.id }) return
+        val analysisSnapshot = favoriteSnapshot(result, snapshot)
         scope.launch {
             try {
-                val saved = favoriteSettlements.add(datasetId, settlement)
-                val current = mutableState.value
-                val next =
-                    (current.favorites.filterNot { it.settlementId == saved.settlementId } + saved)
-                        .sortedWith(compareByDescending<FavoriteSettlement> { it.addedAtEpochMs }.thenBy { it.settlementId })
-                mutableState.value = current.copy(favorites = next, failure = null)
+                val saved = favoriteSettlements.add(datasetId, result.settlement, analysisSnapshot)
+                replaceFavorite(saved)
             } catch (failure: CancellationException) {
                 throw failure
             } catch (failure: Throwable) {
@@ -353,6 +351,43 @@ class AnalysisWorkspaceController(
                     mutableState.value.copy(
                         failure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not save favorite settlement"),
                     )
+            }
+        }
+    }
+
+    /** Persist an optional user note without changing analysis inputs or the frozen snapshot. */
+    fun updateFavoriteNote(settlementId: String, note: String?) {
+        val datasetId = mutableState.value.datasetInfo?.id ?: return
+        if (mutableState.value.favorites.none { it.settlementId == settlementId }) return
+        scope.launch {
+            try {
+                replaceFavorite(favoriteSettlements.updateNote(datasetId, settlementId, note))
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Throwable) {
+                mutableState.value = mutableState.value.copy(
+                    failure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not save favorite note"),
+                )
+            }
+        }
+    }
+
+    /** Explicitly replace one favorite's historical snapshot with the current ranked-analysis state. */
+    fun updateFavoriteSnapshot(settlementId: String) {
+        val current = mutableState.value
+        val datasetId = current.datasetInfo?.id ?: return
+        if (current.favorites.none { it.settlementId == settlementId }) return
+        val result = current.rankedResults.firstOrNull { it.settlement.id == settlementId } ?: return
+        val analysisSnapshot = favoriteSnapshot(result, current)
+        scope.launch {
+            try {
+                replaceFavorite(favoriteSettlements.updateSnapshot(datasetId, settlementId, analysisSnapshot))
+            } catch (failure: CancellationException) {
+                throw failure
+            } catch (failure: Throwable) {
+                mutableState.value = mutableState.value.copy(
+                    failure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not update favorite analysis snapshot"),
+                )
             }
         }
     }
@@ -397,6 +432,27 @@ class AnalysisWorkspaceController(
                     )
             }
         }
+    }
+
+    private fun favoriteSnapshot(
+        result: ScoredSettlement,
+        state: AnalysisWorkspaceState,
+    ) = FavoriteAnalysisSnapshotFactory.create(
+        datasetId = requireNotNull(state.datasetInfo).id,
+        result = result,
+        definitions = state.definitions,
+        conditions = state.conditions,
+        effectivePreferences = state.effectivePreferences,
+        center = state.center,
+        radiusKm = state.radiusKm,
+    )
+
+    private fun replaceFavorite(saved: FavoriteSettlement) {
+        val current = mutableState.value
+        val next =
+            (current.favorites.filterNot { it.settlementId == saved.settlementId } + saved)
+                .sortedWith(compareByDescending<FavoriteSettlement> { it.addedAtEpochMs }.thenBy { it.settlementId })
+        mutableState.value = current.copy(favorites = next, failure = null)
     }
 
     fun clearError() {

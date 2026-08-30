@@ -8,6 +8,7 @@ import com.permieware.osmapdigger.error.OperationalFailureKind
 import com.permieware.osmapdigger.domain.SearchCondition
 import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.preferences.UserPreferences
+import com.permieware.osmapdigger.settings.ApplicationSettingsSchema
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
 import java.sql.DriverManager
@@ -122,7 +123,7 @@ class SqliteUserPreferencesRepositoryTest {
                         result.getInt(1)
                     }
                 }
-                assertEquals(5, version)
+                assertEquals(ApplicationSettingsSchema.VERSION, version)
             }
         } finally {
             database.parent.toFile().deleteRecursively()

@@ -10,12 +10,15 @@ data class FavoriteSettlement(
     val settlementId: String,
     val settlementName: String,
     val addedAtEpochMs: Long,
+    val note: String? = null,
+    val analysisSnapshot: FavoriteAnalysisSnapshot? = null,
 ) {
     init {
         require(datasetId.isNotBlank()) { "Favorite dataset ID must not be blank" }
         require(settlementId.isNotBlank()) { "Favorite settlement ID must not be blank" }
         require(settlementName.isNotBlank()) { "Favorite settlement name must not be blank" }
         require(addedAtEpochMs >= 0L) { "Favorite timestamp must not be negative" }
+        require(note == null || note.isNotBlank()) { "Favorite note must be null or non-blank" }
     }
 }
 
@@ -23,7 +26,23 @@ data class FavoriteSettlement(
 interface FavoriteSettlementRepository {
     suspend fun list(datasetId: String): List<FavoriteSettlement>
 
-    suspend fun add(datasetId: String, settlement: Settlement): FavoriteSettlement
+    suspend fun add(
+        datasetId: String,
+        settlement: Settlement,
+        analysisSnapshot: FavoriteAnalysisSnapshotDraft?,
+    ): FavoriteSettlement
+
+    suspend fun updateNote(
+        datasetId: String,
+        settlementId: String,
+        note: String?,
+    ): FavoriteSettlement
+
+    suspend fun updateSnapshot(
+        datasetId: String,
+        settlementId: String,
+        analysisSnapshot: FavoriteAnalysisSnapshotDraft,
+    ): FavoriteSettlement
 
     suspend fun remove(datasetId: String, settlementId: String)
 
@@ -39,9 +58,31 @@ class OperationalFavoriteSettlementRepository(
             delegate.list(datasetId)
         }
 
-    override suspend fun add(datasetId: String, settlement: Settlement): FavoriteSettlement =
+    override suspend fun add(
+        datasetId: String,
+        settlement: Settlement,
+        analysisSnapshot: FavoriteAnalysisSnapshotDraft?,
+    ): FavoriteSettlement =
         operationalBoundary(OperationalFailureKind.SETTINGS, "Could not save favorite settlement") {
-            delegate.add(datasetId, settlement)
+            delegate.add(datasetId, settlement, analysisSnapshot)
+        }
+
+    override suspend fun updateNote(
+        datasetId: String,
+        settlementId: String,
+        note: String?,
+    ): FavoriteSettlement =
+        operationalBoundary(OperationalFailureKind.SETTINGS, "Could not save favorite note") {
+            delegate.updateNote(datasetId, settlementId, note)
+        }
+
+    override suspend fun updateSnapshot(
+        datasetId: String,
+        settlementId: String,
+        analysisSnapshot: FavoriteAnalysisSnapshotDraft,
+    ): FavoriteSettlement =
+        operationalBoundary(OperationalFailureKind.SETTINGS, "Could not update favorite analysis snapshot") {
+            delegate.updateSnapshot(datasetId, settlementId, analysisSnapshot)
         }
 
     override suspend fun remove(datasetId: String, settlementId: String) {
@@ -61,8 +102,24 @@ class OperationalFavoriteSettlementRepository(
 object EmptyFavoriteSettlementRepository : FavoriteSettlementRepository {
     override suspend fun list(datasetId: String): List<FavoriteSettlement> = emptyList()
 
-    override suspend fun add(datasetId: String, settlement: Settlement): FavoriteSettlement =
-        FavoriteSettlement(datasetId, settlement.id, settlement.name, 0L)
+    override suspend fun add(
+        datasetId: String,
+        settlement: Settlement,
+        analysisSnapshot: FavoriteAnalysisSnapshotDraft?,
+    ): FavoriteSettlement =
+        FavoriteSettlement(datasetId, settlement.id, settlement.name, 0L, analysisSnapshot = analysisSnapshot?.capturedAt(0L))
+
+    override suspend fun updateNote(
+        datasetId: String,
+        settlementId: String,
+        note: String?,
+    ): FavoriteSettlement = error("Favorite is not available in the empty repository")
+
+    override suspend fun updateSnapshot(
+        datasetId: String,
+        settlementId: String,
+        analysisSnapshot: FavoriteAnalysisSnapshotDraft,
+    ): FavoriteSettlement = error("Favorite is not available in the empty repository")
 
     override suspend fun remove(datasetId: String, settlementId: String) = Unit
 

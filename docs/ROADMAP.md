@@ -14,7 +14,7 @@ Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/sp
 Architecture note: KMP architecture hardening iterations 1–4 are implemented between feature checkpoints (dependency direction, typed operational failures, shared settings/package semantics, atomic dataset installation, and shared analytical candidate-query semantics); later gates remain interleaved backlog.
 
 Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, persistent favorites/notebook, later analysis snapshots, export/share, and batch external search.
-Candidate-source core/workflow, visual ranked affordances, persistent dataset-scoped Favorites, and explicit selected-Favorites transfer back into the imported candidate source are implemented; the next notebook increment adds optional notes and frozen analysis snapshots.
+Candidate-source core/workflow, visual ranked affordances, persistent dataset-scoped Favorites, explicit selected-Favorites transfer back into imported candidates, and notebook notes/frozen analysis snapshots are implemented; the next product increment is batch external search for selected Favorites.
 
 Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — dependency-direction, typed-error, shared settings/package/atomic-install, and analytical-query DRY gates 1–4 are implemented; later source-size/module gates run between completed product increments where they protect the next feature boundary.
 

@@ -71,9 +71,11 @@ internal fun DesktopAnalysisWorkspace(
     rankedResults: List<ScoredSettlement>,
     favorites: List<FavoriteSettlement>,
     favoriteSettlementsById: Map<String, Settlement>,
-    onFavoriteAdded: (Settlement) -> Unit,
+    onFavoriteAdded: (ScoredSettlement) -> Unit,
     onFavoriteRemoved: (String) -> Unit,
     onFavoritesCleared: () -> Unit,
+    onFavoriteNoteChanged: (String, String?) -> Unit,
+    onFavoriteSnapshotUpdated: (String) -> Unit,
     candidateScope: SettlementCandidateScope,
     importedCandidateList: ImportedCandidateList?,
     onImportedCandidatesApplied: (String, List<String>) -> Unit,
@@ -254,6 +256,8 @@ internal fun DesktopAnalysisWorkspace(
                         },
                         onRemove = onFavoriteRemoved,
                         onClear = onFavoritesCleared,
+                        onNoteChanged = onFavoriteNoteChanged,
+                        onUpdateSnapshot = onFavoriteSnapshotUpdated,
                         onCopySelectedToImport = { sourceText, settlementIds ->
                             onImportedCandidatesApplied(sourceText, settlementIds)
                             favoritesOpen = false
@@ -384,7 +388,7 @@ private fun DesktopAnalysisSidebar(
     onClearImported: () -> Unit,
     rankedResults: List<ScoredSettlement>,
     favorites: List<FavoriteSettlement>,
-    onFavoriteAdded: (Settlement) -> Unit,
+    onFavoriteAdded: (ScoredSettlement) -> Unit,
     onFavoriteRemoved: (String) -> Unit,
     onFavoritesRequested: () -> Unit,
     resultsFocusRequest: Int,
@@ -518,7 +522,7 @@ private fun DesktopAnalysisSidebar(
                 favorite = result.settlement.id in favoriteIds,
                 onClick = { onSelect(result.settlement) },
                 onFavoriteChanged = { included ->
-                    if (included) onFavoriteAdded(result.settlement) else onFavoriteRemoved(result.settlement.id)
+                    if (included) onFavoriteAdded(result) else onFavoriteRemoved(result.settlement.id)
                 },
                 displayName = settlementDisplayName(result.settlement),
             )

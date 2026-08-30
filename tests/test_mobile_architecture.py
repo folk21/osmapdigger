@@ -175,6 +175,8 @@ def test_settings_schema_semantics_have_one_shared_owner() -> None:
     assert "external_search_provider" in shared
     assert "candidate_scope_json" in shared
     assert "favorite_settlement" in shared
+    assert "favorite_analysis_snapshot" in shared
+    assert "note_text" in shared
     assert "ALTER TABLE user_preferences" in shared
     for platform_source in (desktop, android):
         assert "ApplicationSettingsSchema" in platform_source

@@ -96,7 +96,7 @@ Umbrella:
 
 Current implementation focus:
 
-- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate sets, later analysis snapshots, export/share, and batch external searches.
+- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate sets, frozen analysis snapshots, export/share, and batch external searches.
 
 Active interleaved architecture track:
 

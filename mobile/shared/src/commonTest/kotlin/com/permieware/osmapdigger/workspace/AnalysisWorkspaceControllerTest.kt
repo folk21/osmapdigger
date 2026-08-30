@@ -3,6 +3,8 @@ package com.permieware.osmapdigger.workspace
 import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.analysis.SettlementCandidateScope
+import com.permieware.osmapdigger.analysis.ScoredSettlement
+import com.permieware.osmapdigger.analysis.SettlementScore
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.MetricDefinition
@@ -16,6 +18,7 @@ import com.permieware.osmapdigger.domain.SettlementSearchEntry
 import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.preferences.UserPreferences
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
+import com.permieware.osmapdigger.notebook.FavoriteAnalysisSnapshotDraft
 import com.permieware.osmapdigger.notebook.FavoriteSettlement
 import com.permieware.osmapdigger.notebook.FavoriteSettlementRepository
 import com.permieware.osmapdigger.dataset.GeoRepository
@@ -440,11 +443,30 @@ class AnalysisWorkspaceControllerTest {
         val analysisCallsBefore = repository.analysisCalls
         val savesBefore = preferences.saved.size
 
-        controller.addFavorite(settlement("best", "Best"))
-        controller.addFavorite(settlement("other", "Other"))
+        controller.addFavorite(controller.state.value.rankedResults.first { it.settlement.id == "best" })
+        controller.addFavorite(
+            ScoredSettlement(
+                settlement = settlement("other", "Other"),
+                score = SettlementScore(null, 0.0, 0, 0, emptyList()),
+            ),
+        )
         advanceUntilIdle()
 
         assertEquals(listOf("other", "best"), controller.state.value.favorites.map { it.settlementId })
+        assertEquals(analysisCallsBefore, repository.analysisCalls)
+        assertEquals(savesBefore, preferences.saved.size)
+        assertTrue(controller.state.value.favorites.all { it.analysisSnapshot != null })
+
+        val originalSnapshot = controller.state.value.favorites.first { it.settlementId == "best" }.analysisSnapshot
+        controller.updateFavoriteNote("best", "  promising location  ")
+        advanceUntilIdle()
+        assertEquals("promising location", controller.state.value.favorites.first { it.settlementId == "best" }.note)
+        assertEquals(originalSnapshot, controller.state.value.favorites.first { it.settlementId == "best" }.analysisSnapshot)
+        assertEquals(analysisCallsBefore, repository.analysisCalls)
+        assertEquals(savesBefore, preferences.saved.size)
+
+        controller.updateFavoriteSnapshot("best")
+        advanceUntilIdle()
         assertEquals(analysisCallsBefore, repository.analysisCalls)
         assertEquals(savesBefore, preferences.saved.size)
 
@@ -457,6 +479,30 @@ class AnalysisWorkspaceControllerTest {
         assertTrue(controller.state.value.favorites.isEmpty())
         assertEquals(analysisCallsBefore, repository.analysisCalls)
         assertEquals(savesBefore, preferences.saved.size)
+    }
+
+    @Test
+    fun favoriteSnapshotChangesOnlyAfterExplicitRefresh() = runTest {
+        val repository = FakeRepository(candidates = listOf(candidate("best", "Best", 1.0)))
+        val preferences = FakePreferencesRepository(null)
+        val favorites = FakeFavoriteRepository()
+        val controller = AnalysisWorkspaceController(repository, preferences, this, favorites, debounceMillis = 0)
+
+        controller.initialize()
+        advanceUntilIdle()
+        controller.addFavorite(controller.state.value.rankedResults.single())
+        advanceUntilIdle()
+        val original = requireNotNull(controller.state.value.favorites.single().analysisSnapshot)
+
+        controller.updatePreferenceWeight("forest.distance_km", 9)
+        advanceUntilIdle()
+        assertEquals(original, controller.state.value.favorites.single().analysisSnapshot)
+
+        controller.updateFavoriteSnapshot("best")
+        advanceUntilIdle()
+        val refreshed = requireNotNull(controller.state.value.favorites.single().analysisSnapshot)
+        assertEquals(9, refreshed.preferences.single().weight)
+        assertTrue(refreshed.capturedAtEpochMs > original.capturedAtEpochMs)
     }
 
     @Test
@@ -516,11 +562,36 @@ class AnalysisWorkspaceControllerTest {
         override suspend fun list(datasetId: String): List<FavoriteSettlement> =
             entries.values.sortedWith(compareByDescending<FavoriteSettlement> { it.addedAtEpochMs }.thenBy { it.settlementId })
 
-        override suspend fun add(datasetId: String, settlement: Settlement): FavoriteSettlement {
+        override suspend fun add(
+            datasetId: String,
+            settlement: Settlement,
+            analysisSnapshot: FavoriteAnalysisSnapshotDraft?,
+        ): FavoriteSettlement {
             val existing = entries[settlement.id]
             if (existing != null) return existing
             clock += 1
-            return FavoriteSettlement(datasetId, settlement.id, settlement.name, clock).also { entries[settlement.id] = it }
+            return FavoriteSettlement(
+                datasetId,
+                settlement.id,
+                settlement.name,
+                clock,
+                analysisSnapshot = analysisSnapshot?.capturedAt(clock),
+            ).also { entries[settlement.id] = it }
+        }
+
+        override suspend fun updateNote(datasetId: String, settlementId: String, note: String?): FavoriteSettlement {
+            val current = requireNotNull(entries[settlementId])
+            return current.copy(note = note?.trim()?.takeIf { it.isNotEmpty() }).also { entries[settlementId] = it }
+        }
+
+        override suspend fun updateSnapshot(
+            datasetId: String,
+            settlementId: String,
+            analysisSnapshot: FavoriteAnalysisSnapshotDraft,
+        ): FavoriteSettlement {
+            val current = requireNotNull(entries[settlementId])
+            clock += 1
+            return current.copy(analysisSnapshot = analysisSnapshot.capturedAt(clock)).also { entries[settlementId] = it }
         }
 
         override suspend fun remove(datasetId: String, settlementId: String) {

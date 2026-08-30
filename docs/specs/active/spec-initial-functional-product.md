@@ -20,7 +20,7 @@ After acceptance, move stable behavior into owning implementation/architecture d
 
 Current implementation sub-spec:
 
-- [`subspecs/settlement-shortlist-workflow.md`](subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate lists, later analysis snapshots, export/share, and batch external searches.
+- [`subspecs/settlement-shortlist-workflow.md`](subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate lists, frozen analysis snapshots, export/share, and batch external searches.
 
 Active architecture-hardening work:
 

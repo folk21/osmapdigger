@@ -8,6 +8,8 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Enrich persistent Favorites with optional notes and one frozen versioned analysis snapshot that captures score, coverage, Required criteria, enabled Preferences, and contribution values; snapshots change only through an explicit refresh.
+
 - Centralize compatibility-sensitive hard-filter and ranked-analysis candidate SQL in shared `DatasetCandidateQueries`, leaving JDBC/Android adapters responsible only for platform binding, execution, and row mapping.
 - Add persistent dataset-scoped Favorites with 0–100 ranked score bars, strongest/weakest contribution cues, independent favorite toggles, and a Desktop notebook pane for browse/open/remove/clear plus explicit multi-select transfer back into an activated imported candidate source.
 

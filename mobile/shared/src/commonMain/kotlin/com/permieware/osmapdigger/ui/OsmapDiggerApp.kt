@@ -332,6 +332,8 @@ private fun LoadedDatasetApp(
                 onFavoriteAdded = analysisController::addFavorite,
                 onFavoriteRemoved = analysisController::removeFavorite,
                 onFavoritesCleared = analysisController::clearFavorites,
+                onFavoriteNoteChanged = analysisController::updateFavoriteNote,
+                onFavoriteSnapshotUpdated = analysisController::updateFavoriteSnapshot,
                 candidateScope = analysisState.candidateScope,
                 importedCandidateList = analysisState.importedCandidateList,
                 onImportedCandidatesApplied = analysisController::applyImportedCandidates,
