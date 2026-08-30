@@ -55,6 +55,7 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
         mapPackage: MapPackage,
         results: List<Settlement>,
         selected: Settlement?,
+        focusRequest: Long,
         onSettlementActivated: ((String) -> Unit)?,
         onMapLocationActivated: ((GeoPoint) -> Unit)?,
     ) {
@@ -121,6 +122,7 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
                 session.update(
                     results = results,
                     selected = selected,
+                    focusRequest = focusRequest,
                     onSettlementActivated = onSettlementActivated,
                     onMapLocationActivated = onMapLocationActivated,
                 )
@@ -263,10 +265,12 @@ private class WebMapSession(
 
     private var lastStateJson: String? = null
     private var lastSelectedId: String? = null
+    private var lastFocusRequest: Long = Long.MIN_VALUE
 
     fun update(
         results: List<Settlement>,
         selected: Settlement?,
+        focusRequest: Long,
         onSettlementActivated: ((String) -> Unit)?,
         onMapLocationActivated: ((GeoPoint) -> Unit)?,
     ) {
@@ -279,13 +283,14 @@ private class WebMapSession(
                 mapLocationPickingEnabled = onMapLocationActivated != null,
             )
         val selectedId = selected?.id
-        if (stateJson == lastStateJson && selectedId == lastSelectedId) {
+        if (stateJson == lastStateJson && selectedId == lastSelectedId && focusRequest == lastFocusRequest) {
             return
         }
 
-        val focusSelected = selectedId != null && selectedId != lastSelectedId
+        val focusSelected = selectedId != null && (selectedId != lastSelectedId || focusRequest != lastFocusRequest)
         lastStateJson = stateJson
         lastSelectedId = selectedId
+        lastFocusRequest = focusRequest
 
         val script =
             "window.osmapdiggerApplyState && window.osmapdiggerApplyState($stateJson, $focusSelected);"

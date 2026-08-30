@@ -34,6 +34,7 @@ internal actual fun MapPanel(
     styleJson: String?,
     results: List<Settlement>,
     selected: Settlement?,
+    focusRequest: Long,
     onSettlementActivated: ((String) -> Unit)?,
     onMapLocationActivated: ((GeoPoint) -> Unit)?,
 ) {
@@ -43,6 +44,7 @@ internal actual fun MapPanel(
         styleJson,
         results,
         selected,
+        focusRequest,
         onSettlementActivated,
         onMapLocationActivated,
     )
@@ -78,6 +80,7 @@ private fun RenderMapLibrePanel(
     styleJson: String?,
     results: List<Settlement>,
     selected: Settlement?,
+    focusRequest: Long,
     onSettlementActivated: ((String) -> Unit)?,
     onMapLocationActivated: ((GeoPoint) -> Unit)?,
 ) {
@@ -107,7 +110,7 @@ private fun RenderMapLibrePanel(
                 ),
         )
 
-    LaunchedEffect(selected?.id) {
+    LaunchedEffect(selected?.id, focusRequest) {
         selected?.let {
             camera.position =
                 camera.position.copy(
@@ -185,6 +188,14 @@ private fun RenderMapLibrePanel(
                 )
             }
         }
+
+        MapScaleIndicator(
+            latitude = cameraPosition.target.latitude,
+            zoom = cameraPosition.zoom,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 8.dp, bottom = 38.dp),
+        )
 
         Card(
             modifier = Modifier

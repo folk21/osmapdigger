@@ -356,6 +356,8 @@ internal class LocalWebMapServer(
               attributionControl: true
             });
 
+            map.addControl(new maplibregl.ScaleControl({ maxWidth: 110, unit: 'metric' }), 'bottom-right');
+
             function ensureOverlay(id, data, paint) {
               if (!map.getSource(id)) {
                 map.addSource(id, { type: 'geojson', data: data || emptyCollection });

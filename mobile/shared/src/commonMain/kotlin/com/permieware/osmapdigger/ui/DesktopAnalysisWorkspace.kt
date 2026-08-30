@@ -250,6 +250,8 @@ internal fun DesktopAnalysisWorkspace(
                         favorites = favorites,
                         settlementsById = favoriteSettlementsById,
                         rankedResults = rankedResults,
+                        activeSettlementId = selected?.settlement?.id,
+                        onSelect = onSelect,
                         onOpen = { settlement ->
                             onSelect(settlement)
                             favoritesOpen = false
@@ -840,12 +842,14 @@ private fun SettlementSummaryPanel(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(settlementDisplayName(details.settlement), style = MaterialTheme.typography.titleLarge)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = onDetails) { Text(strings.details) }
-                    if (hasExternalSearch) {
-                        TextButton(onClick = onExternalSearch) { Text(strings.externalSearch) }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text(
+                        strings.settlementsFound(resultCount),
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    if (running) {
+                        Text(strings.updating.replaceFirstChar { it.uppercase() }, style = MaterialTheme.typography.labelSmall)
                     }
-                    TextButton(onClick = onClose) { Text(strings.close) }
                 }
             }
 
@@ -857,18 +861,23 @@ private fun SettlementSummaryPanel(
             val coordinates =
                 "${NumberFormatter.compact(details.settlement.location.latitude)}, " +
                     NumberFormatter.compact(details.settlement.location.longitude)
-            Text(
-                listOf(context, coordinates).filter { it.isNotBlank() }.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-            )
-
-            Text(
-                buildString {
-                    append(strings.settlementsFound(resultCount))
-                    if (running) append(" · ${strings.updating}")
-                },
-                style = MaterialTheme.typography.labelMedium,
-            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    listOf(context, coordinates).filter { it.isNotBlank() }.joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onDetails) { Text(strings.details) }
+                    if (hasExternalSearch) {
+                        TextButton(onClick = onExternalSearch) { Text(strings.externalSearch) }
+                    }
+                    TextButton(onClick = onClose) { Text(strings.close) }
+                }
+            }
 
             score?.let { settlementScore ->
                 Text(

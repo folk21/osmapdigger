@@ -1,11 +1,17 @@
 package com.permieware.osmapdigger.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Checkbox
@@ -42,6 +48,8 @@ internal fun FavoritesPanel(
     favorites: List<FavoriteSettlement>,
     settlementsById: Map<String, Settlement>,
     rankedResults: List<ScoredSettlement>,
+    activeSettlementId: String?,
+    onSelect: (Settlement) -> Unit,
     onOpen: (Settlement) -> Unit,
     onRemove: (String) -> Unit,
     onClear: () -> Unit,
@@ -143,9 +151,11 @@ internal fun FavoritesPanel(
                             ranked = rankedById[favorite.settlementId],
                             rank = rankById[favorite.settlementId],
                             selected = favorite.settlementId in selectedIds,
+                            active = favorite.settlementId == activeSettlementId,
                             onSelectedChanged = { checked ->
                                 selectedIds = if (checked) selectedIds + favorite.settlementId else selectedIds - favorite.settlementId
                             },
+                            onSelect = onSelect,
                             onOpen = onOpen,
                             onRemove = { onRemove(favorite.settlementId) },
                             onNoteChanged = { note -> onNoteChanged(favorite.settlementId, note) },
@@ -166,7 +176,9 @@ private fun FavoriteCard(
     ranked: ScoredSettlement?,
     rank: Int?,
     selected: Boolean,
+    active: Boolean,
     onSelectedChanged: (Boolean) -> Unit,
+    onSelect: (Settlement) -> Unit,
     onOpen: (Settlement) -> Unit,
     onRemove: () -> Unit,
     onNoteChanged: (String?) -> Unit,
@@ -179,7 +191,8 @@ private fun FavoriteCard(
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        tonalElevation = 1.dp,
+        tonalElevation = if (active) 3.dp else 1.dp,
+        color = if (active) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface,
         shape = MaterialTheme.shapes.medium,
     ) {
         Row(
@@ -196,27 +209,43 @@ private fun FavoriteCard(
                 Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Text(
-                    settlement?.let(settlementDisplayName) ?: favorite.settlementName,
-                    style = MaterialTheme.typography.titleSmall,
-                )
-                if (settlement == null) {
-                    Text(strings.favoriteUnavailable, style = MaterialTheme.typography.bodySmall)
-                } else {
-                    val context = listOfNotNull(settlement.placeType, settlement.population?.let(strings.population)).joinToString(" · ")
-                    val coordinates = "${NumberFormatter.compact(settlement.location.latitude)}, ${NumberFormatter.compact(settlement.location.longitude)}"
-                    Text(listOf(context, coordinates).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
-                    if (ranked != null) {
+                Column(
+                    Modifier.clickable(enabled = settlement != null) { settlement?.let(onSelect) },
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
                         Text(
-                            strings.favoriteCurrentAnalysis(rank, ranked.score.value?.roundToInt(), ranked.score.coverage.roundToInt()),
-                            style = MaterialTheme.typography.labelSmall,
+                            settlement?.let(settlementDisplayName) ?: favorite.settlementName,
+                            style = MaterialTheme.typography.titleSmall,
                         )
-                    } else {
-                        Text(strings.favoriteNotInCurrentResults, style = MaterialTheme.typography.labelSmall)
+                        if (active) {
+                            Text(strings.favoriteCurrentSelection, style = MaterialTheme.typography.labelSmall)
+                        }
                     }
+                    if (settlement == null) {
+                        Text(strings.favoriteUnavailable, style = MaterialTheme.typography.bodySmall)
+                    } else {
+                        val context = listOfNotNull(settlement.placeType, settlement.population?.let(strings.population)).joinToString(" · ")
+                        val coordinates = "${NumberFormatter.compact(settlement.location.latitude)}, ${NumberFormatter.compact(settlement.location.longitude)}"
+                        Text(listOf(context, coordinates).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
+                        if (ranked != null) {
+                            Text(
+                                strings.favoriteCurrentAnalysis(rank, ranked.score.value?.roundToInt(), ranked.score.coverage.roundToInt()),
+                                style = MaterialTheme.typography.labelSmall,
+                            )
+                        } else {
+                            Text(strings.favoriteNotInCurrentResults, style = MaterialTheme.typography.labelSmall)
+                        }
+                    }
+
+                    FavoriteSnapshotSummary(favorite.analysisSnapshot)
                 }
 
-                FavoriteSnapshotSummary(favorite.analysisSnapshot)
+                Spacer(Modifier.height(8.dp))
 
                 if (editingNote) {
                     OutlinedTextField(
@@ -243,24 +272,43 @@ private fun FavoriteCard(
                     }
                 } else {
                     favorite.note?.let { Text("${strings.favoriteNote}: $it", style = MaterialTheme.typography.bodySmall) }
-                    TextButton(onClick = { editingNote = true }) { Text(strings.editFavoriteNote) }
-                }
-
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (settlement != null) {
-                        TextButton(onClick = { onOpen(settlement) }) { Text(strings.openFavorite) }
-                    }
-                    TextButton(
-                        enabled = ranked != null,
-                        onClick = onUpdateSnapshot,
-                    ) { Text(strings.updateFavoriteSnapshot) }
-                    TextButton(onClick = onRemove) { Text(strings.remove) }
-                }
-                if (ranked == null) {
-                    Text(strings.snapshotUpdateUnavailable, style = MaterialTheme.typography.labelSmall)
                 }
             }
+
+            Column(
+                Modifier.widthIn(min = 88.dp, max = 112.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                if (!editingNote) {
+                    FavoriteAction(strings.editFavoriteNote) { editingNote = true }
+                }
+                if (settlement != null) {
+                    FavoriteAction(strings.openFavorite) { onOpen(settlement) }
+                }
+                FavoriteAction(
+                    label = strings.updateFavoriteSnapshot,
+                    enabled = ranked != null,
+                    onClick = onUpdateSnapshot,
+                )
+                FavoriteAction(strings.remove, onClick = onRemove)
+            }
         }
+    }
+}
+
+@Composable
+private fun FavoriteAction(
+    label: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    TextButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth().heightIn(min = 32.dp),
+        contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+    ) {
+        Text(label, maxLines = 1)
     }
 }
 

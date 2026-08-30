@@ -135,6 +135,7 @@ private fun LoadedDatasetApp(
     val analysisState by analysisController.state.collectAsState()
 
     var selected by remember { mutableStateOf<SettlementDetails?>(null) }
+    var mapFocusRequest by remember { mutableStateOf(0L) }
     var radiusText by remember { mutableStateOf("") }
     var radiusInitializedForDataset by remember { mutableStateOf<String?>(null) }
     var uiError by remember { mutableStateOf<String?>(null) }
@@ -234,13 +235,18 @@ private fun LoadedDatasetApp(
     }
 
     val selectSettlement: (Settlement) -> Unit = { settlement ->
-        scope.launch {
-            try {
-                selected = runtime.repository.details(settlement.id)
-            } catch (failure: CancellationException) {
-                throw failure
-            } catch (failure: Throwable) {
-                uiFailure = failure.toOperationalFailure(OperationalFailureKind.DATABASE, "Could not load settlement details")
+        if (selected?.settlement?.id == settlement.id) {
+            mapFocusRequest += 1L
+        } else {
+            scope.launch {
+                try {
+                    selected = runtime.repository.details(settlement.id)
+                    mapFocusRequest += 1L
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (failure: Throwable) {
+                    uiFailure = failure.toOperationalFailure(OperationalFailureKind.DATABASE, "Could not load settlement details")
+                }
             }
         }
     }
@@ -359,6 +365,7 @@ private fun LoadedDatasetApp(
                         mapPackage = runtime.mapPackage,
                         results = results.map { it.copy(name = settlementDisplayName(it)) },
                         selected = selected?.settlement?.let { it.copy(name = settlementDisplayName(it)) },
+                        focusRequest = mapFocusRequest,
                         platformMapSurface = platformMapSurface,
                         onSettlementActivated = onSettlementActivated,
                         onMapLocationActivated = onMapLocationActivated,
@@ -408,6 +415,7 @@ private fun RuntimeMapPanel(
     mapPackage: MapPackage,
     results: List<Settlement>,
     selected: Settlement?,
+    focusRequest: Long = 0L,
     platformMapSurface: PlatformMapSurface?,
     onSettlementActivated: ((String) -> Unit)? = null,
     onMapLocationActivated: ((GeoPoint) -> Unit)? = null,
@@ -419,6 +427,7 @@ private fun RuntimeMapPanel(
             mapPackage = mapPackage,
             results = results,
             selected = selected,
+            focusRequest = focusRequest,
             onSettlementActivated = onSettlementActivated,
             onMapLocationActivated = onMapLocationActivated,
         )
@@ -429,6 +438,7 @@ private fun RuntimeMapPanel(
             styleJson = mapPackage.styleJson,
             results = results,
             selected = selected,
+            focusRequest = focusRequest,
             onSettlementActivated = onSettlementActivated,
             onMapLocationActivated = onMapLocationActivated,
         )

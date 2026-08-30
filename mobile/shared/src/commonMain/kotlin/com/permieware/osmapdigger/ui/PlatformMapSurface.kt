@@ -16,6 +16,7 @@ interface PlatformMapSurface {
         mapPackage: MapPackage,
         results: List<Settlement>,
         selected: Settlement?,
+        focusRequest: Long = 0L,
         onSettlementActivated: ((String) -> Unit)? = null,
         onMapLocationActivated: ((GeoPoint) -> Unit)? = null,
     )

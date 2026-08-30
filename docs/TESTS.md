@@ -144,7 +144,9 @@ With a dataset that contains preference defaults, verify on a wide Desktop windo
 - the Desktop analysis sidebar starts at roughly one third of a normal wide window and remains resizable within bounded limits;
 - **Add filter** opens a full-height chooser inside the left analysis pane and never overlaps the map rectangle;
 - with no selected settlement, the shallow pane beneath the map shows the current ranked-result count and updating state without requiring the user to inspect the left results list;
-- selecting a ranked result highlights/focuses the existing map marker and opens the compact lower settlement pane beneath the map;
+- selecting a ranked result highlights/focuses the existing map marker and opens the compact lower settlement pane beneath the map; after manually panning away, selecting the same already selected result again must issue a fresh camera focus;
+- the map shows a metric scale in the bottom-right corner and the selected-settlement lower pane keeps the total result count on its first row;
+- Favorites keep checkbox multi-selection separate from current map/details selection: clicking a Favorite highlights that card and focuses the map without closing Favorites, clicking the same already selected Favorite after manually panning the map focuses it again, and compact Favorite actions remain single-line and vertically stacked;
 - the compact settlement pane shows score/coverage and every active search metric, prioritizing effective Required constraints before enabled Preferences, with later criteria reachable through the horizontal criteria strip;
 - **Details** opens a scrollable lower-pane view with deterministic strongest/weakest/unknown preference explanation and complete grouped metrics, while External search remains a separate view;
 - on Intel macOS/JCEF, both filter selection and settlement details remain outside the Swing map rectangle, so no map freeze/hide/occlusion workaround is required;

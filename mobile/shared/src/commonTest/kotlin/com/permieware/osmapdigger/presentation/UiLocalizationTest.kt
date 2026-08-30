@@ -39,7 +39,7 @@ class UiLocalizationTest {
         assertTrue(russian.favoriteCurrentAnalysis(4, 81, 75).contains("рейтинг #4"))
         assertEquals("Not in the current analysis results.", english.favoriteNotInCurrentResults)
         assertEquals("Заметка", russian.favoriteNote)
-        assertEquals("Update analysis snapshot", english.updateFavoriteSnapshot)
+        assertEquals("Update", english.updateFavoriteSnapshot)
         assertTrue(russian.favoriteSnapshotSummary(81, 75).contains("81"))
         assertNotEquals(
             russian.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),

@@ -8,6 +8,8 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Re-focus the map when an already selected ranked result or Favorite is activated again after manual panning, and compact the Favorites action labels.
+- Improve Desktop analysis usability with a metric map scale, first-line result count in settlement details, compact vertically stacked Favorite actions, separated notes, and explicit current-Favorite map selection/highlighting.
 - Enrich persistent Favorites with optional notes and one frozen versioned analysis snapshot that captures score, coverage, Required criteria, enabled Preferences, and contribution values; snapshots change only through an explicit refresh.
 
 - Centralize compatibility-sensitive hard-filter and ranked-analysis candidate SQL in shared `DatasetCandidateQueries`, leaving JDBC/Android adapters responsible only for platform binding, execution, and row mapping.
