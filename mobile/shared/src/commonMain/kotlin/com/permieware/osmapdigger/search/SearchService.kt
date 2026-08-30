@@ -2,7 +2,7 @@ package com.permieware.osmapdigger.search
 
 import com.permieware.osmapdigger.domain.SearchRequest
 import com.permieware.osmapdigger.domain.Settlement
-import com.permieware.osmapdigger.runtime.GeoRepository
+import com.permieware.osmapdigger.dataset.GeoRepository
 
 /** Executes deterministic local settlement search. */
 class SearchService(

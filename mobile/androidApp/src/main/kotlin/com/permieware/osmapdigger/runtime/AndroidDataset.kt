@@ -1,5 +1,7 @@
 package com.permieware.osmapdigger.runtime
 
+import com.permieware.osmapdigger.external.ExternalLinkOpener
+import com.permieware.osmapdigger.map.MapPackage
 import android.content.Context
 import android.content.Intent
 import android.database.sqlite.SQLiteDatabase

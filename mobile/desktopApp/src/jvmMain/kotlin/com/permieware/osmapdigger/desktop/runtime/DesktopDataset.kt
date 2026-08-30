@@ -3,7 +3,9 @@ package com.permieware.osmapdigger.desktop.runtime
 import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
-import com.permieware.osmapdigger.runtime.*
+import com.permieware.osmapdigger.external.ExternalLinkOpener
+import com.permieware.osmapdigger.map.MapPackage
+import com.permieware.osmapdigger.runtime.OsmapDiggerRuntime
 import kotlinx.serialization.json.*
 import java.awt.Desktop
 import java.io.Closeable

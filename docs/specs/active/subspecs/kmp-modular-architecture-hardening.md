@@ -1,7 +1,7 @@
 ---
 type: Specification
 title: KMP modular architecture and runtime hardening
-description: Current-focus sub-spec for making the Kotlin runtime incrementally modular, dependency-directed, DRY, and consistent in error handling before further feature growth.
+description: Active interleaved sub-spec for making the Kotlin runtime incrementally modular, dependency-directed, DRY, and consistent in error handling alongside bounded feature growth.
 document_role: subspec
 spec_status: active
 parent: ../spec-initial-functional-product.md
@@ -10,16 +10,21 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Active implementation sub-spec.
+Active interleaved architecture-hardening sub-spec; not the current product implementation focus.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-This is a bounded architecture-hardening increment inserted before implementation of
-[`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md). The shortlist specification remains active
-product work, but is temporarily queued while the runtime boundaries it will depend on are made safer to extend.
+This is a bounded architecture-hardening track that may be interleaved with
+[`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md) and later product increments. Architecture work
+must happen only between completed, testable feature increments, not in the middle of an unfinished behavioral change.
 
-The work must be delivered as a sequence of independently reviewable PATCH iterations. Each iteration must leave the
-repository in a coherent, testable state; this specification deliberately rejects a single repository-wide rewrite.
+Iteration 1 implementation is complete; configured Kotlin validation remains pending in environments where the Gradle distribution/dependencies are unavailable. Logical commonMain ownership is acyclic, workspace orchestration and filter-summary
+presentation have moved to the appropriate owners, dataset/map/external contracts no longer live in a generic runtime
+API file, the unused legacy dataset-manager API is removed, and a network-free architecture check protects the current
+dependency direction. The shortlist workflow is now the current product implementation focus.
+
+The remaining work must continue as independently reviewable PATCH iterations. Each iteration must leave the repository
+in a coherent, testable state; this specification deliberately rejects a single repository-wide rewrite.
 
 ## Goal
 
@@ -74,15 +79,14 @@ search orchestration, preference scoring, application-state controllers, persist
 localization, map contracts/Compose integration, responsive UI, and the wide Desktop analysis UI.
 
 Package names provide useful semantic grouping, but they do not yet provide build-enforced context boundaries.
-Several package dependencies also form cycles that would prevent a direct package-to-Gradle-module conversion. For
-example, the current source graph includes:
+Before iteration 1, package dependencies included `analysis -> preferences -> analysis` and
+`analysis -> search -> presentation -> analysis`, and the generic `runtime` package owned unrelated dataset/map/external
+contracts.
 
-- `analysis -> preferences -> analysis` through `AnalysisWorkspaceController` and effective preference models;
-- `analysis -> search -> presentation -> analysis` through search request semantics/filter summaries and score
-  presentation.
-
-The `runtime` package also groups contracts with different semantic owners (`GeoRepository`, `MapPackage`,
-`ExternalLinkOpener`, and the application runtime bundle).
+Iteration 1 removes those targeted cycles without adding Gradle modules. `AnalysisWorkspaceController` now belongs to
+`workspace`, filter-summary generation belongs to `presentation`, `GeoRepository` belongs to `dataset`, `MapPackage`
+belongs to `map`, and `ExternalLinkOpener` belongs to `external`; `runtime` retains only the platform composition bundle.
+The unused legacy `DatasetManager`/`DatasetMetadata`/`DatasetConfig` API and its unread `config/app-config.yaml` companion are removed. `mobile/README.md` documents the current logical DAG and `tests/test_mobile_architecture.py` enforces allowed commonMain package directions during network-free checks.
 
 Cross-platform implementations intentionally use different platform APIs, but some compatibility-sensitive semantics
 are duplicated manually between Desktop and Android, notably dataset SQL behavior and application settings schema/
@@ -533,10 +537,16 @@ No individual iteration should wait for every later acceptance item. Each iterat
 
 ## Small implementation iterations
 
-The following sequence is intentional. Later iterations may be adjusted after earlier dependency cleanup reveals a
-better boundary, but do not combine them into one large patch without a concrete reason.
+The following sequence is intentional, but it is not a feature-development freeze. After a hardening iteration reaches
+its own acceptance gate, implementation focus may return to a bounded product increment. Once that product increment is
+complete and testable, one or two relevant hardening iterations may run before the next product increment. Preserve the
+internal prerequisite order where one hardening iteration depends on another.
 
-### Iteration 1 — dependency map and direction cleanup
+Later iterations may be adjusted after earlier dependency cleanup reveals a better boundary, but do not combine them
+into one large patch without a concrete reason. Prefer hardening the dependency subtree that the next product increment
+will extend.
+
+### Iteration 1 — dependency map and direction cleanup — implementation complete, configured validation pending
 
 Scope:
 
@@ -673,6 +683,7 @@ For each PATCH iteration:
 7. generate a PATCH archive rooted at `osmapdigger/` containing only added/modified files;
 8. provide a multi-line commit summary describing architecture, behavior preservation, tests, and compatibility.
 
-After the final iteration is accepted, move stable module/error/storage rules into `mobile/AGENTS.md`,
-`mobile/README.md`, `mobile/IMPLEMENTATION.md`, and cross-project docs as appropriate, then archive this sub-spec and
-resume [`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md) as current focus.
+After the final iteration is accepted, move any remaining stable module/error/storage rules into `mobile/AGENTS.md`,
+`mobile/README.md`, `mobile/IMPLEMENTATION.md`, and cross-project docs as appropriate, then archive this sub-spec. Product
+work does not need to wait for that final archival: only completed/testable increments may alternate with the remaining
+hardening gates.

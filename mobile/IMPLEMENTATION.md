@@ -13,11 +13,13 @@ This document describes the current Kotlin Multiplatform implementation under `m
 
 | Module | Current responsibility |
 |---|---|
-| `shared` | Domain models, search/preferences contracts, exact-radius search, filter summary, property-link generation, GeoJSON overlay, shared Compose/MapLibre UI |
+| `shared` | Logical domain/dataset/search/analysis/preferences/workspace/presentation/map/external boundaries plus shared Compose UI; physical extraction is pending |
 | `desktopApp` | JVM app host, dataset JDBC SQLite, settings SQLite, filesystem/ZIP loading, Desktop browser integration |
 | `androidApp` | Android app host, dataset/settings SQLite, SAF ZIP import, app-private installation, browser intents |
 
 `shared/commonMain` contains no Android/JDBC/filesystem implementation APIs.
+
+The current logical package graph inside `:shared` is documented in [`README.md`](README.md) and enforced by the network-free `tests/test_mobile_architecture.py` check. The graph is intentionally acyclic before any package is extracted into a physical Gradle module.
 
 ## Shared domain model
 
@@ -37,11 +39,16 @@ This document describes the current Kotlin Multiplatform implementation under `m
 
 Models are intentionally immutable and do not know SQL/OSM selector semantics.
 
-## Runtime contracts
+## Shared runtime boundaries
 
-`runtime/RuntimeContracts.kt` defines `GeoRepository` as the shared data boundary.
+Iteration 1 of KMP architecture hardening makes semantic ownership explicit inside the still-physical `:shared` module:
 
-Platform implementations provide:
+- `dataset/GeoRepository.kt` owns the read-only analytical dataset boundary;
+- `map/MapPackage.kt` owns platform-resolved local map assets;
+- `external/ExternalLinkOpener.kt` owns the explicit platform browser action;
+- `runtime/OsmapDiggerRuntime.kt` is only the dataset-scoped composition bundle assembled by platform hosts.
+
+`runtime` is therefore no longer the API owner for unrelated dataset/map/external contracts. Platform implementations provide the `GeoRepository` capabilities below:
 
 - dataset metadata;
 - metric catalog;
@@ -51,7 +58,7 @@ Platform implementations provide:
 - batch hard-filter-eligible analysis candidates with only requested scoring metric values;
 - detailed single-settlement hydration.
 
-`OsmapDiggerRuntime` bundles dataset-scoped repository/map/browser dependencies. The platform host separately creates one application-scoped `UserPreferencesRepository` and injects it into `OsmapDiggerApp`. Shared `AnalysisWorkspaceController` now owns restored hard constraints, effective preference defaults/overrides, center/radius, automatic ranked-analysis results, and persistence orchestration; Compose observes that state instead of independently owning those analytical fields.
+`OsmapDiggerRuntime` bundles dataset-scoped repository/map/browser dependencies. The platform host separately creates one application-scoped `UserPreferencesRepository` and injects it into `OsmapDiggerApp`. `workspace/AnalysisWorkspaceController.kt` owns restored hard constraints, effective preference defaults/overrides, center/radius, automatic ranked-analysis results, and persistence orchestration; Compose observes that state instead of independently owning those analytical fields.
 
 ## User preferences
 
@@ -59,9 +66,9 @@ Platform implementations provide:
 
 Restore is dataset-scoped. Metric conditions are retained only when their stable IDs still exist in the opened metric catalog. The saved center is resolved only by stable settlement ID; no display-name fallback is used.
 
-`AnalysisWorkspaceController.initialize()` loads dataset metadata, metric definitions, dataset preference defaults, and persisted user state in one shared lifecycle. It validates restored center/hard-filter references, merges sparse user preference overrides over dataset defaults, persists only after initialization, and immediately schedules ranked analysis. `OsmapDiggerApp` keeps only presentation-local text/selection/provider state and delegates analytical mutations back to the controller.
+`workspace/AnalysisWorkspaceController.initialize()` loads dataset metadata, metric definitions, dataset preference defaults, and persisted user state in one shared lifecycle. It validates restored center/hard-filter references, merges sparse user preference overrides over dataset defaults, persists only after initialization, and immediately schedules ranked analysis. `OsmapDiggerApp` keeps only presentation-local text/selection/provider state and delegates analytical mutations back to the controller.
 
-`SettlementAnalysisService.analyzeWithDiagnostics()` wraps the same deterministic analysis result with execution-only counters/timings for acceptance measurements. `AnalysisWorkspaceController` forwards only the currently valid generation through an injected diagnostics callback. Desktop supplies that callback and records `analysis.performance` entries through `DesktopDiagnostics`; Android leaves the callback at its no-op default. This instrumentation is observational only and is not part of score/search semantics.
+`SettlementAnalysisService.analyzeWithDiagnostics()` wraps the same deterministic analysis result with execution-only counters/timings for acceptance measurements. `workspace/AnalysisWorkspaceController` forwards only the currently valid generation through an injected diagnostics callback. Desktop supplies that callback and records `analysis.performance` entries through `DesktopDiagnostics`; Android leaves the callback at its no-op default. This instrumentation is observational only and is not part of score/search semantics.
 
 ## Search orchestration
 
@@ -120,11 +127,11 @@ The repository path intentionally has no unrelated name-based final limit and ne
 `search/SearchRequestSemantics.kt` centralizes radius validation, coarse bounds, exact radius matching,
 and effective-condition selection so legacy `SearchService` and ranked analysis cannot drift.
 
-`AnalysisWorkspaceController` connects `MetricPreferenceDefault`, saved overrides, `SettlementAnalysisService`, and `UserPreferencesRepository` into the active application flow. Input changes schedule a 250 ms debounced recalculation and late stale generations cannot replace newer ranked results. It also exposes explicit generic preference-edit operations for enabled state, weight, target/limit thresholds, and reset-to-dataset-default while keeping persisted overrides sparse. Legacy packages with no enabled preference defaults and no effective hard/radius constraint do not trigger an automatic unbounded candidate scan; explicit refresh remains available through the compatibility SearchPane path.
+`workspace/AnalysisWorkspaceController` connects `MetricPreferenceDefault`, saved overrides, `SettlementAnalysisService`, and `UserPreferencesRepository` into the active application flow. Input changes schedule a 250 ms debounced recalculation and late stale generations cannot replace newer ranked results. It also exposes explicit generic preference-edit operations for enabled state, weight, target/limit thresholds, and reset-to-dataset-default while keeping persisted overrides sparse. Legacy packages with no enabled preference defaults and no effective hard/radius constraint do not trigger an automatic unbounded candidate scan; explicit refresh remains available through the compatibility SearchPane path.
 
 ## Filter summaries
 
-`FilterSummaryBuilder` renders the current structured request into readable text. It uses persisted metric title/unit metadata and therefore requires no category-specific wording branches for normal range metrics.
+`presentation/FilterSummaryBuilder.kt` renders the current structured request into readable text. It uses persisted metric title/unit metadata and therefore requires no category-specific wording branches for normal range metrics.
 
 It is presentation logic only: the generated sentence does not become an executable query language.
 
@@ -312,6 +319,6 @@ Normal ranked-marker interaction on Intel macOS uses a bounded screen-space hit 
 
 ## UI localization
 
-`shared/ui/UiLocalization.kt` owns the application UI language catalog and composition-local access. Supported UI languages are Russian and English; Russian is the default. `OsmapDiggerApp` owns a saveable language code and injects `LocalUiLanguage`, `LocalUiStrings`, and the language setter for both Desktop and Android presentation modes. `SearchPane`, `DesktopAnalysisWorkspace`, native map fallback/status surfaces, `FilterSummaryBuilder`, and generic metric-filter presentation consume localized connective/control text instead of hardcoded English strings.
+`shared/ui/UiLocalization.kt` owns the application UI language catalog and composition-local access. Supported UI languages are Russian and English; Russian is the default. `OsmapDiggerApp` owns a saveable language code and injects `LocalUiLanguage`, `LocalUiStrings`, and the language setter for both Desktop and Android presentation modes. `SearchPane`, `DesktopAnalysisWorkspace`, native map fallback/status surfaces, `presentation.FilterSummaryBuilder`, and generic metric-filter presentation consume localized connective/control text instead of hardcoded English strings.
 
 Persisted dataset metadata remains the source of truth. Settlement display names may select a dataset-provided alias whose `language` matches the current UI language, falling back to the canonical settlement name. Current stable metric categories have presentation-only Russian labels keyed by `category_id`; unknown/additive categories fall back to the persisted metric title. Dataset names and provider titles remain unchanged.

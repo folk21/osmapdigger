@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.runtime
 
+import com.permieware.osmapdigger.dataset.GeoRepository
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import com.permieware.osmapdigger.domain.*

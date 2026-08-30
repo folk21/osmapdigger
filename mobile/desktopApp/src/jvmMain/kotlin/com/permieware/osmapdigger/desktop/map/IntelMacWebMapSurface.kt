@@ -13,7 +13,7 @@ import com.permieware.osmapdigger.desktop.diagnostics.DesktopDiagnostics
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.Settlement
-import com.permieware.osmapdigger.runtime.MapPackage
+import com.permieware.osmapdigger.map.MapPackage
 import com.permieware.osmapdigger.ui.PlatformMapSurface
 import me.friwi.jcefmaven.CefAppBuilder
 import me.friwi.jcefmaven.MavenCefAppHandlerAdapter

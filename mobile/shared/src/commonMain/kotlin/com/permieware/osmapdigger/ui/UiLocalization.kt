@@ -10,7 +10,7 @@ import com.permieware.osmapdigger.presentation.MetricFilterPresentationText
 import com.permieware.osmapdigger.presentation.UiLanguage
 import com.permieware.osmapdigger.presentation.UiLocalization
 import com.permieware.osmapdigger.presentation.UiStrings
-import com.permieware.osmapdigger.search.FilterSummaryText
+import com.permieware.osmapdigger.presentation.FilterSummaryText
 
 val LocalUiLanguage = staticCompositionLocalOf { UiLocalization.defaultLanguage }
 val LocalUiStrings = staticCompositionLocalOf { UiLocalization.strings(UiLocalization.defaultLanguage) }

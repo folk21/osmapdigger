@@ -7,7 +7,7 @@ import com.permieware.osmapdigger.domain.SettlementName
 import com.permieware.osmapdigger.domain.SettlementSearchEntry
 import com.permieware.osmapdigger.domain.SettlementSearchMatch
 import com.permieware.osmapdigger.geo.GeoMath
-import com.permieware.osmapdigger.runtime.GeoRepository
+import com.permieware.osmapdigger.dataset.GeoRepository
 
 /** Shared normalization rules mirrored by the Geo Builder settlement-name writer. */
 object SettlementNameNormalizer {

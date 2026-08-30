@@ -1,8 +1,7 @@
-package com.permieware.osmapdigger.search
+package com.permieware.osmapdigger.presentation
 
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.SearchRequest
-import com.permieware.osmapdigger.presentation.NumberFormatter
 
 /** Language-specific connective text for deterministic filter summaries. */
 data class FilterSummaryText(

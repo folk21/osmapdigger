@@ -1,7 +1,7 @@
 package com.permieware.osmapdigger.desktop.runtime
 
 import com.permieware.osmapdigger.domain.*
-import com.permieware.osmapdigger.runtime.GeoRepository
+import com.permieware.osmapdigger.dataset.GeoRepository
 import com.permieware.osmapdigger.search.SettlementNameNormalizer
 import java.sql.Connection
 import java.sql.ResultSet

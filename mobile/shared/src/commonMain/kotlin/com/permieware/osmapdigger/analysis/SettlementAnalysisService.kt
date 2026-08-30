@@ -1,6 +1,6 @@
 package com.permieware.osmapdigger.analysis
 
-import com.permieware.osmapdigger.runtime.GeoRepository
+import com.permieware.osmapdigger.dataset.GeoRepository
 import com.permieware.osmapdigger.search.SearchRequestSemantics
 import kotlin.time.TimeSource
 

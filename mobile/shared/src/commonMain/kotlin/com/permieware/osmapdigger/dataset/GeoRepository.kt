@@ -1,4 +1,4 @@
-package com.permieware.osmapdigger.runtime
+package com.permieware.osmapdigger.dataset
 
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.MetricDefinition
@@ -9,7 +9,7 @@ import com.permieware.osmapdigger.domain.SettlementAnalysisCandidate
 import com.permieware.osmapdigger.domain.SettlementDetails
 import com.permieware.osmapdigger.domain.SettlementSearchEntry
 
-/** Platform-provided local dataset repository. */
+/** Platform-provided read-only analytical dataset repository. */
 interface GeoRepository {
     suspend fun datasetInfo(): DatasetInfo
     suspend fun metricDefinitions(): List<MetricDefinition>
@@ -23,6 +23,7 @@ interface GeoRepository {
     suspend fun preferenceDefaults(): List<MetricPreferenceDefault>
 
     suspend fun settlementSearchEntries(): List<SettlementSearchEntry>
+
     suspend fun searchCandidates(
         conditions: List<SearchCondition>,
         latitudeRange: ClosedFloatingPointRange<Double>?,
@@ -45,22 +46,4 @@ interface GeoRepository {
     ): List<SettlementAnalysisCandidate>
 
     suspend fun details(settlementId: String): SettlementDetails
-}
-
-/** Platform-resolved local map assets. */
-data class MapPackage(
-    val styleJson: String?,
-    val localMapUri: String? = null,
-)
-
-/** Runtime dependencies injected by the platform host. */
-data class OsmapDiggerRuntime(
-    val repository: GeoRepository,
-    val mapPackage: MapPackage,
-    val externalLinks: ExternalLinkOpener,
-)
-
-/** Opens an explicit user-selected URL in the platform browser. */
-fun interface ExternalLinkOpener {
-    fun open(url: String)
 }

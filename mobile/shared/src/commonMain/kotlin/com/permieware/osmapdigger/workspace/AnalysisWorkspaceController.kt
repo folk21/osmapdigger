@@ -1,5 +1,10 @@
-package com.permieware.osmapdigger.analysis
+package com.permieware.osmapdigger.workspace
 
+import com.permieware.osmapdigger.analysis.MetricPreference
+import com.permieware.osmapdigger.analysis.ScoredSettlement
+import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
+import com.permieware.osmapdigger.analysis.SettlementAnalysisRequest
+import com.permieware.osmapdigger.analysis.SettlementAnalysisService
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.domain.MetricPreferenceDefault
@@ -12,7 +17,7 @@ import com.permieware.osmapdigger.preferences.MetricPreferenceOverrideResolver
 import com.permieware.osmapdigger.preferences.UserPreferences
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
 import com.permieware.osmapdigger.preferences.UserPreferencesRestorer
-import com.permieware.osmapdigger.runtime.GeoRepository
+import com.permieware.osmapdigger.dataset.GeoRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job

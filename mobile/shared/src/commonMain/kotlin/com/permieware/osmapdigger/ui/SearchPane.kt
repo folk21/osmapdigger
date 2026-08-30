@@ -14,7 +14,7 @@ import com.permieware.osmapdigger.presentation.MetricFilterPresentationBuilder
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchUrlBuilder
 import com.permieware.osmapdigger.presentation.NumberFormatter
-import com.permieware.osmapdigger.runtime.ExternalLinkOpener
+import com.permieware.osmapdigger.external.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
 

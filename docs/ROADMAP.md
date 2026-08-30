@@ -11,9 +11,9 @@ This roadmap stays intentionally compact. Detailed requirements for significant 
 
 Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
-Current implementation focus: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — incremental KMP dependency cleanup, unified operational error handling, shared cross-platform semantics, atomic dataset installation, source responsibility cleanup, and physical module extraction.
+Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, visual shortlisting, persisted notebook snapshots, export/share, and batch external search.
 
-Queued next product work: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, visual shortlisting, persisted notebook snapshots, export/share, and batch external search after the architecture-hardening gate.
+Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — dependency-direction gate 1 is implemented; later error/storage/DRY/module gates run between completed product increments where they protect the next feature boundary.
 
 Previously implemented Desktop analysis workspace, Desktop map, and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
 

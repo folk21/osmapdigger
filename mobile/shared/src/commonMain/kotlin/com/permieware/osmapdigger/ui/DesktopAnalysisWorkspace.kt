@@ -33,7 +33,7 @@ import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
 import com.permieware.osmapdigger.presentation.SettlementCriteriaSummaryBuilder
 import com.permieware.osmapdigger.presentation.TwoRowLayout
-import com.permieware.osmapdigger.runtime.ExternalLinkOpener
+import com.permieware.osmapdigger.external.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt

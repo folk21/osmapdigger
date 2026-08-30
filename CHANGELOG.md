@@ -8,6 +8,7 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Establish an acyclic logical dependency graph inside KMP `shared`, move workspace/presentation/dataset/map/external contracts to semantic owners, remove unused legacy dataset-manager abstractions, and add a network-free architecture dependency check.
 - Highlight the selected ranked settlement, show active criteria in two rows, and resolve settlement/map display names from persisted aliases matching the selected UI language.
 
 - Replace the broad analytical Water metric with Beach proximity in generated metric catalogs and default ranking profiles. Basemap water rendering remains unchanged.

@@ -1,4 +1,4 @@
-package com.permieware.osmapdigger.search
+package com.permieware.osmapdigger.presentation
 
 import com.permieware.osmapdigger.domain.*
 import kotlin.test.Test

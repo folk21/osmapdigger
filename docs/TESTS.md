@@ -15,7 +15,7 @@ Default checks must be deterministic and runnable without network access, Docker
 make check
 ```
 
-Currently this runs Python synthetic/unit tests under `geo-builder/tests/`.
+Currently this runs Python synthetic/unit tests under `geo-builder/tests/` plus repository-level deterministic checks under `tests/`. The repository checks include the current `mobile/shared/commonMain` logical package dependency DAG, so an accidental upward/cyclic dependency fails without requiring Gradle or network access.
 
 The tests cover configuration parsing, metric/preference profile validation, dynamic metric generation, synthetic settlement extraction, selector semantics, distance/count/coverage calculations, SQLite round trips including preference-default constraints, package validation, and a synthetic pipeline path.
 

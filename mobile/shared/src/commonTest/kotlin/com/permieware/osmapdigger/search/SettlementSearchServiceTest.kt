@@ -1,7 +1,7 @@
 package com.permieware.osmapdigger.search
 
 import com.permieware.osmapdigger.domain.*
-import com.permieware.osmapdigger.runtime.GeoRepository
+import com.permieware.osmapdigger.dataset.GeoRepository
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals

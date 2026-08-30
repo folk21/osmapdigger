@@ -5,7 +5,7 @@ import androidx.compose.ui.Modifier
 import com.permieware.osmapdigger.domain.DatasetInfo
 import com.permieware.osmapdigger.domain.GeoPoint
 import com.permieware.osmapdigger.domain.Settlement
-import com.permieware.osmapdigger.runtime.MapPackage
+import com.permieware.osmapdigger.map.MapPackage
 
 /** Optional platform-owned map renderer used when the shared default renderer is unavailable. */
 interface PlatformMapSurface {

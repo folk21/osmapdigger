@@ -16,6 +16,12 @@ Root [`../AGENTS.md`](../AGENTS.md) applies. Read [`README.md`](README.md), [`IM
 
 Common code must not import Android/JVM filesystem or database APIs.
 
+## Logical dependency graph
+
+[`README.md`](README.md) owns the current physical Gradle module table and the logical `commonMain` package dependency DAG used before further physical module extraction. `tests/test_mobile_architecture.py` enforces the documented logical dependency direction during `make check`.
+
+When intentionally adding or changing a top-level shared package dependency, update the README graph/table and the architecture check in the same patch. Do not bypass a dependency rule by moving reusable code into a generic `util`, `common`, or `helpers` package.
+
 ## Search invariants
 
 - UI must not construct SQL.

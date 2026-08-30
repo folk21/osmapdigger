@@ -24,6 +24,7 @@ active/
 - `subspecs/*.md` refines one bounded implementation increment under the umbrella.
 - At most one sub-spec is the current implementation focus at a time.
 - The umbrella links to the current sub-spec, and the sub-spec links back to its parent.
+- A long-lived architecture-hardening sub-spec may remain active but non-current while bounded hardening gates are interleaved between completed, testable product increments. Do not switch into structural refactoring in the middle of an unfinished feature increment.
 - Completing a sub-spec does not imply that its umbrella specification is complete.
 
 This hierarchy is intentionally shallow. Do not create deeper specification trees unless a real product need makes the two-level model insufficient.
@@ -95,11 +96,11 @@ Umbrella:
 
 Current implementation focus:
 
-- [`active/subspecs/kmp-modular-architecture-hardening.md`](active/subspecs/kmp-modular-architecture-hardening.md) — incremental KMP dependency cleanup, unified error policy, cross-platform semantic DRY, atomic dataset installation, and physical module extraction.
+- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — visual ranked shortlisting, imported candidate sets, persisted notebook snapshots, export/share, and batch external searches.
 
-Queued active product sub-spec:
+Active interleaved architecture track:
 
-- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — visual ranked shortlisting, imported candidate sets, persisted notebook snapshots, export/share, and batch external searches; implementation resumes after architecture hardening.
+- [`active/subspecs/kmp-modular-architecture-hardening.md`](active/subspecs/kmp-modular-architecture-hardening.md) — iteration 1 is implemented; later dependency/error/storage/module gates are scheduled between completed product increments when relevant.
 
 Verification-pending completed increments:
 

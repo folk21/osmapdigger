@@ -6,18 +6,19 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.permieware.osmapdigger.analysis.AnalysisWorkspaceController
+import com.permieware.osmapdigger.workspace.AnalysisWorkspaceController
 import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
+import com.permieware.osmapdigger.map.MapPackage
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
 import com.permieware.osmapdigger.presentation.SettlementDisplayNameResolver
 import com.permieware.osmapdigger.presentation.UiLanguage
 import com.permieware.osmapdigger.presentation.UiLocalization
 import com.permieware.osmapdigger.presentation.UiStrings
 import com.permieware.osmapdigger.runtime.OsmapDiggerRuntime
-import com.permieware.osmapdigger.search.FilterSummaryBuilder
+import com.permieware.osmapdigger.presentation.FilterSummaryBuilder
 import com.permieware.osmapdigger.search.OptionalRadiusInput
 import com.permieware.osmapdigger.search.SearchInputParser
 import com.permieware.osmapdigger.search.SettlementSearchService
@@ -350,7 +351,7 @@ private fun LoadedDatasetApp(
 private fun RuntimeMapPanel(
     modifier: Modifier,
     datasetInfo: DatasetInfo?,
-    mapPackage: com.permieware.osmapdigger.runtime.MapPackage,
+    mapPackage: MapPackage,
     results: List<Settlement>,
     selected: Settlement?,
     platformMapSurface: PlatformMapSurface?,
