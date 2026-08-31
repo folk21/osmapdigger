@@ -14,6 +14,7 @@ import com.permieware.osmapdigger.error.OperationalFailureKind
 import com.permieware.osmapdigger.error.toOperationalFailure
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
+import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 import com.permieware.osmapdigger.map.MapPackage
 import com.permieware.osmapdigger.notebook.FavoriteSettlementRepository
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
@@ -217,6 +218,22 @@ private fun LoadedDatasetApp(
         )
     val summary = FilterSummaryBuilder.build(request, definitionMap, strings.filterSummaryText())
     val error = uiError ?: hostFailure?.let { strings.operationalFailureMessage(it.kind) } ?: uiFailure?.let { strings.operationalFailureMessage(it.kind) } ?: analysisState.failure?.let { strings.operationalFailureMessage(it.kind) }
+    val updateExternalSearchSettings: (List<ExternalSearchProviderTermsUpdate>) -> Unit = { updates ->
+        val info = analysisState.datasetInfo
+        if (info != null) {
+            scope.launch {
+                try {
+                    externalSearchProviders.updateQueryTerms(updates)
+                    searchProviders = externalSearchProviders.providersFor(info.countryCode)
+                    uiFailure = null
+                } catch (failure: CancellationException) {
+                    throw failure
+                } catch (failure: Throwable) {
+                    uiFailure = failure.toOperationalFailure(OperationalFailureKind.SETTINGS, "Could not update external search provider terms")
+                }
+            }
+        }
+    }
 
     LaunchedEffect(results.map { it.id }) {
         val selectedId = selected?.settlement?.id ?: return@LaunchedEffect
@@ -294,6 +311,7 @@ private fun LoadedDatasetApp(
                 onImportDataset = onImportDataset,
                 externalLinks = runtime.externalLinks,
                 searchProviders = searchProviders,
+                onExternalSearchSettingsSave = updateExternalSearchSettings,
                 settlementDisplayName = settlementDisplayName,
             )
         }
@@ -357,6 +375,7 @@ private fun LoadedDatasetApp(
                 onImportDataset = onImportDataset,
                 externalLinks = runtime.externalLinks,
                 searchProviders = searchProviders,
+                onExternalSearchSettingsSave = updateExternalSearchSettings,
                 settlementDisplayName = settlementDisplayName,
                 mapContent = { mapModifier, onSettlementActivated, onMapLocationActivated ->
                     RuntimeMapPanel(

@@ -18,9 +18,22 @@ data class SettingsMigration(
  * Platform owners still control transactions, database APIs, paths, and resource lifecycle.
  */
 object ApplicationSettingsSchema {
-    const val VERSION: Int = 6
+    const val VERSION: Int = 7
     const val GLOBAL_COUNTRY_CODE: String = "*"
     const val DEFAULT_CANDIDATE_SCOPE_PAYLOAD: String = "{\"version\":1,\"source\":\"dataset\",\"settlementIds\":[]}"
+
+    private val externalSearchProviderV2Schema =
+        """
+        CREATE TABLE IF NOT EXISTS external_search_provider (
+            provider_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            country_code TEXT NOT NULL,
+            url_template TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
+            priority INTEGER NOT NULL DEFAULT 100,
+            PRIMARY KEY(provider_id, country_code)
+        )
+        """.trimIndent()
 
     val createStatements: List<String> =
         listOf(
@@ -44,6 +57,7 @@ object ApplicationSettingsSchema {
                 url_template TEXT NOT NULL,
                 enabled INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
                 priority INTEGER NOT NULL DEFAULT 100,
+                query_terms_override TEXT,
                 PRIMARY KEY(provider_id, country_code)
             )
             """.trimIndent(),
@@ -76,7 +90,7 @@ object ApplicationSettingsSchema {
             SettingsMigration(
                 fromVersion = 1,
                 toVersion = 2,
-                statements = listOf(createStatements[1]),
+                statements = listOf(externalSearchProviderV2Schema),
             ),
             SettingsMigration(
                 fromVersion = 2,
@@ -123,6 +137,15 @@ object ApplicationSettingsSchema {
                     listOf(
                         "ALTER TABLE favorite_settlement ADD COLUMN note_text TEXT",
                         createStatements[3],
+                    ),
+            ),
+            SettingsMigration(
+                fromVersion = 6,
+                toVersion = 7,
+                statements =
+                    listOf(
+                        externalSearchProviderV2Schema,
+                        "ALTER TABLE external_search_provider ADD COLUMN query_terms_override TEXT",
                     ),
             ),
         )

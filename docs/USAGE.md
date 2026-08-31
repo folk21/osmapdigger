@@ -203,19 +203,17 @@ Importing another package replaces the current app-private package in the curren
 
 ## Property web search
 
-A selected settlement exposes Google and Yandex actions. The URL is generated from:
+A selected settlement and the Favorites batch-search surface expose enabled application-configured providers. Open **External search settings** to edit the additional query terms for each provider directly.
 
-- settlement display name;
-- optional dataset-configured site restriction;
-- dataset-configured property terms.
+Each text field contains the effective extra terms that will be appended for that provider. Clear a field completely when no extra terms are wanted. **Set defaults** fills all visible provider fields with the opened dataset's `property_search_terms`; the values are still editable independently before saving.
 
-For a Belarus dataset this can produce a query equivalent to:
+The site restriction remains owned by the provider URL template. For example, clearing the Kufar field can produce a query equivalent to:
 
 ```text
-site:kufar.by "Settlement name" дом недвижимость
+site:re.kufar.by "Заболотье"
 ```
 
-The app does not scrape the result page.
+Legacy provider rows with no explicit stored value continue to resolve to dataset terms until the settings are saved. Existing customized provider rows are not overwritten by packaged seed updates. Batch search applies the same provider-specific terms before deterministic URL chunking. The app does not scrape the result page.
 
 ## Troubleshooting
 

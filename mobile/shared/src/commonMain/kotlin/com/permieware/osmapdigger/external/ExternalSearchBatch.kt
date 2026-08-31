@@ -102,7 +102,7 @@ object ExternalSearchBatchBuilder {
         settlementNames: List<String>,
         terms: String,
     ): String {
-        val normalizedTerms = terms.trim()
+        val normalizedTerms = provider.resolveQueryTerms(terms)
         val alternatives = settlementNames.joinToString(" OR ") { quoteSearchPhrase(it) }
         val rawQuery =
             buildString {

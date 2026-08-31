@@ -11,4 +11,9 @@ class OperationalExternalSearchProviderRepository(
         operationalBoundary(OperationalFailureKind.SETTINGS, "Could not load external search providers") {
             delegate.providersFor(countryCode)
         }
+
+    override suspend fun updateQueryTerms(updates: List<ExternalSearchProviderTermsUpdate>) =
+        operationalBoundary(OperationalFailureKind.SETTINGS, "Could not update external search provider terms") {
+            delegate.updateQueryTerms(updates)
+        }
 }

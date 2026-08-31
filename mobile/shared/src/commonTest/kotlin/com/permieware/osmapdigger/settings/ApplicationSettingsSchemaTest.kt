@@ -10,13 +10,14 @@ class ApplicationSettingsSchemaTest {
     fun legacyVersionOneHasOneDeterministicPathToCurrentSchema() {
         val migrations = requireNotNull(ApplicationSettingsSchema.migrationsFrom(1))
 
-        assertEquals(listOf(1 to 2, 2 to 3, 3 to 4, 4 to 5, 5 to 6), migrations.map { it.fromVersion to it.toVersion })
+        assertEquals(listOf(1 to 2, 2 to 3, 3 to 4, 4 to 5, 5 to 6, 6 to 7), migrations.map { it.fromVersion to it.toVersion })
         assertEquals(ApplicationSettingsSchema.VERSION, migrations.last().toVersion)
         assertTrue(migrations.flatMap { it.statements }.any { "preferences_json" in it })
         assertTrue(migrations.flatMap { it.statements }.any { "candidate_scope_json" in it })
         assertTrue(migrations.flatMap { it.statements }.any { "favorite_settlement" in it })
         assertTrue(migrations.flatMap { it.statements }.any { "favorite_analysis_snapshot" in it })
         assertTrue(migrations.flatMap { it.statements }.any { "note_text" in it })
+        assertTrue(migrations.flatMap { it.statements }.any { "query_terms_override" in it })
     }
 
     @Test
@@ -27,6 +28,18 @@ class ApplicationSettingsSchemaTest {
         assertTrue(versionFourMigration.statements.any { "favorite_settlement" in it })
         assertTrue(versionFourMigration.statements.none { "note_text" in it })
         assertTrue(versionFiveMigration.statements.any { "ADD COLUMN note_text" in it })
+    }
+
+    @Test
+    fun historicalExternalProviderMigrationDoesNotIncludeFutureTermsColumn() {
+        val versionOneMigration = requireNotNull(ApplicationSettingsSchema.migrationsFrom(1)).first()
+        val versionSixMigration = requireNotNull(ApplicationSettingsSchema.migrationsFrom(6)).first()
+
+        assertTrue(versionOneMigration.statements.any { "external_search_provider" in it })
+        assertTrue(versionOneMigration.statements.none { "query_terms_override" in it })
+        assertTrue(versionSixMigration.statements.any { "external_search_provider" in it && "CREATE TABLE" in it })
+        assertTrue(versionSixMigration.statements.none { "CREATE TABLE" in it && "query_terms_override" in it })
+        assertTrue(versionSixMigration.statements.any { "ADD COLUMN query_terms_override" in it })
     }
 
     @Test

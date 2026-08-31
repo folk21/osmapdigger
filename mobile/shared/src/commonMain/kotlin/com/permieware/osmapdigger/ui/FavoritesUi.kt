@@ -35,6 +35,7 @@ import com.permieware.osmapdigger.domain.PreferredDirection
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.external.ExternalSearchBatchBuilder
 import com.permieware.osmapdigger.external.ExternalSearchProvider
+import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 import com.permieware.osmapdigger.notebook.FavoriteAnalysisSnapshot
 import com.permieware.osmapdigger.notebook.FavoritePreferenceSnapshot
 import com.permieware.osmapdigger.notebook.FavoriteRequiredCriterionSnapshot
@@ -61,6 +62,7 @@ internal fun FavoritesPanel(
     searchProviders: List<ExternalSearchProvider>,
     propertySearchTerms: String,
     onExternalSearchUrlOpen: (String) -> Unit,
+    onExternalSearchSettingsSave: (List<ExternalSearchProviderTermsUpdate>) -> Unit,
     onClose: () -> Unit,
     settlementDisplayName: (Settlement) -> String,
 ) {
@@ -173,8 +175,11 @@ internal fun FavoritesPanel(
                 FavoriteBatchExternalSearchPanel(
                     modifier = Modifier.fillMaxSize(),
                     actions = batchSearchActions,
+                    providers = searchProviders,
+                    propertySearchTerms = propertySearchTerms,
                     selectedCount = selectedIds.size,
                     onOpen = onExternalSearchUrlOpen,
+                    onSettingsSave = onExternalSearchSettingsSave,
                     onBack = { batchSearchOpen = false },
                 )
             } else if (favorites.isEmpty()) {

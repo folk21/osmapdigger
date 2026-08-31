@@ -25,6 +25,7 @@ import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.analysis.SettlementScore
 import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.external.ExternalSearchProvider
+import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 import com.permieware.osmapdigger.external.ExternalSearchUrlBuilder
 import com.permieware.osmapdigger.preferences.EffectiveMetricPreference
 import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
@@ -93,6 +94,7 @@ internal fun DesktopAnalysisWorkspace(
     onImportDataset: () -> Unit,
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
+    onExternalSearchSettingsSave: (List<ExternalSearchProviderTermsUpdate>) -> Unit,
     settlementDisplayName: (Settlement) -> String = { it.name },
     mapContent: @Composable (Modifier, (String) -> Unit, ((GeoPoint) -> Unit)?) -> Unit,
 ) {
@@ -268,6 +270,7 @@ internal fun DesktopAnalysisWorkspace(
                         searchProviders = searchProviders,
                         propertySearchTerms = datasetInfo?.propertySearchTerms ?: "property",
                         onExternalSearchUrlOpen = externalLinks::open,
+                        onExternalSearchSettingsSave = onExternalSearchSettingsSave,
                         onClose = { favoritesOpen = false },
                         settlementDisplayName = settlementDisplayName,
                     )
@@ -352,6 +355,7 @@ internal fun DesktopAnalysisWorkspace(
                                     datasetInfo = datasetInfo,
                                     externalLinks = externalLinks,
                                     searchProviders = searchProviders,
+                                    onExternalSearchSettingsSave = onExternalSearchSettingsSave,
                                     onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
                                     settlementDisplayName = settlementDisplayName,
                                 )
@@ -1015,10 +1019,12 @@ private fun SettlementExternalSearchPanel(
     datasetInfo: DatasetInfo?,
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
+    onExternalSearchSettingsSave: (List<ExternalSearchProviderTermsUpdate>) -> Unit,
     onBack: () -> Unit,
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
+    var settingsOpen by remember { mutableStateOf(false) }
     Card(modifier) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -1033,10 +1039,27 @@ private fun SettlementExternalSearchPanel(
                     Text(strings.externalSearch, style = MaterialTheme.typography.headlineSmall)
                     Text(settlementDisplayName(details.settlement), style = MaterialTheme.typography.bodyMedium)
                 }
-                TextButton(onClick = onBack) { Text(strings.summary) }
+                Row {
+                    if (searchProviders.isNotEmpty()) {
+                        TextButton(onClick = { settingsOpen = !settingsOpen }) {
+                            Text(strings.externalSearchSettings)
+                        }
+                    }
+                    TextButton(onClick = onBack) { Text(strings.summary) }
+                }
             }
 
-            if (searchProviders.isEmpty()) {
+            if (settingsOpen) {
+                ExternalSearchTermsSettings(
+                    providers = searchProviders,
+                    datasetTerms = datasetInfo?.propertySearchTerms ?: "property",
+                    onSave = { updates ->
+                        onExternalSearchSettingsSave(updates)
+                        settingsOpen = false
+                    },
+                    onClose = { settingsOpen = false },
+                )
+            } else if (searchProviders.isEmpty()) {
                 Text(strings.noExternalProviders)
             } else {
                 searchProviders.forEach { provider ->

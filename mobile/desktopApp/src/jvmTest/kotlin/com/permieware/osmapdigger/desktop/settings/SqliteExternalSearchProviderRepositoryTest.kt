@@ -1,6 +1,7 @@
 package com.permieware.osmapdigger.desktop.settings
 
 import com.permieware.osmapdigger.settings.ApplicationSettingsSchema
+import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 
 import kotlinx.coroutines.test.runTest
 import java.nio.file.Files
@@ -102,6 +103,36 @@ class SqliteExternalSearchProviderRepositoryTest {
     }
 
     @Test
+    fun providerTermsOverridePersistsCustomAndExplicitEmptyValues() = runTest {
+        val path = Files.createTempDirectory("osmapdigger-providers-").resolve("settings.sqlite")
+        try {
+            val repository = SqliteExternalSearchProviderRepository(path, testSeeds)
+            assertEquals(null, repository.providersFor("BY").first { it.id == "kufar-by" }.queryTermsOverride)
+
+            repository.updateQueryTerms(
+                listOf(
+                    ExternalSearchProviderTermsUpdate(
+                        providerId = "google",
+                        countryCode = null,
+                        queryTermsOverride = "house land",
+                    ),
+                    ExternalSearchProviderTermsUpdate(
+                        providerId = "kufar-by",
+                        countryCode = "BY",
+                        queryTermsOverride = "",
+                    ),
+                ),
+            )
+
+            val providers = SqliteExternalSearchProviderRepository(path, testSeeds).providersFor("BY").associateBy { it.id }
+            assertEquals("house land", providers.getValue("google").queryTermsOverride)
+            assertEquals("", providers.getValue("kufar-by").queryTermsOverride)
+        } finally {
+            path.parent.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun versionOnePreferencesDatabaseMigratesToCurrentSchemaWithoutLosingPreferences() = runTest {
         val path = Files.createTempDirectory("osmapdigger-providers-").resolve("settings.sqlite")
         try {
@@ -160,6 +191,15 @@ class SqliteExternalSearchProviderRepositoryTest {
                     }
                 assertTrue("preferences_json" in columns)
                 assertTrue("candidate_scope_json" in columns)
+                val providerColumns =
+                    connection.createStatement().use { statement ->
+                        statement.executeQuery("PRAGMA table_info(external_search_provider)").use { result ->
+                            buildSet {
+                                while (result.next()) add(result.getString("name"))
+                            }
+                        }
+                    }
+                assertTrue("query_terms_override" in providerColumns)
             }
         } finally {
             path.parent.toFile().deleteRecursively()

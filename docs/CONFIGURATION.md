@@ -90,9 +90,9 @@ The checked-in Andorra and Belarus datasets currently select `balanced-living`. 
 
 ### External property-search configuration
 
-External-search providers are application-owned runtime configuration rather than dataset-format configuration. `mobile/config/external-search-providers.json` is the packaged seed catalog. On first use its rows are inserted into the local settings SQLite, which then becomes the authoritative runtime registry. Dataset `country_code` selects applicable country rows and `property_search_terms` supplies default query terms. Provider URLs are templates expanded locally by shared Kotlin; the application does not scrape property portals.
+External-search providers are application-owned runtime configuration rather than dataset-format configuration. `mobile/config/external-search-providers.json` is the packaged seed catalog. On first use its rows are inserted into the local settings SQLite, which then becomes the authoritative runtime registry. Dataset `country_code` selects applicable country rows and `property_search_terms` supplies the fallback query terms. Provider URLs are templates expanded locally by shared Kotlin; the application does not scrape property portals.
 
-Provider customization currently has no dedicated settings screen. Advanced/manual changes may update the application settings database directly; seeded defaults use `INSERT OR IGNORE`, so existing customized rows are not overwritten on startup.
+Each provider may persist `query_terms_override`. `null` is retained as a backward-compatible unconfigured state and resolves to the opened dataset's `property_search_terms`; an empty string explicitly adds no extra terms, and a non-empty string is the exact provider-specific extra text. The settings UI materializes the effective value directly into an editable field, so clearing it is an explicit "no extra terms" choice. **Set defaults** copies the dataset terms into all visible fields instead of restoring a separate inheritance toggle. Seeded defaults use `INSERT OR IGNORE`, so existing customized provider rows are never silently overwritten.
 
 ## Metric configuration model
 

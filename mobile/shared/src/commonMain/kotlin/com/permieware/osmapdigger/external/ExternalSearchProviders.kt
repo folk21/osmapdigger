@@ -15,11 +15,26 @@ data class ExternalSearchProvider(
     val countryCode: String?,
     val urlTemplate: String,
     val priority: Int,
+    /** Null means no explicit provider value is stored yet; resolution then falls back to dataset terms. */
+    val queryTermsOverride: String? = null,
 )
 
-/** Loads enabled external search actions applicable to a dataset country. */
-fun interface ExternalSearchProviderRepository {
+/** One persisted provider-specific search-terms edit. */
+data class ExternalSearchProviderTermsUpdate(
+    val providerId: String,
+    val countryCode: String?,
+    val queryTermsOverride: String?,
+) {
+    init {
+        require(providerId.isNotBlank()) { "External search provider ID must not be blank" }
+    }
+}
+
+/** Loads and updates application-owned external search provider settings. */
+interface ExternalSearchProviderRepository {
     suspend fun providersFor(countryCode: String?): List<ExternalSearchProvider>
+
+    suspend fun updateQueryTerms(updates: List<ExternalSearchProviderTermsUpdate>)
 }
 
 /** Parses the packaged provider seed configuration before it is inserted into settings SQLite. */
@@ -39,6 +54,7 @@ object ExternalSearchProviderCatalog {
                         countryCode = item["countryCode"]?.jsonPrimitive?.contentOrNull,
                         urlTemplate = requireNotNull(item["urlTemplate"]).jsonPrimitive.content,
                         priority = requireNotNull(item["priority"]).jsonPrimitive.int,
+                        queryTermsOverride = item["queryTermsOverride"]?.jsonPrimitive?.contentOrNull,
                     )
                 }
 
@@ -67,7 +83,7 @@ object ExternalSearchUrlBuilder {
         settlement: Settlement,
         terms: String = "property",
     ): String {
-        val normalizedTerms = terms.trim()
+        val normalizedTerms = provider.resolveQueryTerms(terms)
         val rawQuery =
             buildString {
                 append('"')
@@ -85,6 +101,10 @@ object ExternalSearchUrlBuilder {
             .replace("{terms}", percentEncode(normalizedTerms))
     }
 }
+
+/** Resolve provider-specific terms while preserving an explicit empty value and legacy null fallback. */
+internal fun ExternalSearchProvider.resolveQueryTerms(datasetTerms: String): String =
+    (queryTermsOverride ?: datasetTerms).trim()
 
 internal fun percentEncode(value: String): String =
     buildString {

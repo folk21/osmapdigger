@@ -136,6 +136,39 @@ class ExternalSearchProvidersTest {
     }
 
     @Test
+    fun providerSpecificEmptyTermsOverrideSuppressesDatasetTermsForSingleAndBatchSearch() {
+        val kufar = ExternalSearchProvider(
+            id = "kufar-by",
+            title = "Kufar",
+            countryCode = "BY",
+            urlTemplate = "https://www.google.com/search?q=site%3Are.kufar.by%20{query}",
+            priority = 100,
+            queryTermsOverride = "",
+        )
+
+        val singleUrl = ExternalSearchUrlBuilder.build(kufar, settlement, terms = "дом недвижимость")
+        val batchUrl =
+            ExternalSearchBatchBuilder.build(
+                providers = listOf(kufar),
+                settlementNames = listOf("Заболотье"),
+                terms = "дом недвижимость",
+            ).single().url
+
+        assertTrue(singleUrl.contains("site%3Are.kufar.by%20%22Test%20Village%22"))
+        assertTrue(batchUrl.contains("site%3Are.kufar.by%20%22%D0%97%D0%B0%D0%B1%D0%BE%D0%BB%D0%BE%D1%82%D1%8C%D0%B5%22"))
+        assertTrue("%D0%B4%D0%BE%D0%BC" !in singleUrl)
+        assertTrue("%D0%BD%D0%B5%D0%B4%D0%B2%D0%B8%D0%B6%D0%B8%D0%BC%D0%BE%D1%81%D1%82%D1%8C" !in batchUrl)
+    }
+
+    @Test
+    fun catalogPreservesExplicitEmptyTermsOverride() {
+        val payload =
+            """{"providers":[{"id":"custom","title":"Custom","countryCode":"BY","urlTemplate":"https://example.test?q={query}","priority":1,"queryTermsOverride":""}]}"""
+
+        assertEquals("", ExternalSearchProviderCatalog.decode(payload).single().queryTermsOverride)
+    }
+
+    @Test
     fun catalogRejectsNonHttpsTemplates() {
         val payload =
             """{"providers":[{"id":"bad","title":"Bad","countryCode":null,"urlTemplate":"http://example.test?q={query}","priority":1}]}"""

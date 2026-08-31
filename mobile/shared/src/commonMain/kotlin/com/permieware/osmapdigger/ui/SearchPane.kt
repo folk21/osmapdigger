@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.domain.*
 import com.permieware.osmapdigger.presentation.MetricFilterPresentationBuilder
 import com.permieware.osmapdigger.external.ExternalSearchProvider
+import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 import com.permieware.osmapdigger.external.ExternalSearchUrlBuilder
 import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.external.ExternalLinkOpener
@@ -47,6 +48,7 @@ internal fun SearchPane(
     onImportDataset: () -> Unit,
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
+    onExternalSearchSettingsSave: (List<ExternalSearchProviderTermsUpdate>) -> Unit,
     settlementDisplayName: (Settlement) -> String = { it.name },
 ) {
     val strings = LocalUiStrings.current
@@ -143,6 +145,7 @@ internal fun SearchPane(
                     datasetInfo = datasetInfo,
                     externalLinks = externalLinks,
                     searchProviders = searchProviders,
+                    onExternalSearchSettingsSave = onExternalSearchSettingsSave,
                     settlementDisplayName = settlementDisplayName,
                 )
             }
@@ -462,9 +465,11 @@ private fun SettlementDetailsCard(
     datasetInfo: DatasetInfo?,
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
+    onExternalSearchSettingsSave: (List<ExternalSearchProviderTermsUpdate>) -> Unit,
     settlementDisplayName: (Settlement) -> String = { it.name },
 ) {
     val strings = LocalUiStrings.current
+    var externalSearchSettingsOpen by remember { mutableStateOf(false) }
     Card {
         Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(strings.settlementDetails, style = MaterialTheme.typography.labelLarge)
@@ -487,22 +492,43 @@ private fun SettlementDetailsCard(
                 }
 
             if (searchProviders.isNotEmpty()) {
-                Text(strings.externalPropertySearch, style = MaterialTheme.typography.labelLarge)
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    searchProviders.forEach { provider ->
-                        OutlinedButton(
-                            onClick = {
-                                externalLinks.open(
-                                    ExternalSearchUrlBuilder.build(
-                                        provider = provider,
-                                        settlement = details.settlement,
-                                        terms = datasetInfo?.propertySearchTerms ?: "property",
-                                    ),
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Text(provider.title)
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(strings.externalPropertySearch, style = MaterialTheme.typography.labelLarge)
+                    TextButton(onClick = { externalSearchSettingsOpen = !externalSearchSettingsOpen }) {
+                        Text(strings.externalSearchSettings)
+                    }
+                }
+                if (externalSearchSettingsOpen) {
+                    ExternalSearchTermsSettings(
+                        providers = searchProviders,
+                        datasetTerms = datasetInfo?.propertySearchTerms ?: "property",
+                        onSave = { updates ->
+                            onExternalSearchSettingsSave(updates)
+                            externalSearchSettingsOpen = false
+                        },
+                        onClose = { externalSearchSettingsOpen = false },
+                    )
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        searchProviders.forEach { provider ->
+                            OutlinedButton(
+                                onClick = {
+                                    externalLinks.open(
+                                        ExternalSearchUrlBuilder.build(
+                                            provider = provider,
+                                            settlement = details.settlement,
+                                            terms = datasetInfo?.propertySearchTerms ?: "property",
+                                        ),
+                                    )
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text(provider.title)
+                            }
                         }
                     }
                 }
