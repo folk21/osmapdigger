@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.analysis.ScoredSettlement
 import com.permieware.osmapdigger.domain.PreferredDirection
 import com.permieware.osmapdigger.domain.Settlement
+import com.permieware.osmapdigger.external.ExternalSearchBatchBuilder
+import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.notebook.FavoriteAnalysisSnapshot
 import com.permieware.osmapdigger.notebook.FavoritePreferenceSnapshot
 import com.permieware.osmapdigger.notebook.FavoriteRequiredCriterionSnapshot
@@ -56,6 +58,9 @@ internal fun FavoritesPanel(
     onNoteChanged: (String, String?) -> Unit,
     onUpdateSnapshot: (String) -> Unit,
     onCopySelectedToImport: (String, List<String>) -> Unit,
+    searchProviders: List<ExternalSearchProvider>,
+    propertySearchTerms: String,
+    onExternalSearchUrlOpen: (String) -> Unit,
     onClose: () -> Unit,
     settlementDisplayName: (Settlement) -> String,
 ) {
@@ -66,10 +71,14 @@ internal fun FavoritesPanel(
     }
     val availableIds = remember(settlementsById) { settlementsById.keys.toSet() }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
+    var batchSearchOpen by remember { mutableStateOf(false) }
 
     LaunchedEffect(favorites, availableIds) {
         val retainedFavoriteIds = favorites.mapTo(hashSetOf()) { it.settlementId }
         selectedIds = selectedIds.filterTo(linkedSetOf()) { it in retainedFavoriteIds && it in availableIds }
+    }
+    LaunchedEffect(selectedIds) {
+        if (selectedIds.isEmpty()) batchSearchOpen = false
     }
 
     val selectableIds = remember(favorites, availableIds) {
@@ -82,6 +91,19 @@ internal fun FavoritesPanel(
             favorites = favorites,
             selectedSettlementIds = selectedIds,
             availableSettlementIds = availableIds,
+        )
+    }
+    val selectedNames = remember(favorites, selectedIds, settlementsById, settlementDisplayName) {
+        favorites.mapNotNull { favorite ->
+            if (favorite.settlementId !in selectedIds) return@mapNotNull null
+            settlementsById[favorite.settlementId]?.let(settlementDisplayName)
+        }
+    }
+    val batchSearchActions = remember(searchProviders, selectedNames, propertySearchTerms) {
+        ExternalSearchBatchBuilder.build(
+            providers = searchProviders,
+            settlementNames = selectedNames,
+            terms = propertySearchTerms,
         )
     }
 
@@ -124,6 +146,12 @@ internal fun FavoritesPanel(
                         enabled = selectedIds.isNotEmpty(),
                         onClick = { selectedIds = emptySet() },
                     ) { Text(strings.clearSelection) }
+                }
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     TextButton(
                         enabled = transfer != null,
                         onClick = {
@@ -132,12 +160,24 @@ internal fun FavoritesPanel(
                             }
                         },
                     ) { Text(strings.copyFavoritesToImport(selectedIds.size)) }
+                    TextButton(
+                        enabled = selectedIds.isNotEmpty(),
+                        onClick = { batchSearchOpen = true },
+                    ) { Text(strings.externalSearch) }
                 }
             }
 
             HorizontalDivider()
 
-            if (favorites.isEmpty()) {
+            if (batchSearchOpen) {
+                FavoriteBatchExternalSearchPanel(
+                    modifier = Modifier.fillMaxSize(),
+                    actions = batchSearchActions,
+                    selectedCount = selectedIds.size,
+                    onOpen = onExternalSearchUrlOpen,
+                    onBack = { batchSearchOpen = false },
+                )
+            } else if (favorites.isEmpty()) {
                 Text(strings.favoritesEmpty)
             } else {
                 LazyColumn(

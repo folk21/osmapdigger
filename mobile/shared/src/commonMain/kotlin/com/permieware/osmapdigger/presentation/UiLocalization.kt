@@ -86,6 +86,8 @@ data class UiStrings(
     val favoriteUnavailable: String,
     val selectedFavorites: (Int) -> String,
     val copyFavoritesToImport: (Int) -> String,
+    val batchExternalSearchHint: String,
+    val noBatchExternalProviders: String,
     val favoriteCurrentAnalysis: (Int?, Int?, Int) -> String,
     val favoriteNotInCurrentResults: String,
     val favoriteCurrentSelection: String,
@@ -246,6 +248,8 @@ private val RussianUiStrings = UiStrings(
     favoriteUnavailable = "Населённый пункт отсутствует в текущей версии набора данных.",
     selectedFavorites = { count -> "Выбрано: $count" },
     copyFavoritesToImport = { count -> "Скопировать в импорт-список ($count)" },
+    batchExternalSearchHint = "Каждый сформированный запрос открывается только по отдельному нажатию.",
+    noBatchExternalProviders = "Для выбранных пунктов нет сервисов, поддерживающих пакетный поиск.",
     favoriteCurrentAnalysis = { rank, score, coverage ->
         listOfNotNull(
             rank?.let { "рейтинг #$it" },
@@ -416,6 +420,8 @@ private val EnglishUiStrings = UiStrings(
     favoriteUnavailable = "This settlement is not available in the current dataset version.",
     selectedFavorites = { count -> "Selected: $count" },
     copyFavoritesToImport = { count -> "Copy to import list ($count)" },
+    batchExternalSearchHint = "Each generated query opens only after an explicit click.",
+    noBatchExternalProviders = "No configured provider supports batch search for this selection.",
     favoriteCurrentAnalysis = { rank, score, coverage ->
         listOfNotNull(
             rank?.let { "rank #$it" },

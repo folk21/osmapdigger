@@ -10,7 +10,7 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Active product sub-spec; candidate-source, persistent Favorites, explicit Favorites-to-import re-analysis, and notebook notes/frozen snapshots are implemented. Batch external search and export/share remain pending.
+Active product sub-spec; candidate-source, persistent Favorites, explicit Favorites-to-import re-analysis, notebook notes/frozen snapshots, and batch external search are implemented. Export/share remains pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
@@ -528,7 +528,7 @@ Implement in small increments:
 3. **Implemented: Visual ranked affordances** — Desktop ranked cards keep the numeric score and add a 0–100 score bar, incomplete-coverage text, and deterministic strongest/weakest preference cues. The experimental transient `SettlementShortlist` layer was removed after clarifying that the user collection is persistent Favorites rather than another analysis-input loop.
 4. **Implemented: Persistent Favorites foundation and re-analysis bridge** — add shared `FavoriteSettlementRepository`, settings schema version 5 with normalized `favorite_settlement`, Desktop/Android SQLite adapters, persistent result-card toggles, and a Desktop Favorites pane with compact current context plus browse/open/remove/clear. Favorites selection is transient; individual/select-all actions can explicitly replace and activate the imported stable-ID candidate list and return to ranked results without re-resolving names. Favorites otherwise remain output state and never change candidate source or trigger recalculation.
 5. **Implemented: Notebook enrichment** — settings schema version 6 adds optional notes and a separate one-row versioned frozen analysis snapshot per Favorite. Saving a ranked settlement captures current score/coverage, effective Required criteria, enabled Preferences and contributions; later analysis edits do not mutate it, while explicit Update analysis snapshot replaces it from the current ranked result. Desktop Favorites show the saved context compactly and allow inline note editing.
-6. **Batch external search** — extend generic query construction to Favorites with explicit bounded/chunked browser actions and no provider-specific UI branches.
+6. **Implemented: Batch external search** — selected available Favorites reuse current localized settlement names and the configured provider catalog to build quoted `OR` queries. Shared construction is deterministic, UTF-8 percent-encoded, and greedily chunked under a conservative final-URL bound; providers that require a `{settlement}` placeholder are not offered for batch search. Desktop shows each generated provider/chunk action explicitly and opens only the action the user clicks.
 7. **Export/share** — add versioned deterministic JSON plus human-readable summary export and platform save/share adapters.
 8. **Calibration validation** — rebuild/inspect representative Andorra and Belarus analytical packages if necessary; record score/metric distribution evidence before deliberately changing checked-in `balanced-living` defaults.
 9. **Acceptance/documentation** — run configured shared/Desktop/Android tests, record manual workflow acceptance, update owning current-state docs, and archive this sub-spec when complete.

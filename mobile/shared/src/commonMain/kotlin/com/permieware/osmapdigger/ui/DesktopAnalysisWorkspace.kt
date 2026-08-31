@@ -265,6 +265,9 @@ internal fun DesktopAnalysisWorkspace(
                             favoritesOpen = false
                             resultsFocusRequest += 1
                         },
+                        searchProviders = searchProviders,
+                        propertySearchTerms = datasetInfo?.propertySearchTerms ?: "property",
+                        onExternalSearchUrlOpen = externalLinks::open,
                         onClose = { favoritesOpen = false },
                         settlementDisplayName = settlementDisplayName,
                     )
