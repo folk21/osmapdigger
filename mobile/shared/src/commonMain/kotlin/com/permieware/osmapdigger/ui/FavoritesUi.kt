@@ -30,7 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.permieware.osmapdigger.analysis.ScoredSettlement
+import com.permieware.osmapdigger.analysis.RankedSettlementResult
 import com.permieware.osmapdigger.domain.PreferredDirection
 import com.permieware.osmapdigger.domain.Settlement
 import com.permieware.osmapdigger.external.ExternalSearchBatchBuilder
@@ -41,6 +41,7 @@ import com.permieware.osmapdigger.notebook.FavoritePreferenceSnapshot
 import com.permieware.osmapdigger.notebook.FavoriteRequiredCriterionSnapshot
 import com.permieware.osmapdigger.notebook.FavoriteSettlement
 import com.permieware.osmapdigger.presentation.NumberFormatter
+import com.permieware.osmapdigger.presentation.SettlementPlaceTypeResolver
 import com.permieware.osmapdigger.workspace.FavoriteCandidateTransfer
 import kotlin.math.roundToInt
 
@@ -50,7 +51,8 @@ internal fun FavoritesPanel(
     modifier: Modifier,
     favorites: List<FavoriteSettlement>,
     settlementsById: Map<String, Settlement>,
-    rankedResults: List<ScoredSettlement>,
+    rankedCandidatesBySettlementId: Map<String, RankedSettlementResult>,
+    hasEnabledPreferences: Boolean,
     activeSettlementId: String?,
     onSelect: (Settlement) -> Unit,
     onOpen: (Settlement) -> Unit,
@@ -67,10 +69,6 @@ internal fun FavoritesPanel(
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
-    val rankedById = remember(rankedResults) { rankedResults.associateBy { it.settlement.id } }
-    val rankById = remember(rankedResults) {
-        rankedResults.mapIndexed { index, result -> result.settlement.id to index + 1 }.toMap()
-    }
     val availableIds = remember(settlementsById) { settlementsById.keys.toSet() }
     var selectedIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var batchSearchOpen by remember { mutableStateOf(false) }
@@ -193,8 +191,8 @@ internal fun FavoritesPanel(
                         FavoriteCard(
                             favorite = favorite,
                             settlement = settlementsById[favorite.settlementId],
-                            ranked = rankedById[favorite.settlementId],
-                            rank = rankById[favorite.settlementId],
+                            currentAnalysis = rankedCandidatesBySettlementId[favorite.settlementId],
+                            hasEnabledPreferences = hasEnabledPreferences,
                             selected = favorite.settlementId in selectedIds,
                             active = favorite.settlementId == activeSettlementId,
                             onSelectedChanged = { checked ->
@@ -218,8 +216,8 @@ internal fun FavoritesPanel(
 private fun FavoriteCard(
     favorite: FavoriteSettlement,
     settlement: Settlement?,
-    ranked: ScoredSettlement?,
-    rank: Int?,
+    currentAnalysis: RankedSettlementResult?,
+    hasEnabledPreferences: Boolean,
     selected: Boolean,
     active: Boolean,
     onSelectedChanged: (Boolean) -> Unit,
@@ -231,6 +229,7 @@ private fun FavoriteCard(
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
+    val language = LocalUiLanguage.current
     var editingNote by remember(favorite.settlementId) { mutableStateOf(false) }
     var noteText by remember(favorite.settlementId, favorite.note) { mutableStateOf(favorite.note.orEmpty()) }
 
@@ -274,12 +273,25 @@ private fun FavoriteCard(
                     if (settlement == null) {
                         Text(strings.favoriteUnavailable, style = MaterialTheme.typography.bodySmall)
                     } else {
-                        val context = listOfNotNull(settlement.placeType, settlement.population?.let(strings.population)).joinToString(" · ")
-                        val coordinates = "${NumberFormatter.compact(settlement.location.latitude)}, ${NumberFormatter.compact(settlement.location.longitude)}"
+                        val context =
+                            listOfNotNull(
+                                SettlementPlaceTypeResolver.resolve(settlement.placeType, language),
+                                settlement.population?.let(strings.population),
+                            ).joinToString(" · ")
+                        val coordinates =
+                            strings.coordinates(
+                                NumberFormatter.compact(settlement.location.latitude),
+                                NumberFormatter.compact(settlement.location.longitude),
+                            )
                         Text(listOf(context, coordinates).filter { it.isNotBlank() }.joinToString(" · "), style = MaterialTheme.typography.bodySmall)
-                        if (ranked != null) {
+                        if (currentAnalysis != null) {
                             Text(
-                                strings.favoriteCurrentAnalysis(rank, ranked.score.value?.roundToInt(), ranked.score.coverage.roundToInt()),
+                                strings.favoriteCurrentAnalysis(
+                                    currentAnalysis.rank,
+                                    currentAnalysis.result.score.value?.roundToInt(),
+                                    currentAnalysis.result.score.coverage.roundToInt(),
+                                    hasEnabledPreferences,
+                                ),
                                 style = MaterialTheme.typography.labelSmall,
                             )
                         } else {
@@ -332,7 +344,7 @@ private fun FavoriteCard(
                 }
                 FavoriteAction(
                     label = strings.updateFavoriteSnapshot,
-                    enabled = ranked != null,
+                    enabled = currentAnalysis != null,
                     onClick = onUpdateSnapshot,
                 )
                 FavoriteAction(strings.remove, onClick = onRemove)
@@ -366,7 +378,11 @@ private fun FavoriteSnapshotSummary(snapshot: FavoriteAnalysisSnapshot?) {
     }
 
     Text(
-        strings.favoriteSnapshotSummary(snapshot.scoreValue?.roundToInt(), snapshot.coverage.roundToInt()),
+        strings.favoriteSnapshotSummary(
+            snapshot.scoreValue?.roundToInt(),
+            snapshot.coverage.roundToInt(),
+            snapshot.preferences.isNotEmpty(),
+        ),
         style = MaterialTheme.typography.labelMedium,
     )
     val area = buildList {

@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.ScoredSettlement
+import com.permieware.osmapdigger.analysis.RankedSettlementResult
 import com.permieware.osmapdigger.analysis.SettlementCandidateScope
 import com.permieware.osmapdigger.analysis.SettlementScore
 import com.permieware.osmapdigger.domain.*
@@ -33,6 +34,7 @@ import com.permieware.osmapdigger.presentation.UiStrings
 import com.permieware.osmapdigger.presentation.DesktopWorkspaceLayoutPolicy
 import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
+import com.permieware.osmapdigger.presentation.SettlementPlaceTypeResolver
 import com.permieware.osmapdigger.presentation.SettlementCriteriaSummaryBuilder
 import com.permieware.osmapdigger.presentation.TwoRowLayout
 import com.permieware.osmapdigger.external.ExternalLinkOpener
@@ -70,6 +72,7 @@ internal fun DesktopAnalysisWorkspace(
     radiusError: String?,
     summary: String,
     rankedResults: List<ScoredSettlement>,
+    rankedCandidatesBySettlementId: Map<String, RankedSettlementResult>,
     favorites: List<FavoriteSettlement>,
     favoriteSettlementsById: Map<String, Settlement>,
     onFavoriteAdded: (ScoredSettlement) -> Unit,
@@ -109,7 +112,7 @@ internal fun DesktopAnalysisWorkspace(
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     val selectedScore =
         selected?.settlement?.id?.let { selectedId ->
-            rankedResults.firstOrNull { it.settlement.id == selectedId }?.score
+            rankedCandidatesBySettlementId[selectedId]?.result?.score
         }
     var settlementPaneMode by remember { mutableStateOf(DesktopSettlementPaneMode.SUMMARY) }
     LaunchedEffect(selected?.settlement?.id) {
@@ -251,7 +254,8 @@ internal fun DesktopAnalysisWorkspace(
                         modifier = Modifier.fillMaxSize(),
                         favorites = favorites,
                         settlementsById = favoriteSettlementsById,
-                        rankedResults = rankedResults,
+                        rankedCandidatesBySettlementId = rankedCandidatesBySettlementId,
+                        hasEnabledPreferences = effectivePreferences.any { it.enabled },
                         activeSettlementId = selected?.settlement?.id,
                         onSelect = onSelect,
                         onOpen = { settlement ->
@@ -344,6 +348,7 @@ internal fun DesktopAnalysisWorkspace(
                                     modifier = Modifier.fillMaxWidth().height(lowerPaneHeight),
                                     details = selected,
                                     score = selectedScore,
+                                    hasEnabledPreferences = effectivePreferences.any { it.enabled },
                                     definitions = definitionMap,
                                     onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
                                     settlementDisplayName = settlementDisplayName,
@@ -527,6 +532,7 @@ private fun DesktopAnalysisSidebar(
                 rank = index + 1,
                 result = result,
                 definitions = definitionMap,
+                hasEnabledPreferences = effectivePreferences.any { it.enabled },
                 selected = result.settlement.id == selectedId,
                 favorite = result.settlement.id in favoriteIds,
                 onClick = { onSelect(result.settlement) },
@@ -862,12 +868,14 @@ private fun SettlementSummaryPanel(
 
             val context =
                 listOfNotNull(
-                    details.settlement.placeType,
+                    SettlementPlaceTypeResolver.resolve(details.settlement.placeType, language),
                     details.settlement.population?.let(strings.population),
                 ).joinToString(" · ")
             val coordinates =
-                "${NumberFormatter.compact(details.settlement.location.latitude)}, " +
-                    NumberFormatter.compact(details.settlement.location.longitude)
+                strings.coordinates(
+                    NumberFormatter.compact(details.settlement.location.latitude),
+                    NumberFormatter.compact(details.settlement.location.longitude),
+                )
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -886,11 +894,13 @@ private fun SettlementSummaryPanel(
                 }
             }
 
-            score?.let { settlementScore ->
-                Text(
-                    strings.scoreAndCoverage(settlementScore.value?.roundToInt(), settlementScore.coverage.roundToInt()),
-                    style = MaterialTheme.typography.titleSmall,
-                )
+            if (effectivePreferences.any { it.enabled }) {
+                val settlementScore = score
+                val scoreText =
+                    settlementScore?.value?.let { value ->
+                        strings.scoreAndCoverage(value.roundToInt(), settlementScore.coverage.roundToInt())
+                    } ?: strings.scoreUnavailable
+                Text(scoreText, style = MaterialTheme.typography.titleSmall)
             }
 
             val criteriaSummary = remember(details, definitions, conditions, effectivePreferences, language) {
@@ -936,11 +946,13 @@ private fun SettlementDetailedInfoPanel(
     modifier: Modifier,
     details: SettlementDetails,
     score: SettlementScore?,
+    hasEnabledPreferences: Boolean,
     definitions: Map<String, MetricDefinition>,
     onBack: () -> Unit,
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
+    val language = LocalUiLanguage.current
     Card(modifier) {
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -957,39 +969,46 @@ private fun SettlementDetailedInfoPanel(
 
             val context =
                 listOfNotNull(
-                    details.settlement.placeType,
+                    SettlementPlaceTypeResolver.resolve(details.settlement.placeType, language),
                     details.settlement.population?.let(strings.population),
                 ).joinToString(" · ")
             if (context.isNotBlank()) {
                 Text(context, style = MaterialTheme.typography.bodySmall)
             }
             Text(
-                "${details.settlement.location.latitude}, ${details.settlement.location.longitude}",
+                strings.coordinates(
+                    NumberFormatter.compact(details.settlement.location.latitude),
+                    NumberFormatter.compact(details.settlement.location.longitude),
+                ),
                 style = MaterialTheme.typography.bodySmall,
             )
 
-            score?.let { settlementScore ->
+            if (hasEnabledPreferences) {
+                val settlementScore = score
                 Text(strings.score, style = MaterialTheme.typography.labelLarge)
-                Text(
-                    strings.scoreAndCoverage(settlementScore.value?.roundToInt(), settlementScore.coverage.roundToInt()),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                val explanation = remember(settlementScore, definitions) {
-                    ScoreExplanationBuilder.build(settlementScore, definitions)
+                val scoreText =
+                    settlementScore?.value?.let { value ->
+                        strings.scoreAndCoverage(value.roundToInt(), settlementScore.coverage.roundToInt())
+                    } ?: strings.scoreUnavailable
+                Text(scoreText, style = MaterialTheme.typography.titleMedium)
+                val explanation = settlementScore?.let { currentScore ->
+                    remember(currentScore, definitions) {
+                        ScoreExplanationBuilder.build(currentScore, definitions)
+                    }
                 }
-                explanation.strongest?.let { strongest ->
+                explanation?.strongest?.let { strongest ->
                     Text(
                         "${strings.strongest}: ${contributionLabel(strongest.title, strongest.unit, strongest.contribution.rawValue, strongest.contribution.scoreContribution, strings)}",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                explanation.weakest?.let { weakest ->
+                explanation?.weakest?.let { weakest ->
                     Text(
                         "${strings.weakest}: ${contributionLabel(weakest.title, weakest.unit, weakest.contribution.rawValue, weakest.contribution.scoreContribution, strings)}",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                if (explanation.unknown.isNotEmpty()) {
+                if (explanation != null && explanation.unknown.isNotEmpty()) {
                     Text(
                         "${strings.unknown}: ${explanation.unknown.joinToString { it.title }}",
                         style = MaterialTheme.typography.bodySmall,

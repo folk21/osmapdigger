@@ -258,7 +258,7 @@ Favorites checkbox selection is transient UI state, separate from persistent mem
 
 An explicit **Copy selected to import list** action must transfer selected stable settlement IDs directly without name resolution, replace the retained imported list, activate `SettlementCandidateScope.Imported`, close the Favorites view, and return the Desktop sidebar to ranked results. The generated import source text is editing provenance only; stable IDs remain authoritative. Existing Required, Preferences, center, and radius state are preserved and continue to apply through the normal analysis pipeline.
 
-Changing filters/preferences or imported candidate source may remove a favorite from current ranked results; that must not delete the persistent favorite. Merely selecting Favorites must not trigger analysis until the explicit copy action is invoked.
+Changing filters/preferences or imported candidate source may remove a favorite from the visible top-N ranked results; that must not delete the persistent favorite. The analysis pipeline ranks every eligible settlement before applying the visible result limit, so Favorites should retain the current rank/score/coverage for eligible settlements even when their rank falls below that limit. Only settlements excluded by Required/radius/candidate-source eligibility lack a current rank. Merely selecting Favorites must not trigger analysis until the explicit copy action is invoked.
 
 ### SS-R7 — notebook enrichment and analysis snapshots
 
@@ -276,7 +276,7 @@ Snapshot internals remain versioned and replaceable without turning the growing 
 
 Current preference changes must not mutate saved notebook snapshots automatically.
 
-When the saved settlement participates in the current ranked results, the UI offers **Update analysis snapshot**. The replacement is explicit and uses the current authoritative analysis parameters, score, coverage, and contribution values. Merely changing current filters/preferences never mutates the stored snapshot.
+When the saved settlement participates in the complete current eligible ranking, the UI offers **Update analysis snapshot**, even if that settlement is below the visible top-N result limit. The replacement is explicit and uses the current authoritative analysis parameters, score, coverage, and contribution values. Merely changing current filters/preferences never mutates the stored snapshot.
 
 If the dataset or settlement is unavailable, the historical notebook entry remains exportable rather
 than being reassigned by name.

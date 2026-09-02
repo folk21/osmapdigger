@@ -37,8 +37,19 @@ data class SettlementAnalysisDiagnostics(
     }
 }
 
-/** Ranked-analysis result together with non-semantic execution diagnostics. */
+/** One eligible settlement's deterministic position in the complete current analysis ranking. */
+data class RankedSettlementResult(
+    val rank: Int,
+    val result: ScoredSettlement,
+) {
+    init {
+        require(rank >= 1) { "Rank must be positive" }
+    }
+}
+
+/** Ranked-analysis result together with the complete rank lookup and non-semantic execution diagnostics. */
 data class SettlementAnalysisOutcome(
     val results: List<ScoredSettlement>,
+    val rankedCandidates: List<RankedSettlementResult>,
     val diagnostics: SettlementAnalysisDiagnostics,
 )

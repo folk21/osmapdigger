@@ -53,15 +53,18 @@ class SettlementAnalysisService(
                     score = PreferenceScorer.score(request.preferences, candidate.metricValues),
                 )
             }
-        val results =
-            SettlementRanker
-                .rank(scored)
-                .take(SearchRequestSemantics.resultLimit(search))
+        val ranked = SettlementRanker.rank(scored)
+        val rankedCandidates =
+            ranked.mapIndexed { index, result ->
+                RankedSettlementResult(rank = index + 1, result = result)
+            }
+        val results = ranked.take(SearchRequestSemantics.resultLimit(search))
         val sharedScoringSortMillis = sharedMark.elapsedNow().inWholeNanoseconds / 1_000_000.0
         val totalMillis = totalMark.elapsedNow().inWholeNanoseconds / 1_000_000.0
 
         return SettlementAnalysisOutcome(
             results = results,
+            rankedCandidates = rankedCandidates,
             diagnostics =
                 SettlementAnalysisDiagnostics(
                     candidateCount = candidates.size,

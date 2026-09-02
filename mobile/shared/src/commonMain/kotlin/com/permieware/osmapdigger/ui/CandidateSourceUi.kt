@@ -42,6 +42,7 @@ import com.permieware.osmapdigger.search.SettlementImportReview
 import com.permieware.osmapdigger.search.SettlementImportReviewer
 import com.permieware.osmapdigger.search.SettlementListImportParser
 import com.permieware.osmapdigger.search.SettlementListImportResolver
+import com.permieware.osmapdigger.presentation.SettlementPlaceTypeResolver
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
@@ -408,12 +409,13 @@ private fun MatchLabel(
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
+    val language = LocalUiLanguage.current
     Column(Modifier.padding(vertical = 2.dp)) {
         Text(settlementDisplayName(match.settlement), style = MaterialTheme.typography.bodyMedium)
         val context =
             listOfNotNull(
                 match.matchedName.takeUnless { it == settlementDisplayName(match.settlement) },
-                match.settlement.placeType,
+                SettlementPlaceTypeResolver.resolve(match.settlement.placeType, language),
                 match.settlement.population?.let(strings.population),
             ).joinToString(" · ")
         if (context.isNotBlank()) {

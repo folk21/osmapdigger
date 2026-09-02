@@ -45,6 +45,33 @@ class SettlementAnalysisServiceTest {
         assertEquals(0, repository.detailsCalls)
     }
 
+
+    @Test
+    fun outcomeRetainsCompleteRankingPastVisibleLimit() = runTest {
+        val repository =
+            FakeRepository(
+                candidates =
+                    listOf(
+                        candidate("early", "Alpha", forestDistance = 9.0),
+                        candidate("best", "Zulu", forestDistance = 1.0),
+                    ),
+            )
+
+        val outcome =
+            SettlementAnalysisService(repository).analyzeWithDiagnostics(
+                SettlementAnalysisRequest(
+                    search = SearchRequest(limit = 1),
+                    preferences = listOf(forestPreference()),
+                ),
+            )
+
+        assertEquals(listOf("best"), outcome.results.map { it.settlement.id })
+        assertEquals(
+            listOf(1 to "best", 2 to "early"),
+            outcome.rankedCandidates.map { it.rank to it.result.settlement.id },
+        )
+    }
+
     @Test
     fun exactRadiusFilteringHappensBeforeScoring() = runTest {
         val center = settlement("center", "Center", latitude = 0.0)

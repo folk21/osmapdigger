@@ -3,6 +3,7 @@ package com.permieware.osmapdigger.workspace
 import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.MetricPreference
 import com.permieware.osmapdigger.analysis.ScoredSettlement
+import com.permieware.osmapdigger.analysis.RankedSettlementResult
 import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.analysis.SettlementAnalysisRequest
 import com.permieware.osmapdigger.analysis.SettlementAnalysisService
@@ -52,6 +53,7 @@ data class AnalysisWorkspaceState(
     val importedCandidateList: ImportedCandidateList? = null,
     val favorites: List<FavoriteSettlement> = emptyList(),
     val rankedResults: List<ScoredSettlement> = emptyList(),
+    val rankedCandidatesBySettlementId: Map<String, RankedSettlementResult> = emptyMap(),
     val analyzing: Boolean = false,
     val failure: OperationalFailure? = null,
 )
@@ -377,7 +379,7 @@ class AnalysisWorkspaceController(
         val current = mutableState.value
         val datasetId = current.datasetInfo?.id ?: return
         if (current.favorites.none { it.settlementId == settlementId }) return
-        val result = current.rankedResults.firstOrNull { it.settlement.id == settlementId } ?: return
+        val result = current.rankedCandidatesBySettlementId[settlementId]?.result ?: return
         val analysisSnapshot = favoriteSnapshot(result, current)
         scope.launch {
             try {
@@ -551,6 +553,7 @@ class AnalysisWorkspaceController(
             mutableState.value =
                 snapshot.copy(
                     rankedResults = emptyList(),
+                    rankedCandidatesBySettlementId = emptyMap(),
                     analyzing = false,
                     failure = null,
                 )
@@ -592,6 +595,8 @@ class AnalysisWorkspaceController(
                         mutableState.value =
                             mutableState.value.copy(
                                 rankedResults = outcome.results,
+                                rankedCandidatesBySettlementId =
+                                    outcome.rankedCandidates.associateBy { it.result.settlement.id },
                                 analyzing = false,
                                 failure = null,
                             )

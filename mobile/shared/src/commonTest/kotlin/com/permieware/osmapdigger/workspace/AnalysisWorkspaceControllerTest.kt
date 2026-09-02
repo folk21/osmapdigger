@@ -71,6 +71,7 @@ class AnalysisWorkspaceControllerTest {
         assertEquals(listOf(SearchCondition("hard", maxValue = 3.0)), state.conditions)
         assertEquals(10, state.effectivePreferences.single().preference.weight)
         assertEquals(listOf("best"), state.rankedResults.map { it.settlement.id })
+        assertEquals(1, state.rankedCandidatesBySettlementId.getValue("best").rank)
         assertEquals(setOf("forest.distance_km"), repository.lastScoringMetricIds)
         assertFalse(state.analyzing)
         assertNull(state.failure)

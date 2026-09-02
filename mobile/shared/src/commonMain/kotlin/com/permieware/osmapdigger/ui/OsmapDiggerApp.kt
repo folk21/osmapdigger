@@ -351,6 +351,7 @@ private fun LoadedDatasetApp(
                 radiusError = radiusError,
                 summary = summary,
                 rankedResults = rankedResults,
+                rankedCandidatesBySettlementId = analysisState.rankedCandidatesBySettlementId,
                 favorites = analysisState.favorites,
                 favoriteSettlementsById = settlementsById,
                 onFavoriteAdded = analysisController::addFavorite,

@@ -15,6 +15,7 @@ import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 import com.permieware.osmapdigger.external.ExternalSearchUrlBuilder
 import com.permieware.osmapdigger.presentation.NumberFormatter
+import com.permieware.osmapdigger.presentation.SettlementPlaceTypeResolver
 import com.permieware.osmapdigger.external.ExternalLinkOpener
 import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
@@ -52,6 +53,7 @@ internal fun SearchPane(
     settlementDisplayName: (Settlement) -> String = { it.name },
 ) {
     val strings = LocalUiStrings.current
+    val language = LocalUiLanguage.current
     LazyColumn(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -128,7 +130,7 @@ internal fun SearchPane(
                     Text(settlementDisplayName(settlement), style = MaterialTheme.typography.titleSmall)
                     val subtitle =
                         listOfNotNull(
-                            settlement.placeType,
+                            SettlementPlaceTypeResolver.resolve(settlement.placeType, language),
                             settlement.population?.let(strings.population),
                         ).joinToString(" · ")
                     if (subtitle.isNotBlank()) {
@@ -167,6 +169,7 @@ internal fun CenterSelector(
     settlementDisplayName: (Settlement) -> String = { it.name },
 ) {
     val strings = LocalUiStrings.current
+    val language = LocalUiLanguage.current
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf("") }
     val centerDisplayName = center?.let(settlementDisplayName)
@@ -266,7 +269,7 @@ internal fun CenterSelector(
                         val details =
                             listOfNotNull(
                                 match.matchedName.takeIf { it != displayName },
-                                match.settlement.placeType,
+                                SettlementPlaceTypeResolver.resolve(match.settlement.placeType, language),
                                 match.kind.name.lowercase().takeIf { match.kind == SettlementMatchKind.FUZZY },
                             ).joinToString(" · ")
                         if (details.isNotBlank()) {
@@ -475,7 +478,10 @@ private fun SettlementDetailsCard(
             Text(strings.settlementDetails, style = MaterialTheme.typography.labelLarge)
             Text(settlementDisplayName(details.settlement), style = MaterialTheme.typography.titleMedium)
             Text(
-                "${details.settlement.location.latitude}, ${details.settlement.location.longitude}",
+                strings.coordinates(
+                    NumberFormatter.compact(details.settlement.location.latitude),
+                    NumberFormatter.compact(details.settlement.location.longitude),
+                ),
                 style = MaterialTheme.typography.bodySmall,
             )
 

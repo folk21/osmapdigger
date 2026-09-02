@@ -23,6 +23,7 @@ import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
 import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
+import com.permieware.osmapdigger.presentation.SettlementPlaceTypeResolver
 import com.permieware.osmapdigger.presentation.UiStrings
 import kotlin.math.roundToInt
 
@@ -64,6 +65,7 @@ internal fun RankedSettlementCard(
     rank: Int,
     result: ScoredSettlement,
     definitions: Map<String, MetricDefinition>,
+    hasEnabledPreferences: Boolean,
     selected: Boolean,
     favorite: Boolean,
     onClick: () -> Unit,
@@ -123,12 +125,14 @@ internal fun RankedSettlementCard(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(displayName, style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        strings.scoreValue(result.score.value?.roundToInt()),
-                        style = MaterialTheme.typography.titleSmall,
-                    )
+                    if (hasEnabledPreferences) {
+                        Text(
+                            result.score.value?.let { strings.scoreValue(it.roundToInt()) } ?: strings.scoreUnavailable,
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                    }
                 }
-                result.score.value?.let { score ->
+                if (hasEnabledPreferences) result.score.value?.let { score ->
                     LinearProgressIndicator(
                         progress = { (score / 100.0).toFloat().coerceIn(0f, 1f) },
                         modifier = Modifier.fillMaxWidth(),
@@ -136,13 +140,13 @@ internal fun RankedSettlementCard(
                 }
                 val context =
                     listOfNotNull(
-                        result.settlement.placeType,
+                        SettlementPlaceTypeResolver.resolve(result.settlement.placeType, language),
                         result.settlement.population?.let(strings.population),
                     ).joinToString(" · ")
                 if (context.isNotBlank()) {
                     Text(context, style = MaterialTheme.typography.bodySmall)
                 }
-                if (result.score.coverage < 99.5) {
+                if (hasEnabledPreferences && result.score.value != null && result.score.coverage < 99.5) {
                     Text(
                         strings.dataCoverage(result.score.coverage.roundToInt()),
                         style = MaterialTheme.typography.labelSmall,

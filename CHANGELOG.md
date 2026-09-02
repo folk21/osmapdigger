@@ -8,6 +8,7 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Keep complete current rank/score/coverage for eligible Favorites beyond the visible top-N result limit, and distinguish those from settlements excluded by current analysis criteria.
 - Add per-provider external-search term settings with directly editable effective values, explicit empty terms, a Set defaults action, shared single/batch behavior, and settings schema v7 persistence.
 - Add explicit batch external search for selected Favorites using configured providers, quoted `OR` queries, deterministic URL-bounded chunking, and one-click-at-a-time browser actions.
 - Re-focus the map when an already selected ranked result or Favorite is activated again after manual panning, and compact the Favorites action labels.

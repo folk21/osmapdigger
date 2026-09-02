@@ -88,7 +88,7 @@ data class UiStrings(
     val copyFavoritesToImport: (Int) -> String,
     val batchExternalSearchHint: String,
     val noBatchExternalProviders: String,
-    val favoriteCurrentAnalysis: (Int?, Int?, Int) -> String,
+    val favoriteCurrentAnalysis: (Int?, Int?, Int, Boolean) -> String,
     val favoriteNotInCurrentResults: String,
     val favoriteCurrentSelection: String,
     val favoriteNote: String,
@@ -96,7 +96,7 @@ data class UiStrings(
     val saveFavoriteNote: String,
     val cancelFavoriteNote: String,
     val noFavoriteSnapshot: String,
-    val favoriteSnapshotSummary: (Int?, Int) -> String,
+    val favoriteSnapshotSummary: (Int?, Int, Boolean) -> String,
     val favoriteSnapshotRequired: String,
     val favoriteSnapshotPreferences: String,
     val updateFavoriteSnapshot: String,
@@ -104,6 +104,7 @@ data class UiStrings(
     val selected: String,
     val searchResults: String,
     val settlementsFound: (Int) -> String,
+    val coordinates: (String, String) -> String,
     val updating: String,
     val details: String,
     val externalSearch: String,
@@ -118,7 +119,8 @@ data class UiStrings(
     val summary: String,
     val score: String,
     val scoreValue: (Int?) -> String,
-    val scoreAndCoverage: (Int?, Int) -> String,
+    val scoreUnavailable: String,
+    val scoreAndCoverage: (Int, Int) -> String,
     val strongest: String,
     val weakest: String,
     val unknown: String,
@@ -257,21 +259,30 @@ private val RussianUiStrings = UiStrings(
     copyFavoritesToImport = { count -> "Скопировать в импорт-список ($count)" },
     batchExternalSearchHint = "Каждый сформированный запрос открывается только по отдельному нажатию.",
     noBatchExternalProviders = "Для выбранных пунктов нет сервисов, поддерживающих пакетный поиск.",
-    favoriteCurrentAnalysis = { rank, score, coverage ->
-        listOfNotNull(
-            rank?.let { "рейтинг #$it" },
-            score?.let { "оценка $it" } ?: "оценка —",
-            "полнота $coverage%",
-        ).joinToString(" · ")
+    favoriteCurrentAnalysis = { rank, score, coverage, hasScoring ->
+        val scoring =
+            if (!hasScoring) {
+                null
+            } else {
+                score?.let { value -> if (coverage < 100) "оценка $value · полнота $coverage%" else "оценка $value" }
+                    ?: "оценка недоступна"
+            }
+        listOfNotNull(rank?.let { "рейтинг #$it" }, scoring).joinToString(" · ")
     },
-    favoriteNotInCurrentResults = "Сейчас не входит в результаты анализа.",
+    favoriteNotInCurrentResults = "Не соответствует текущим условиям анализа.",
     favoriteCurrentSelection = "Текущий",
     favoriteNote = "Заметка",
     editFavoriteNote = "Заметка",
     saveFavoriteNote = "Сохранить заметку",
     cancelFavoriteNote = "Отмена",
     noFavoriteSnapshot = "Снимок анализа ещё не сохранён.",
-    favoriteSnapshotSummary = { score, coverage -> "Сохранённый анализ: ${score?.let { "оценка $it" } ?: "оценка —"} · полнота $coverage%" },
+    favoriteSnapshotSummary = { score, coverage, hasScoring ->
+        val scoring =
+            if (!hasScoring) null
+            else score?.let { value -> if (coverage < 100) "оценка $value · полнота $coverage%" else "оценка $value" }
+                ?: "оценка недоступна"
+        listOfNotNull("Сохранённый анализ", scoring).joinToString(": ")
+    },
     favoriteSnapshotRequired = "Обязательные условия",
     favoriteSnapshotPreferences = "Предпочтения",
     updateFavoriteSnapshot = "Обновить",
@@ -279,6 +290,7 @@ private val RussianUiStrings = UiStrings(
     selected = "Выбрано",
     searchResults = "Результаты поиска",
     settlementsFound = { count -> if (count == 1) "Найден 1 населённый пункт" else "Найдено населённых пунктов: $count" },
+    coordinates = { latitude, longitude -> "Координаты: $latitude, $longitude" },
     updating = "обновление…",
     details = "Подробнее",
     externalSearch = "Внешний поиск",
@@ -293,7 +305,8 @@ private val RussianUiStrings = UiStrings(
     summary = "Кратко",
     score = "Оценка",
     scoreValue = { value -> value?.let { "Оценка $it" } ?: "Оценка —" },
-    scoreAndCoverage = { value, coverage -> "${value?.let { "Оценка $it" } ?: "Оценка —"} · полнота $coverage%" },
+    scoreUnavailable = "Оценка недоступна",
+    scoreAndCoverage = { value, coverage -> if (coverage < 100) "Оценка $value · полнота $coverage%" else "Оценка $value" },
     strongest = "Сильнейший вклад",
     weakest = "Слабейший вклад",
     unknown = "Нет данных",
@@ -436,21 +449,30 @@ private val EnglishUiStrings = UiStrings(
     copyFavoritesToImport = { count -> "Copy to import list ($count)" },
     batchExternalSearchHint = "Each generated query opens only after an explicit click.",
     noBatchExternalProviders = "No configured provider supports batch search for this selection.",
-    favoriteCurrentAnalysis = { rank, score, coverage ->
-        listOfNotNull(
-            rank?.let { "rank #$it" },
-            score?.let { "score $it" } ?: "score —",
-            "coverage $coverage%",
-        ).joinToString(" · ")
+    favoriteCurrentAnalysis = { rank, score, coverage, hasScoring ->
+        val scoring =
+            if (!hasScoring) {
+                null
+            } else {
+                score?.let { value -> if (coverage < 100) "score $value · coverage $coverage%" else "score $value" }
+                    ?: "score unavailable"
+            }
+        listOfNotNull(rank?.let { "rank #$it" }, scoring).joinToString(" · ")
     },
-    favoriteNotInCurrentResults = "Not in the current analysis results.",
+    favoriteNotInCurrentResults = "Does not match the current analysis criteria.",
     favoriteCurrentSelection = "Current",
     favoriteNote = "Note",
     editFavoriteNote = "Note",
     saveFavoriteNote = "Save note",
     cancelFavoriteNote = "Cancel",
     noFavoriteSnapshot = "No analysis snapshot has been saved yet.",
-    favoriteSnapshotSummary = { score, coverage -> "Saved analysis: ${score?.let { "score $it" } ?: "score —"} · coverage $coverage%" },
+    favoriteSnapshotSummary = { score, coverage, hasScoring ->
+        val scoring =
+            if (!hasScoring) null
+            else score?.let { value -> if (coverage < 100) "score $value · coverage $coverage%" else "score $value" }
+                ?: "score unavailable"
+        listOfNotNull("Saved analysis", scoring).joinToString(": ")
+    },
     favoriteSnapshotRequired = "Required",
     favoriteSnapshotPreferences = "Preferences",
     updateFavoriteSnapshot = "Update",
@@ -458,6 +480,7 @@ private val EnglishUiStrings = UiStrings(
     selected = "Selected",
     searchResults = "Search results",
     settlementsFound = { count -> if (count == 1) "1 settlement found" else "$count settlements found" },
+    coordinates = { latitude, longitude -> "Coordinates: $latitude, $longitude" },
     updating = "updating…",
     details = "Details",
     externalSearch = "External search",
@@ -472,7 +495,8 @@ private val EnglishUiStrings = UiStrings(
     summary = "Summary",
     score = "Score",
     scoreValue = { value -> value?.let { "Score $it" } ?: "Score —" },
-    scoreAndCoverage = { value, coverage -> "${value?.let { "Score $it" } ?: "Score —"} · coverage $coverage%" },
+    scoreUnavailable = "Score unavailable",
+    scoreAndCoverage = { value, coverage -> if (coverage < 100) "Score $value · coverage $coverage%" else "Score $value" },
     strongest = "Strongest",
     weakest = "Weakest",
     unknown = "Unknown",

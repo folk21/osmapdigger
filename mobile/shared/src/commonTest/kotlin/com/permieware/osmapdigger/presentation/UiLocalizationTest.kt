@@ -47,11 +47,20 @@ class UiLocalizationTest {
         assertEquals("Сохранить настройки поиска", russian.saveSearchSettings)
         assertEquals("Save search settings", english.saveSearchSettings)
         assertTrue(russian.externalSearchTermsHint.contains("Сохранить настройки поиска"))
-        assertTrue(russian.favoriteCurrentAnalysis(4, 81, 75).contains("рейтинг #4"))
-        assertEquals("Not in the current analysis results.", english.favoriteNotInCurrentResults)
+        assertEquals("Оценка недоступна", russian.scoreUnavailable)
+        assertEquals("Score unavailable", english.scoreUnavailable)
+        assertEquals("Оценка 82", russian.scoreAndCoverage(82, 100))
+        assertEquals("Оценка 82 · полнота 75%", russian.scoreAndCoverage(82, 75))
+        assertTrue(russian.favoriteCurrentAnalysis(4, 81, 75, true).contains("рейтинг #4"))
+        assertEquals("Не соответствует текущим условиям анализа.", russian.favoriteNotInCurrentResults)
+        assertEquals("Does not match the current analysis criteria.", english.favoriteNotInCurrentResults)
         assertEquals("Заметка", russian.favoriteNote)
         assertEquals("Update", english.updateFavoriteSnapshot)
-        assertTrue(russian.favoriteSnapshotSummary(81, 75).contains("81"))
+        assertTrue(russian.favoriteSnapshotSummary(81, 75, true).contains("81"))
+        assertEquals("рейтинг #4", russian.favoriteCurrentAnalysis(4, null, 0, false))
+        assertEquals("рейтинг #4 · оценка недоступна", russian.favoriteCurrentAnalysis(4, null, 0, true))
+        assertEquals("Сохранённый анализ", russian.favoriteSnapshotSummary(null, 0, false))
+        assertEquals("Координаты: 55.19, 29.75", russian.coordinates("55.19", "29.75"))
         assertNotEquals(
             russian.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),
             english.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),

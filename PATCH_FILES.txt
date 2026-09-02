@@ -1,0 +1,7 @@
+PATCH archive
+
+Modified files:
+- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/presentation/SettlementPlaceTypeResolver.kt
+- mobile/shared/src/commonTest/kotlin/com/permieware/osmapdigger/presentation/SettlementPlaceTypeResolverTest.kt
+
+Deleted files: none.
