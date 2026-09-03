@@ -61,6 +61,16 @@ class UiLocalizationTest {
         assertEquals("рейтинг #4 · оценка недоступна", russian.favoriteCurrentAnalysis(4, null, 0, true))
         assertEquals("Сохранённый анализ", russian.favoriteSnapshotSummary(null, 0, false))
         assertEquals("Координаты: 55.19, 29.75", russian.coordinates("55.19", "29.75"))
+        assertEquals(
+            "максимум баллов: до 1 км · без баллов: от 10 км",
+            russian.bestLowerSummary("1 км", "10 км"),
+        )
+        assertEquals(
+            "maximum points: from 15 km · no points: up to 3 km",
+            english.bestHigherSummary("15 km", "3 km"),
+        )
+        assertEquals("Максимум баллов до", russian.bestLower)
+        assertEquals("Без баллов от", russian.zeroHigher)
         assertNotEquals(
             russian.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),
             english.operationalFailureMessage(OperationalFailureKind.FILE_ACCESS),

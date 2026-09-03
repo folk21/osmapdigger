@@ -416,6 +416,7 @@ private fun DesktopAnalysisSidebar(
     settlementDisplayName: (Settlement) -> String,
 ) {
     val strings = LocalUiStrings.current
+    val language = LocalUiLanguage.current
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     val favoriteIds = remember(favorites) { favorites.mapTo(hashSetOf()) { it.settlementId } }
     val listState = rememberLazyListState()
@@ -628,6 +629,7 @@ private fun PreferencesSection(
     onReset: (String) -> Unit,
 ) {
     val strings = LocalUiStrings.current
+    val language = LocalUiLanguage.current
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
     val overriddenIds = remember(preferenceOverrides) { preferenceOverrides.mapTo(hashSetOf()) { it.metricId } }
     var expandedMetricId by remember { mutableStateOf<String?>(null) }
@@ -645,7 +647,7 @@ private fun PreferencesSection(
             effectivePreferences.forEach { effective ->
                 val definition = definitionMap[effective.metricId]
                 PreferenceRow(
-                    title = definition?.title ?: effective.metricId,
+                    title = definition?.let { MetricDisplayNameResolver.resolve(it, language) } ?: effective.metricId,
                     unit = definition?.unit.orEmpty(),
                     effective = effective,
                     overridden = effective.metricId in overriddenIds,

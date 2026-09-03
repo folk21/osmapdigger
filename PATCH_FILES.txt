@@ -1,7 +1,6 @@
-PATCH archive
+PATCH: fix Preference localization compile scope
 
 Modified files:
-- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/presentation/SettlementPlaceTypeResolver.kt
-- mobile/shared/src/commonTest/kotlin/com/permieware/osmapdigger/presentation/SettlementPlaceTypeResolverTest.kt
+- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/DesktopAnalysisWorkspace.kt
 
-Deleted files: none.
+Deleted files: none
