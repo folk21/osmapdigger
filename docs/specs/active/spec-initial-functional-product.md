@@ -24,7 +24,7 @@ Current implementation sub-spec:
 
 Active architecture-hardening work:
 
-- [`subspecs/kmp-modular-architecture-hardening.md`](subspecs/kmp-modular-architecture-hardening.md) — iteration 1 established acyclic logical ownership and dependency checks. Remaining hardening iterations are intentionally interleaved between completed, testable product increments instead of blocking all feature work.
+- [`subspecs/kmp-modular-architecture-hardening.md`](subspecs/kmp-modular-architecture-hardening.md) — iterations 1–5 are implemented through source-responsibility decomposition; remaining physical-module hardening is intentionally interleaved between completed, testable product increments instead of blocking feature work.
 
 The implemented [`subspecs/desktop-analysis-workspace.md`](subspecs/desktop-analysis-workspace.md) remains verification-pending while its strict country-scale scored acceptance and remaining configured checks are completed.
 

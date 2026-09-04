@@ -41,7 +41,7 @@ Models are intentionally immutable and do not know SQL/OSM selector semantics.
 
 ## Shared runtime boundaries
 
-Iteration 1 of KMP architecture hardening makes semantic ownership explicit inside the still-physical `:shared` module:
+KMP architecture hardening iterations 1–5 keep semantic ownership explicit inside the still-physical `:shared` module and reduce source-context hotspots before physical Gradle extraction:
 
 - `dataset/GeoRepository.kt` owns the read-only analytical dataset boundary;
 - `map/MapPackage.kt` owns platform-resolved local map assets;
@@ -59,6 +59,13 @@ Iteration 1 of KMP architecture hardening makes semantic ownership explicit insi
 - detailed single-settlement hydration.
 
 `OsmapDiggerRuntime` bundles dataset-scoped repository/map/browser dependencies. The platform host separately creates one application-scoped `UserPreferencesRepository` and injects it into `OsmapDiggerApp`. `workspace/AnalysisWorkspaceController.kt` owns restored hard constraints, effective preference defaults/overrides, center/radius, automatic ranked-analysis results, and persistence orchestration; Compose observes that state instead of independently owning those analytical fields.
+
+
+### Shared UI source responsibilities
+
+Wide Desktop orchestration remains in `ui/DesktopAnalysisWorkspace.kt`, but its previous independent responsibilities are split into focused sibling files: `DesktopAnalysisSidebar.kt` owns sidebar composition and candidate/result controls, `DesktopPreferencesUi.kt` owns generic Preference editing, and `DesktopSettlementPanels.kt` owns the lower summary/details/external-search panes. `SearchPane.kt` remains the responsive composition entry point while `SearchAreaUi.kt`, `DynamicFiltersUi.kt`, and `ResponsiveSettlementDetailsUi.kt` own reusable center/radius, metric-filter, and selected-settlement surfaces. Shared numeric metric rendering is centralized in presentation-owned `MetricValueFormatter` rather than duplicated inside UI files.
+
+This is a source-responsibility split only: all files remain in the same `ui` logical package and `:shared` Gradle module, so dependency direction, Compose state ownership, scoring/search semantics, persistence, and platform boundaries are unchanged.
 
 ## User preferences
 
@@ -238,7 +245,7 @@ Startup dataset resolution is host-owned. `OSMAPDIGGER_DATASET_DIR` has developm
 
 `shared/src/desktopMain/.../MapPanel.desktop.kt` is the default Desktop `actual` map surface. It renders the local package style, result/selection GeoJSON overlays, camera focus, attribution, a metric scale bar derived from the current Web Mercator camera, normal settlement-marker activation, and optional WGS84 map-location activation on MapLibre Compose native hosts, and otherwise provides the non-fatal fallback. Map focus uses an explicit monotonic request token in addition to selected settlement identity, so re-activating an already selected ranked/Favorite settlement re-centers the camera after manual panning; the Intel macOS JCEF renderer consumes the same renderer-neutral focus request. Shared UI can accept a small `PlatformMapSurface` override from the Desktop application host; the contract exposes only stable settlement IDs and `GeoPoint`, never MapLibre/JCEF types.
 
-`desktopApp/build.gradle.kts` owns the platform-native runtime selection for macOS Apple Silicon Metal, Linux x86-64 OpenGL, and Windows x86-64 OpenGL. Intel macOS receives no incompatible MapLibre JNI runtime; instead `desktopApp/.../map/IntelMacWebMapSurface.kt` owns the JCEF + MapLibre GL JS renderer. `LocalWebMapServer` binds to loopback only, serves packaged browser assets, converts local PMTiles reads into XYZ vector-tile responses, exposes MapLibre's metric scale control, and accepts bounded same-origin POST payloads for normal stable-ID marker activation and WGS84 map-location activation. `IntelMacWebMapSurface` marshals those callbacks onto the Desktop AWT event queue before invoking shared UI callbacks, keeping browser/native lifecycle outside shared code.
+`desktopApp/build.gradle.kts` owns the platform-native runtime selection for macOS Apple Silicon Metal, Linux x86-64 OpenGL, and Windows x86-64 OpenGL. Intel macOS receives no incompatible MapLibre JNI runtime; instead `desktopApp/.../map/IntelMacWebMapSurface.kt` owns the JCEF + MapLibre GL JS renderer. `LocalWebMapServer` binds to loopback only and now owns HTTP lifecycle/routing/response transport. `LocalPmtilesTileSource` owns validated random-access MVT reads, `LocalWebMapInteraction` owns the bounded same-origin stable-ID/WGS84 payload contract, and `LocalWebMapPage` owns PMTiles-style rewriting plus the packaged MapLibre GL JS page and metric scale control. `IntelMacWebMapSurface` marshals callbacks onto the Desktop AWT event queue before invoking shared UI callbacks, keeping browser/native lifecycle outside shared code.
 
 ### Desktop diagnostics
 

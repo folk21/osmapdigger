@@ -18,15 +18,12 @@ This is a bounded architecture-hardening track that may be interleaved with
 [`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md) and later product increments. Architecture work
 must happen only between completed, testable feature increments, not in the middle of an unfinished behavioral change.
 
-Iteration 1 implementation is complete; configured Kotlin validation remains pending in environments where the Gradle distribution/dependencies are unavailable. Logical commonMain ownership is acyclic, workspace orchestration and filter-summary
-presentation have moved to the appropriate owners, dataset/map/external contracts no longer live in a generic runtime
-API file, the unused legacy dataset-manager API is removed, and a network-free architecture check protects the current
-dependency direction. The Favorites/import/notebook workflow is now the current product implementation focus.
+Hardening iterations 1–5 are implemented; configured Kotlin validation remains pending in environments where the Gradle distribution/dependencies are unavailable. Logical commonMain ownership is acyclic, runtime contracts and shared persistence/query semantics have focused owners, expected operational failures follow one policy, dataset installation is failure-safe, and the largest Kotlin source hot spots have been decomposed along existing responsibilities. The Favorites/import/notebook workflow remains the current product implementation focus.
 
 The remaining work must continue as independently reviewable PATCH iterations. Each iteration must leave the repository
 in a coherent, testable state; this specification deliberately rejects a single repository-wide rewrite.
 
-The first Favorites/import/notebook feature checkpoints are complete through persistent Favorites. Hardening iterations 2–4 are now also implemented: selected meaningful runtime paths use the shared typed operational-failure contract, settings schema/migrations have one shared semantic owner, package metadata/layout parsing is shared, Desktop/Android replacement installation is staging-based and failure-safe, and compatibility-sensitive candidate SQL is produced once by shared `DatasetCandidateQueries`. Configured Gradle validation remains pending in environments without an available Gradle distribution. Favorites enrichment remains the current product implementation focus.
+The first Favorites/import/notebook feature checkpoints are complete through persistent Favorites, frozen snapshots, and bounded batch external search. Hardening iterations 2–5 are now also implemented: selected meaningful runtime paths use the shared typed operational-failure contract, settings schema/migrations have one shared semantic owner, package metadata/layout parsing is shared, Desktop/Android replacement installation is staging-based and failure-safe, compatibility-sensitive candidate SQL is produced once by shared `DatasetCandidateQueries`, and oversized UI/JCEF entry files are split into cohesive semantic components. Configured Gradle validation remains pending in environments without an available Gradle distribution. Portable Favorites export/share remains the next product increment.
 
 ## Goal
 
@@ -92,12 +89,13 @@ The unused legacy `DatasetManager`/`DatasetMetadata`/`DatasetConfig` API and its
 
 Cross-platform implementations intentionally use different platform APIs. Iterations 2 and 3 removed the previous settings-schema and package-metadata duplication by introducing shared semantic owners. Iteration 4 now also centralizes compatibility-sensitive hard-filter/ranked-candidate SQL and deterministic bind/batching semantics in shared `DatasetCandidateQueries`, while JDBC/Android execution and row mapping remain platform-owned.
 
-Current source-size hot spots include approximately:
+Iteration 5 has reduced the previous mixed-responsibility source-size hot spots. The primary orchestration entry points are now approximately:
 
-- `DesktopAnalysisWorkspace.kt` — 44.7 KB / 1052 lines;
-- Desktop `LocalWebMapServer.kt` — 22.5 KB / 543 lines;
-- `SearchPane.kt` — 20.9 KB / 517 lines;
-- `AnalysisWorkspaceController.kt` — 16.1 KB / 381 lines.
+- `DesktopAnalysisWorkspace.kt` — 17.6 KB, with sidebar, Preferences, and settlement panes in focused sibling files;
+- Desktop `LocalWebMapServer.kt` — 12.2 KB, with PMTiles access, interaction protocol, and style/page construction separated;
+- `SearchPane.kt` — 6.0 KB, with search-area, dynamic-filter, and responsive-details components separated.
+
+The remaining files above the approximate 20 KB guideline were reviewed and deliberately retained: `UiLocalization.kt` is primarily cohesive declarative bilingual catalog data, `AnalysisWorkspaceController.kt` is the intentionally broad application-state orchestration boundary, and `OsmapDiggerApp.kt` is the shared composition root only slightly above the threshold. No independent responsibility was extracted from those files merely to satisfy a byte counter; physical/module-boundary work remains for later gates.
 
 The Python builder remains outside the primary scope of this KMP sub-spec. Its large settlement-canonicalization file
 may be reviewed separately after Kotlin hardening.
@@ -641,7 +639,7 @@ Implemented result:
 - network-free architecture checks prevent the migrated SQL fragments/bind-budget constant from returning to platform repositories;
 - focused shared query tests cover range/filter argument ordering, sparse-scoring `LEFT JOIN`, no-scoring-metric behavior, empty imported scopes, and >900-ID deterministic batching.
 
-### Iteration 5 — source responsibility/size cleanup
+### Iteration 5 — source responsibility/size cleanup — implementation complete, configured validation pending
 
 Scope:
 
@@ -657,6 +655,15 @@ Iteration acceptance:
 - no new generic utility package;
 - current >20 KB hot spots are materially reduced or have an explicit documented reason to remain large;
 - tests and manual behavior remain equivalent.
+
+Implemented result:
+
+- `DesktopAnalysisWorkspace.kt` now owns wide-workspace orchestration only; `DesktopAnalysisSidebar.kt`, `DesktopPreferencesUi.kt`, and `DesktopSettlementPanels.kt` own the corresponding cohesive presentation responsibilities;
+- `SearchPane.kt` now composes reusable `SearchAreaUi.kt`, `DynamicFiltersUi.kt`, and `ResponsiveSettlementDetailsUi.kt` components instead of owning their implementations;
+- `LocalWebMapServer.kt` now owns loopback HTTP lifecycle/routing while `LocalPmtilesTileSource.kt`, `LocalWebMapInteraction.kt`, and `LocalWebMapPage.kt` own PMTiles access, bounded same-origin interaction decoding, and style/page construction respectively;
+- repeated metric-value rendering moved to semantic presentation owner `MetricValueFormatter` with focused shared tests;
+- network-free architecture validation now protects the three former oversized entry points from silently growing past the approximately 20 KiB responsibility-review threshold;
+- focused Desktop tests cover the extracted interaction codec and pure style/page rewriting contracts. Configured Gradle execution remains required on a normal workstation before this iteration is fully accepted.
 
 ### Iteration 6 — first physical Gradle module extraction
 

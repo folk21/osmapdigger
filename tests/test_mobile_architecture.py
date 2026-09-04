@@ -248,3 +248,21 @@ def test_candidate_query_semantics_have_one_shared_owner() -> None:
         assert "FROM settlement_metric sm$index" not in text
         assert "LEFT JOIN settlement_metric sm_score" not in text
         assert "SQLITE_SAFE_BIND_PARAMETER_COUNT" not in text
+
+
+def test_gate5_entry_point_hotspots_stay_below_source_review_threshold() -> None:
+    # Gate 5 keeps orchestration entry points small enough that feature responsibilities remain discoverable.
+    source_paths = [
+        REPO_ROOT
+        / "mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/DesktopAnalysisWorkspace.kt",
+        REPO_ROOT
+        / "mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/SearchPane.kt",
+        REPO_ROOT
+        / "mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/map/LocalWebMapServer.kt",
+    ]
+    oversized = {
+        str(path.relative_to(REPO_ROOT)): path.stat().st_size
+        for path in source_paths
+        if path.stat().st_size > 20 * 1024
+    }
+    assert oversized == {}, f"Gate 5 entry points exceeded the 20 KiB responsibility review threshold: {oversized}"

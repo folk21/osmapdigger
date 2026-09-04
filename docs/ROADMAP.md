@@ -11,12 +11,12 @@ This roadmap stays intentionally compact. Detailed requirements for significant 
 
 Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
-Architecture note: KMP architecture hardening iterations 1–4 are implemented between feature checkpoints (dependency direction, typed operational failures, shared settings/package semantics, atomic dataset installation, and shared analytical candidate-query semantics); later gates remain interleaved backlog.
+Architecture note: KMP architecture hardening iterations 1–5 are implemented between feature checkpoints (dependency direction, typed operational failures, shared settings/package semantics, atomic dataset installation, shared analytical candidate-query semantics, and source-responsibility decomposition); physical Gradle module extraction remains interleaved backlog.
 
 Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, persistent favorites/notebook, later analysis snapshots, export/share, and batch external search.
 Candidate-source core/workflow, visual ranked affordances, persistent dataset-scoped Favorites, explicit selected-Favorites transfer back into imported candidates, notebook notes/frozen analysis snapshots, and explicit bounded batch external search are implemented; portable export/share remains the next product increment.
 
-Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — dependency-direction, typed-error, shared settings/package/atomic-install, and analytical-query DRY gates 1–4 are implemented; later source-size/module gates run between completed product increments where they protect the next feature boundary.
+Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — dependency-direction, typed-error, shared settings/package/atomic-install, analytical-query DRY, and source-responsibility gates 1–5 are implemented; later physical-module gates run between completed product increments where they protect the next feature boundary.
 
 Previously implemented Desktop analysis workspace, Desktop map, and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
 

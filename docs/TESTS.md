@@ -208,7 +208,9 @@ The original generated repository environment could not complete network-depende
 Shared input parsing tests verify that blank and numeric zero mean an unset optional radius, finite positive values remain valid, and negative/non-numeric/non-finite values remain invalid. Shared presentation tests also verify deterministic compact settlement metric selection: every effective Required metric first, then every enabled Preference, with de-duplication and explicit unknown values. GeoJSON overlay tests verify that stable settlement IDs and display names are both available to map renderers. Desktop manual acceptance should verify automatic recalculation without pressing Search, the radius Clear action, the result-count status pane, the compact metric summary, scrollable Details navigation, and the separate External search provider view.
 
 
-JCEF settlement-ID and WGS84 map-location payload decoding plus the minimum normal-marker click hit tolerance are covered without starting JCEF or a display server. Shared settlement lookup tests cover nearest-center selection against the complete dataset index using Haversine distance.
+JCEF settlement-ID and WGS84 map-location payload decoding plus the minimum normal-marker click hit tolerance are covered without starting JCEF or a display server. Desktop JVM tests also exercise the extracted pure web-map style/page builder, including PMTiles source rewriting, same-origin interaction endpoints, metric scale wiring, and initial camera interpolation. Shared settlement lookup tests cover nearest-center selection against the complete dataset index using Haversine distance.
+
+The network-free mobile architecture check also protects the Gate 5 orchestration entry points (`DesktopAnalysisWorkspace.kt`, `SearchPane.kt`, and `LocalWebMapServer.kt`) from silently growing beyond the approximately 20 KiB responsibility-review threshold after their source decomposition.
 
 ## UI localization checks
 
