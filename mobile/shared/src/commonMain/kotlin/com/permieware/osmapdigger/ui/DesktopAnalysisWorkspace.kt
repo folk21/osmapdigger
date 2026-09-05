@@ -21,6 +21,7 @@ import com.permieware.osmapdigger.external.ExternalLinkOpener
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 import com.permieware.osmapdigger.notebook.FavoriteSettlement
+import com.permieware.osmapdigger.notebook.FavoriteNotebookExporter
 import com.permieware.osmapdigger.preferences.EffectiveMetricPreference
 import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.presentation.DesktopWorkspaceLayoutPolicy
@@ -76,6 +77,7 @@ internal fun DesktopAnalysisWorkspace(
     externalLinks: ExternalLinkOpener,
     searchProviders: List<ExternalSearchProvider>,
     onExternalSearchSettingsSave: (List<ExternalSearchProviderTermsUpdate>) -> Unit,
+    favoriteNotebookExporter: FavoriteNotebookExporter?,
     settlementDisplayName: (Settlement) -> String = { it.name },
     mapContent: @Composable (Modifier, (String) -> Unit, ((GeoPoint) -> Unit)?) -> Unit,
 ) {
@@ -253,6 +255,7 @@ internal fun DesktopAnalysisWorkspace(
                         propertySearchTerms = datasetInfo?.propertySearchTerms ?: "property",
                         onExternalSearchUrlOpen = externalLinks::open,
                         onExternalSearchSettingsSave = onExternalSearchSettingsSave,
+                        favoriteNotebookExporter = favoriteNotebookExporter,
                         onClose = { favoritesOpen = false },
                         settlementDisplayName = settlementDisplayName,
                     )

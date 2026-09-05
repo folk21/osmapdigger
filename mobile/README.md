@@ -20,8 +20,8 @@ flowchart LR
 | Module | Owns | Direct internal dependencies | Main entry points | Focused validation |
 |---|---|---|---|---|
 | `:shared` | Country-agnostic models, dataset/search/analysis contracts and logic, workspace orchestration, presentation, shared Compose UI, renderer-neutral map contracts | none | `GeoRepository`, `SearchService`, `SettlementAnalysisService`, `AnalysisWorkspaceController`, `OsmapDiggerApp` | `./gradlew :shared:desktopTest`, `./gradlew :shared:testAndroidHostTest` |
-| `:desktopApp` | JVM composition root, JDBC, Desktop filesystem/package loading, browser integration, native/JCEF map host | `:shared` | Desktop main host, `JdbcGeoRepository`, `DesktopDataset` | `./gradlew :desktopApp:jvmTest` |
-| `:androidApp` | Android composition root, Android SQLite, SAF/package installation, browser intents, Activity lifecycle | `:shared` | Android Activity, `AndroidGeoRepository`, `AndroidDataset` | `./gradlew :androidApp:assembleDebug` |
+| `:desktopApp` | JVM composition root, JDBC, Desktop filesystem/package loading, Favorites ZIP save/reveal, browser integration, native/JCEF map host | `:shared` | Desktop main host, `JdbcGeoRepository`, `DesktopDataset` | `./gradlew :desktopApp:jvmTest` |
+| `:androidApp` | Android composition root, Android SQLite, SAF/package installation, Favorites system-share adapter, browser intents, Activity lifecycle | `:shared` | Android Activity, `AndroidGeoRepository`, `AndroidDataset` | `./gradlew :androidApp:assembleDebug` |
 
 See [`IMPLEMENTATION.md`](IMPLEMENTATION.md) for concrete class/platform call paths.
 
@@ -87,7 +87,7 @@ flowchart TD
 | `dataset` | Read-only analytical dataset boundary, shared candidate-query semantics, package metadata/layout semantics, and deterministic stable-ID batching | `domain`, `error` | `GeoRepository`, `DatasetCandidateQueries`, `DatasetPackageLayout`, `DatasetPackageMetadataParser`, `StableIdBatches` |
 | `map` | Renderer-neutral map data/assets and overlay serialization | `domain` | `MapPackage`, `MapOverlayGeoJson` |
 | `external` | External-search provider model, URL expansion, explicit platform link action | `domain`, `error` | `ExternalSearchProviderRepository`, `ExternalSearchUrlBuilder`, `ExternalLinkOpener` |
-| `notebook` | Dataset-scoped persistent Favorites, notes, frozen versioned snapshot models/codecs, and typed storage wrapper | `domain`, `error` | `FavoriteSettlement`, `FavoriteAnalysisSnapshot`, `FavoriteSettlementRepository` |
+| `notebook` | Dataset-scoped persistent Favorites, notes, frozen versioned snapshot models/codecs, deterministic portable export model, and typed storage/export wrappers | `domain`, `error` | `FavoriteSettlement`, `FavoriteAnalysisSnapshot`, `FavoriteNotebookExportBuilder`, `FavoriteSettlementRepository`, `FavoriteNotebookExporter` |
 | `search` | Deterministic hard search, radius semantics, settlement-name matching, conservative settlement-list import resolution | `domain`, `geo`, `dataset` | `SearchService`, `SettlementSearchService`, `SettlementListImportResolver`, `SettlementImportReviewer`, `SearchRequestSemantics` |
 | `analysis` | Preference scoring, candidate-scope/imported-list contracts, contributions, ranked-analysis orchestration | `domain`, `search`, `dataset` | `SettlementCandidateScope`, `ImportedCandidateList`, `PreferenceScorer`, `SettlementRanker`, `SettlementAnalysisService` |
 | `preferences` | Application-owned persisted search/preference/candidate-scope models, payload codecs, restore/override logic, and operational storage wrapper | `domain`, `analysis`, `error`, `settings` | `UserPreferencesRepository`, `MetricPreferenceOverrideResolver` |

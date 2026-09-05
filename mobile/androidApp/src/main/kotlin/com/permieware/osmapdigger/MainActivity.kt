@@ -12,6 +12,8 @@ import com.permieware.osmapdigger.error.OperationalFailureKind
 import com.permieware.osmapdigger.error.toOperationalFailure
 import com.permieware.osmapdigger.external.OperationalExternalSearchProviderRepository
 import com.permieware.osmapdigger.notebook.AndroidFavoriteSettlementRepository
+import com.permieware.osmapdigger.notebook.AndroidFavoriteNotebookExporter
+import com.permieware.osmapdigger.notebook.OperationalFavoriteNotebookExporter
 import com.permieware.osmapdigger.notebook.OperationalFavoriteSettlementRepository
 import com.permieware.osmapdigger.preferences.AndroidUserPreferencesRepository
 import com.permieware.osmapdigger.preferences.OperationalUserPreferencesRepository
@@ -69,6 +71,8 @@ class MainActivity : ComponentActivity() {
             OperationalUserPreferencesRepository(AndroidUserPreferencesRepository(this))
         val favoriteSettlements =
             OperationalFavoriteSettlementRepository(AndroidFavoriteSettlementRepository(this))
+        val favoriteNotebookExporter =
+            OperationalFavoriteNotebookExporter(AndroidFavoriteNotebookExporter(this))
         val externalSearchProviders =
             OperationalExternalSearchProviderRepository(AndroidExternalSearchProviderRepository(this))
 
@@ -82,6 +86,7 @@ class MainActivity : ComponentActivity() {
                 runtime = state.value?.runtime,
                 userPreferences = userPreferences,
                 favoriteSettlements = favoriteSettlements,
+                favoriteNotebookExporter = favoriteNotebookExporter,
                 externalSearchProviders = externalSearchProviders,
                 hostFailure = failures.value,
                 onImportDataset = {

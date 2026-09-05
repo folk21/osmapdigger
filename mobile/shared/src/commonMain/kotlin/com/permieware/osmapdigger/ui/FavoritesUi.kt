@@ -37,6 +37,7 @@ import com.permieware.osmapdigger.external.ExternalSearchBatchBuilder
 import com.permieware.osmapdigger.external.ExternalSearchProvider
 import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 import com.permieware.osmapdigger.notebook.FavoriteAnalysisSnapshot
+import com.permieware.osmapdigger.notebook.FavoriteNotebookExporter
 import com.permieware.osmapdigger.notebook.FavoritePreferenceSnapshot
 import com.permieware.osmapdigger.notebook.FavoriteRequiredCriterionSnapshot
 import com.permieware.osmapdigger.notebook.FavoriteSettlement
@@ -65,6 +66,7 @@ internal fun FavoritesPanel(
     propertySearchTerms: String,
     onExternalSearchUrlOpen: (String) -> Unit,
     onExternalSearchSettingsSave: (List<ExternalSearchProviderTermsUpdate>) -> Unit,
+    favoriteNotebookExporter: FavoriteNotebookExporter?,
     onClose: () -> Unit,
     settlementDisplayName: (Settlement) -> String,
 ) {
@@ -125,6 +127,12 @@ internal fun FavoritesPanel(
                     }
                 }
                 Row {
+                    FavoriteNotebookExportAction(
+                        favorites = favorites,
+                        settlementsById = settlementsById,
+                        exporter = favoriteNotebookExporter,
+                        settlementDisplayName = settlementDisplayName,
+                    )
                     if (favorites.isNotEmpty()) {
                         TextButton(onClick = onClear) { Text(strings.clearFavorites) }
                     }

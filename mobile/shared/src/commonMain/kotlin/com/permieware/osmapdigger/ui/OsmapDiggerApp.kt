@@ -17,6 +17,7 @@ import com.permieware.osmapdigger.external.ExternalSearchProviderRepository
 import com.permieware.osmapdigger.external.ExternalSearchProviderTermsUpdate
 import com.permieware.osmapdigger.map.MapPackage
 import com.permieware.osmapdigger.notebook.FavoriteSettlementRepository
+import com.permieware.osmapdigger.notebook.FavoriteNotebookExporter
 import com.permieware.osmapdigger.preferences.UserPreferencesRepository
 import com.permieware.osmapdigger.presentation.SettlementDisplayNameResolver
 import com.permieware.osmapdigger.presentation.UiLanguage
@@ -38,6 +39,7 @@ fun OsmapDiggerApp(
     userPreferences: UserPreferencesRepository,
     favoriteSettlements: FavoriteSettlementRepository,
     externalSearchProviders: ExternalSearchProviderRepository,
+    favoriteNotebookExporter: FavoriteNotebookExporter? = null,
     onImportDataset: () -> Unit,
     onImportSettlementListFile: ((String) -> String?)? = null,
     hostFailure: OperationalFailure? = null,
@@ -64,6 +66,7 @@ fun OsmapDiggerApp(
                 userPreferences = userPreferences,
                 favoriteSettlements = favoriteSettlements,
                 externalSearchProviders = externalSearchProviders,
+                favoriteNotebookExporter = favoriteNotebookExporter,
                 onImportDataset = onImportDataset,
                 onImportSettlementListFile = onImportSettlementListFile,
                 platformMapSurface = platformMapSurface,
@@ -114,6 +117,7 @@ private fun LoadedDatasetApp(
     userPreferences: UserPreferencesRepository,
     favoriteSettlements: FavoriteSettlementRepository,
     externalSearchProviders: ExternalSearchProviderRepository,
+    favoriteNotebookExporter: FavoriteNotebookExporter?,
     onImportDataset: () -> Unit,
     onImportSettlementListFile: ((String) -> String?)?,
     platformMapSurface: PlatformMapSurface?,
@@ -377,6 +381,7 @@ private fun LoadedDatasetApp(
                 externalLinks = runtime.externalLinks,
                 searchProviders = searchProviders,
                 onExternalSearchSettingsSave = updateExternalSearchSettings,
+                favoriteNotebookExporter = favoriteNotebookExporter,
                 settlementDisplayName = settlementDisplayName,
                 mapContent = { mapModifier, onSettlementActivated, onMapLocationActivated ->
                     RuntimeMapPanel(

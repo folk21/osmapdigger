@@ -1,6 +1,7 @@
-PATCH: fix Preference localization compile scope
+PATCH: fix Favorites export composable wiring
 
 Modified files:
-- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/DesktopAnalysisWorkspace.kt
+- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/OsmapDiggerApp.kt
 
-Deleted files: none
+Deleted files:
+- none
