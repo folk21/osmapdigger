@@ -164,6 +164,23 @@ The analysis sidebar is resizable on wide Desktop windows and defaults to roughl
 
 Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback. Supported map renderers show a metric scale in the bottom-right corner. Ranked settlement markers show their settlement names when space/zoom permits, with the selected settlement label kept visually prominent. Clicking a ranked settlement marker selects the same result shown in the left list and opens its lower summary. **Pick center on map** is different: click anywhere on the map and OsmapDigger selects the geographically nearest settlement from the complete dataset as the search center. The chosen settlement name appears in Search area, and existing radius, persistence, and automatic recalculation semantics are reused.
 
+## Review Preference calibration
+
+The checked-in `balanced-living` defaults are fixed product heuristics. Before changing their target, limit, or weight values, inspect a representative generated runtime database:
+
+```bash
+make preference-calibration
+```
+
+The default target is `data/generated/packages/belarus`. Override it for another generated package:
+
+```bash
+make preference-calibration \
+  PREFERENCE_CALIBRATION_DATASET=data/generated/packages/andorra
+```
+
+The command reports actual generated metric distributions, endpoint saturation, enabled-weight grouping, and overall score/coverage percentiles. Treat the report as calibration evidence only: OsmapDigger does not derive hidden percentile-based thresholds at runtime. If defaults are changed after review, rebuild the affected analytical packages before evaluating the application again.
+
 ## Record ranked-analysis acceptance performance
 
 After opening a realistic country-scale package on Desktop, exercise representative Required/Preferences/radius changes and let the latest recalculation complete. Then run:

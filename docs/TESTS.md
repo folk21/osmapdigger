@@ -90,6 +90,29 @@ On wide Desktop, verify that **Candidate source** can switch between the full da
 
 On wide Desktop, mark several ranked settlements as **Favorites** and verify that membership does not change current candidate source, Required/Preferences, ranking, or map/details selection. Open **Favorites** and verify compact current context, individual selection, **Select all**, clear-selection, open/remove/clear actions, and disabled selection for an entry unavailable in the current dataset. Use **Copy to import list** and verify the selected stable IDs replace the previous retained import, the imported source becomes active without name resolution, the Favorites pane closes, and the sidebar returns to ranked results while existing Required/Preferences/center/radius state remains intact. Open batch external search settings and verify every provider shows its effective additional terms directly, clearing a field persists an explicit empty value, and **Set defaults** fills the fields with dataset terms; saving must affect both single-settlement and batch URLs without changing candidate source. Select several available Favorites and use **External search**: only configured providers whose templates support a combined `{query}` should appear, Cyrillic/non-Latin names must remain correct after percent encoding, long selections must split into bounded deterministic parts, and no browser action may occur until the user explicitly opens one displayed provider/part. Add a Favorite from a ranked result and verify a frozen snapshot records the saved score/coverage plus current effective Required and enabled Preference contribution context. Change current filters/weights and confirm the saved snapshot remains unchanged. Also verify that an eligible Favorite pushed below the visible result limit still shows its complete current rank/score and can explicitly update its snapshot, while a Favorite excluded by Required/radius/candidate source reports that it does not match the current analysis criteria. Edit/clear the note and explicitly update the snapshot; only that explicit action may replace it. Use **Export** and verify one `osmapdigger-favorites.zip` is saved and its location is revealed. The archive must contain exactly `favorites.json` and `favorites.md`, keep deterministic ordering, contain stable IDs, saved/current names, notes and frozen snapshot criteria, and contain no local filesystem/PBF/settings paths. A Favorite unavailable in the current rebuilt dataset must still be present in both export representations. Restart the application with the same dataset and confirm Favorites, notes, and snapshots are restored. Favorite identity must be dataset-scoped and duplicate additions must not create duplicate rows. Android must continue to compile and use the same settings schema/repository contract; its export adapter must expose the generated ZIP with the normal system share sheet even though the polished Favorites browsing surface remains Desktop-first.
 
+## Preference calibration validation
+
+Before deliberately changing checked-in `balanced-living` target/limit/weight defaults, inspect the distributions published by a representative generated dataset rather than tuning from isolated settlements. The calibration report reads the actual runtime `georisk.sqlite` contract and reproduces the current piecewise-linear Preference quality/weighted-score semantics using only the Python standard library.
+
+For the default Belarus generated package:
+
+```bash
+make preference-calibration
+```
+
+To inspect another generated package or direct database path:
+
+```bash
+make preference-calibration \
+  PREFERENCE_CALIBRATION_DATASET=data/generated/packages/andorra
+```
+
+The report includes enabled weight by persisted metric group, known-value coverage, p10/p25/p50/p75/p90 metric distributions, the percentage of known values saturated at full quality / in transition / at zero quality, and overall score/weighted-coverage percentiles. A warning is emitted when at least 90% of known values for one enabled Preference saturate at one scoring endpoint. That warning is review evidence, not an automatic threshold rewrite or hidden runtime adaptation.
+
+Record representative Andorra/Belarus output when accepting or deliberately recalibrating `balanced-living`. If a report exposes extreme saturation or accidental group-weight dominance, review the product rationale before changing configuration and rebuild the dataset afterward. The report must not be used to derive per-dataset runtime thresholds automatically.
+
+Focused deterministic tests for the report live in `tests/test_preference_calibration_report.py` and use a synthetic SQLite database.
+
 ## Ranked-analysis performance measurement
 
 Desktop records one `analysis.performance` line for each completed current analysis generation. Use a realistic country-scale package, perform representative Required/Preferences/radius edits, then inspect `~/.osmapdigger/logs/desktop.log`, for example with `grep "analysis.performance" ~/.osmapdigger/logs/desktop.log`. Each line records:

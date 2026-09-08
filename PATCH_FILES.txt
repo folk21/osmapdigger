@@ -1,7 +1,21 @@
-PATCH: fix Favorites export composable wiring
+PATCH: Preference calibration validation tooling
 
-Modified files:
-- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/OsmapDiggerApp.kt
+Added:
+- scripts/preference_calibration_report.py
+- tests/test_preference_calibration_report.py
 
-Deleted files:
-- none
+Modified:
+- Makefile
+- CHANGELOG.md
+- docs/IMPLEMENTATION.md
+- docs/ROADMAP.md
+- docs/TESTS.md
+- docs/USAGE.md
+- docs/specs/active/subspecs/settlement-shortlist-workflow.md
+
+Deleted paths:
+- None
+
+Validation:
+- make check -> 58 passed, 2 existing PyProj/NumPy deprecation warnings
+- make preference-calibration exercised against a synthetic generated SQLite package

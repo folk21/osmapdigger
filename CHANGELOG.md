@@ -8,6 +8,7 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+- Add a deterministic generated-dataset Preference calibration report covering metric percentiles, endpoint saturation, enabled group weights, and aggregate score/coverage distributions before product-default tuning.
 - Add deterministic Favorites export as one portable ZIP containing versioned JSON and Markdown, with Desktop save/reveal and Android system-share adapters.
 - Complete KMP architecture hardening Gate 5 by decomposing oversized Desktop/shared UI and Intel macOS web-map source files into cohesive responsibilities, centralizing generic metric-value presentation, and adding focused interaction/style-page regression checks without changing runtime behavior.
 - Localize Desktop Preference metric names with the active UI language and replace technical best/zero threshold wording with explicit maximum-points/no-points descriptions.

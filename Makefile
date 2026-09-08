@@ -1,4 +1,4 @@
-.PHONY: help check check-all test-python test-mobile test-desktop analysis-acceptance analysis-acceptance-strict build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
+.PHONY: help check check-all test-python test-mobile test-desktop analysis-acceptance analysis-acceptance-strict preference-calibration build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
 
 PYTHON ?= python
 GEO_BUILDER_PYTHONPATH = geo-builder/src
@@ -6,6 +6,7 @@ DATASET_CONFIG ?= geo-builder/config/datasets.toml
 METRICS_CONFIG ?= geo-builder/config/metrics.toml
 ANALYSIS_LOG ?= $(HOME)/.osmapdigger/logs/desktop.log
 ANALYSIS_MIN_CANDIDATES ?= 1000
+PREFERENCE_CALIBRATION_DATASET ?= data/generated/packages/belarus
 
 help:
 	@echo "OsmapDigger targets:"
@@ -13,6 +14,7 @@ help:
 	@echo "  check-all            Run Python plus configured Kotlin tests"
 	@echo "  analysis-acceptance         Report latest representative Desktop analysis timing"
 	@echo "  analysis-acceptance-strict  Require a representative run with scoring metrics"
+	@echo "  preference-calibration      Report Preference metric/score distributions for a generated dataset"
 	@echo "  build-andorra-data   Build SQLite/metadata from local Andorra PBF, skip PMTiles"
 	@echo "  build-andorra        Build full Andorra package including PMTiles"
 	@echo "  build-belarus-data   Build Belarus SQLite/metadata from local PBF, skip PMTiles"
@@ -34,6 +36,9 @@ analysis-acceptance:
 
 analysis-acceptance-strict:
 	$(PYTHON) scripts/analysis_performance_report.py --log "$(ANALYSIS_LOG)" --min-candidates $(ANALYSIS_MIN_CANDIDATES) --require-scoring
+
+preference-calibration:
+	$(PYTHON) scripts/preference_calibration_report.py --dataset "$(PREFERENCE_CALIBRATION_DATASET)"
 
 test-desktop:
 	cd mobile && ./gradlew :shared:desktopTest :desktopApp:jvmTest
