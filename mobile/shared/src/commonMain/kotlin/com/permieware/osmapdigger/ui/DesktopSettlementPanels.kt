@@ -19,7 +19,11 @@ import com.permieware.osmapdigger.preferences.EffectiveMetricPreference
 import com.permieware.osmapdigger.presentation.MetricValueFormatter
 import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
 import com.permieware.osmapdigger.presentation.NumberFormatter
+import com.permieware.osmapdigger.presentation.PreferenceDataAvailabilityBuilder
+import com.permieware.osmapdigger.presentation.PreferenceDataAvailabilityPresenter
+import com.permieware.osmapdigger.presentation.PreferenceQualityBaseline
 import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
+import com.permieware.osmapdigger.presentation.ExplainedPreferenceContribution
 import com.permieware.osmapdigger.presentation.SettlementCriteriaSummaryBuilder
 import com.permieware.osmapdigger.presentation.SettlementPlaceTypeResolver
 import com.permieware.osmapdigger.presentation.TwoRowLayout
@@ -140,6 +144,18 @@ internal fun SettlementSummaryPanel(
                         strings.scoreAndCoverage(value.roundToInt(), settlementScore.coverage.roundToInt())
                     } ?: strings.scoreUnavailable
                 Text(scoreText, style = MaterialTheme.typography.titleSmall)
+                if (settlementScore?.value == null && settlementScore != null) {
+                    val availability = remember(settlementScore) { PreferenceDataAvailabilityBuilder.build(settlementScore) }
+                    if (availability.isScoreUnavailableBecauseAllPreferenceDataIsMissing) {
+                        Text(
+                            strings.missingPreferenceSummary(
+                                availability.missingPreferenceCount,
+                                availability.totalPreferenceCount,
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
             }
 
             val criteriaSummary = remember(details, definitions, conditions, effectivePreferences, language) {
@@ -187,6 +203,7 @@ internal fun SettlementDetailedInfoPanel(
     score: SettlementScore?,
     hasEnabledPreferences: Boolean,
     definitions: Map<String, MetricDefinition>,
+    comparisonBaseline: PreferenceQualityBaseline,
     onBack: () -> Unit,
     settlementDisplayName: (Settlement) -> String,
 ) {
@@ -230,26 +247,43 @@ internal fun SettlementDetailedInfoPanel(
                         strings.scoreAndCoverage(value.roundToInt(), settlementScore.coverage.roundToInt())
                     } ?: strings.scoreUnavailable
                 Text(scoreText, style = MaterialTheme.typography.titleMedium)
-                val explanation = settlementScore?.let { currentScore ->
-                    remember(currentScore, definitions) {
-                        ScoreExplanationBuilder.build(currentScore, definitions)
+                val dataAvailability = settlementScore?.let { currentScore ->
+                    remember(currentScore) { PreferenceDataAvailabilityBuilder.build(currentScore) }
+                }
+                if (dataAvailability != null && dataAvailability.missingPreferenceCount > 0) {
+                    Text(
+                        strings.missingPreferenceSummary(
+                            dataAvailability.missingPreferenceCount,
+                            dataAvailability.totalPreferenceCount,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(strings.missingPreferenceCriteria, style = MaterialTheme.typography.labelMedium)
+                    val missingTitles = remember(dataAvailability, definitions, language) {
+                        PreferenceDataAvailabilityPresenter.missingTitles(dataAvailability, definitions, language)
+                    }
+                    missingTitles.forEach { title ->
+                        Text("• $title", style = MaterialTheme.typography.bodySmall)
                     }
                 }
-                explanation?.strongest?.let { strongest ->
+                val explanation = settlementScore?.let { currentScore ->
+                    remember(currentScore, definitions, comparisonBaseline) {
+                        ScoreExplanationBuilder.build(currentScore, definitions, comparisonBaseline)
+                    }
+                }
+                explanation?.advantage?.let { advantage ->
+                    val definition = definitions[advantage.contribution.metricId]
+                    val title = definition?.let { MetricDisplayNameResolver.resolve(it, language) } ?: advantage.title
                     Text(
-                        "${strings.strongest}: ${contributionLabel(strongest.title, strongest.unit, strongest.contribution.rawValue, strongest.contribution.scoreContribution, strings)}",
+                        "${strings.mainAdvantage}: ${comparativeContributionLabel(advantage, title, strings)}",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                explanation?.weakest?.let { weakest ->
+                explanation?.compromise?.let { compromise ->
+                    val definition = definitions[compromise.contribution.metricId]
+                    val title = definition?.let { MetricDisplayNameResolver.resolve(it, language) } ?: compromise.title
                     Text(
-                        "${strings.weakest}: ${contributionLabel(weakest.title, weakest.unit, weakest.contribution.rawValue, weakest.contribution.scoreContribution, strings)}",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-                if (explanation != null && explanation.unknown.isNotEmpty()) {
-                    Text(
-                        "${strings.unknown}: ${explanation.unknown.joinToString { it.title }}",
+                        "${strings.mainCompromise}: ${comparativeContributionLabel(compromise, title, strings)}",
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -260,8 +294,9 @@ internal fun SettlementDetailedInfoPanel(
                 .forEach { (group, values) ->
                     Text(group, style = MaterialTheme.typography.labelLarge)
                     values.forEach { metric ->
+                        val title = MetricDisplayNameResolver.resolve(metric.definition, language)
                         Text(
-                            "${metric.definition.title}: ${MetricValueFormatter.known(metric.value, metric.definition.unit)}",
+                            "$title: ${MetricValueFormatter.known(metric.value, metric.definition.unit)}",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -341,15 +376,22 @@ internal fun SettlementExternalSearchPanel(
     }
 }
 
-private fun contributionLabel(
+private fun comparativeContributionLabel(
+    item: ExplainedPreferenceContribution,
     title: String,
-    unit: String,
-    rawValue: Double?,
-    scoreContribution: Double?,
     strings: UiStrings,
 ): String {
-    val value = MetricValueFormatter.optional(rawValue, unit, strings.unknownValue)
-    val points = scoreContribution?.let { strings.points(NumberFormatter.compact(it)) } ?: strings.unknownContribution
-    return "$title · $value · $points"
+    val raw = MetricValueFormatter.optional(item.contribution.rawValue, item.unit, strings.unknownValue)
+    val quality = item.contribution.quality
+    val average = item.averageQuality
+    val comparison =
+        if (quality == null || average == null) {
+            strings.unknownContribution
+        } else {
+            strings.qualityComparedWithAverage(
+                (quality * 100.0).roundToInt(),
+                (average * 100.0).roundToInt(),
+            )
+        }
+    return "$title · $raw · $comparison"
 }
-

@@ -346,7 +346,7 @@ When a settlement is selected, the default lower pane must remain compact and ex
 - a separate external-search action when providers are configured;
 - a close action.
 
-Complete grouped raw metrics and the full deterministic contribution explanation must be available only
+Complete grouped raw metrics and the full deterministic comparative explanation must be available only
 after the user explicitly opens **Details**. Configured external property-search
 provider buttons must likewise be shown only after the separate **External search** action. Both views
 remain in the lower pane beneath the map; neither may overlap the platform map rectangle.

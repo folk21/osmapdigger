@@ -43,6 +43,7 @@ import com.permieware.osmapdigger.notebook.FavoriteRequiredCriterionSnapshot
 import com.permieware.osmapdigger.notebook.FavoriteSettlement
 import com.permieware.osmapdigger.presentation.NumberFormatter
 import com.permieware.osmapdigger.presentation.SettlementPlaceTypeResolver
+import com.permieware.osmapdigger.presentation.UiStrings
 import com.permieware.osmapdigger.workspace.FavoriteCandidateTransfer
 import kotlin.math.roundToInt
 
@@ -400,16 +401,16 @@ private fun FavoriteSnapshotSummary(snapshot: FavoriteAnalysisSnapshot?) {
     if (area.isNotBlank()) Text(area, style = MaterialTheme.typography.labelSmall)
 
     if (snapshot.requiredCriteria.isNotEmpty()) {
-        Text(
-            "${strings.favoriteSnapshotRequired}: ${snapshot.requiredCriteria.joinToString("; ", transform = ::requiredCriterionText)}",
-            style = MaterialTheme.typography.bodySmall,
-        )
+        Text("${strings.favoriteSnapshotRequired}:", style = MaterialTheme.typography.bodySmall)
+        snapshot.requiredCriteria.forEach { item ->
+            Text("• ${requiredCriterionText(item)}", style = MaterialTheme.typography.bodySmall)
+        }
     }
     if (snapshot.preferences.isNotEmpty()) {
-        Text(
-            "${strings.favoriteSnapshotPreferences}: ${snapshot.preferences.joinToString("; ", transform = ::preferenceText)}",
-            style = MaterialTheme.typography.bodySmall,
-        )
+        Text("${strings.favoriteSnapshotPreferences}:", style = MaterialTheme.typography.bodySmall)
+        snapshot.preferences.forEach { item ->
+            Text("• ${preferenceText(item, strings)}", style = MaterialTheme.typography.bodySmall)
+        }
     }
 }
 
@@ -421,11 +422,11 @@ private fun requiredCriterionText(item: FavoriteRequiredCriterionSnapshot): Stri
     return listOf(item.title, bounds, item.unit).filter { it.isNotBlank() }.joinToString(" ")
 }
 
-private fun preferenceText(item: FavoritePreferenceSnapshot): String {
+private fun preferenceText(item: FavoritePreferenceSnapshot, strings: UiStrings): String {
     val raw = item.rawValue?.let(NumberFormatter::compact) ?: "?"
-    val contribution = item.scoreContribution?.let(NumberFormatter::compact) ?: "?"
+    val quality = item.quality?.let { "${(it * 100.0).roundToInt()}/100" } ?: strings.unknownValue
     val direction = if (item.direction == PreferredDirection.LOWER) "↓" else "↑"
     val thresholds =
         "$direction target ${NumberFormatter.compact(item.targetValue)} / limit ${NumberFormatter.compact(item.limitValue)}"
-    return "${item.title}: $raw ${item.unit} · $thresholds · w${item.weight} · +$contribution"
+    return "${item.title}: $raw ${item.unit} · $thresholds · w${item.weight} · $quality"
 }

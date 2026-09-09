@@ -8,6 +8,10 @@ description: Notable project changes organized by release state.
 All notable changes are documented here.
 
 ## Unreleased
+
+- Explain unavailable Preference scores with missing-data counts and localized missing-criterion lists in ranked results and settlement details.
+- Replace absolute “strongest contribution” result cues with candidate-relative advantage/compromise explanations based on weighted quality deviation from the complete eligible-candidate average; keep the authoritative weighted score unchanged.
+- Recalibrate the `balanced-living` forest-distance default from 1/10 km to 0.25/3 km after Belarus calibration showed 93.9% of settlements saturated at full forest quality; keep all other Preference thresholds and weights unchanged.
 - Add a deterministic generated-dataset Preference calibration report covering metric percentiles, endpoint saturation, enabled group weights, and aggregate score/coverage distributions before product-default tuning.
 - Add deterministic Favorites export as one portable ZIP containing versioned JSON and Markdown, with Desktop save/reveal and Android system-share adapters.
 - Complete KMP architecture hardening Gate 5 by decomposing oversized Desktop/shared UI and Intel macOS web-map source files into cohesive responsibilities, centralizing generic metric-value presentation, and adding focused interaction/style-page regression checks without changing runtime behavior.
@@ -20,7 +24,7 @@ All notable changes are documented here.
 - Enrich persistent Favorites with optional notes and one frozen versioned analysis snapshot that captures score, coverage, Required criteria, enabled Preferences, and contribution values; snapshots change only through an explicit refresh.
 
 - Centralize compatibility-sensitive hard-filter and ranked-analysis candidate SQL in shared `DatasetCandidateQueries`, leaving JDBC/Android adapters responsible only for platform binding, execution, and row mapping.
-- Add persistent dataset-scoped Favorites with 0–100 ranked score bars, strongest/weakest contribution cues, independent favorite toggles, and a Desktop notebook pane for browse/open/remove/clear plus explicit multi-select transfer back into an activated imported candidate source.
+- Add persistent dataset-scoped Favorites with 0–100 ranked score bars, candidate-relative advantage/compromise cues, independent favorite toggles, and a Desktop notebook pane for browse/open/remove/clear plus explicit multi-select transfer back into an activated imported candidate source.
 
 - Refine imported candidate review with active-radius duplicate filtering, multi/select-all exact-name choices, retained editable source text, and explicit enable/disable/delete lifecycle for the saved import.
 - Add a persisted Desktop candidate-source workflow for reviewed settlement-name lists, including paste/UTF-8 file import, conservative alias resolution, explicit ambiguity review, and settings-schema v4 stable-ID restoration.

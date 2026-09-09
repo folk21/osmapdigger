@@ -4,6 +4,13 @@ import com.permieware.osmapdigger.domain.MetricDefinition
 
 /** Presentation-only localized labels for current stable metric categories and measure semantics. */
 object MetricDisplayNameResolver {
+    fun resolveCompact(definition: MetricDefinition, language: UiLanguage): String =
+        if (language == UiLanguage.RUSSIAN) {
+            RussianCategoryNames[definition.categoryId] ?: definition.title
+        } else {
+            definition.title
+        }
+
     fun resolve(definition: MetricDefinition, language: UiLanguage): String {
         if (language == UiLanguage.ENGLISH) return definition.title
         val category = RussianCategoryNames[definition.categoryId] ?: return definition.title

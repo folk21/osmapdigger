@@ -1,21 +1,17 @@
-PATCH: Preference calibration validation tooling
+PATCH: score unavailable diagnostics
 
 Added:
-- scripts/preference_calibration_report.py
-- tests/test_preference_calibration_report.py
+- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/presentation/PreferenceDataAvailability.kt
+- mobile/shared/src/commonTest/kotlin/com/permieware/osmapdigger/presentation/PreferenceDataAvailabilityBuilderTest.kt
 
 Modified:
-- Makefile
 - CHANGELOG.md
-- docs/IMPLEMENTATION.md
-- docs/ROADMAP.md
 - docs/TESTS.md
 - docs/USAGE.md
 - docs/specs/active/subspecs/settlement-shortlist-workflow.md
+- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/presentation/UiLocalization.kt
+- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/DesktopSettlementPanels.kt
+- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/RankedResultsUi.kt
 
-Deleted paths:
-- None
-
-Validation:
-- make check -> 58 passed, 2 existing PyProj/NumPy deprecation warnings
-- make preference-calibration exercised against a synthetic generated SQLite package
+Deleted:
+- none

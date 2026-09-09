@@ -21,10 +21,11 @@ import androidx.compose.ui.unit.dp
 import com.permieware.osmapdigger.analysis.ScoredSettlement
 import com.permieware.osmapdigger.domain.MetricDefinition
 import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
-import com.permieware.osmapdigger.presentation.NumberFormatter
+import com.permieware.osmapdigger.presentation.PreferenceDataAvailabilityBuilder
+import com.permieware.osmapdigger.presentation.PreferenceDataAvailabilityPresenter
+import com.permieware.osmapdigger.presentation.PreferenceQualityBaseline
 import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
 import com.permieware.osmapdigger.presentation.SettlementPlaceTypeResolver
-import com.permieware.osmapdigger.presentation.UiStrings
 import kotlin.math.roundToInt
 
 /** Compact result-list heading with direct access to the persistent favorites notebook. */
@@ -32,6 +33,7 @@ import kotlin.math.roundToInt
 internal fun RankedResultsHeader(
     rankedResultCount: Int,
     favoriteCount: Int,
+    hasEnabledPreferences: Boolean,
     onOpenFavorites: () -> Unit,
 ) {
     val strings = LocalUiStrings.current
@@ -40,8 +42,14 @@ internal fun RankedResultsHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(strings.rankedResults, style = MaterialTheme.typography.titleMedium)
+            if (hasEnabledPreferences) {
+                Text(
+                    strings.rankedResultsExplanation,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             Text(
                 strings.favoriteCount(favoriteCount),
                 style = MaterialTheme.typography.labelMedium,
@@ -65,6 +73,7 @@ internal fun RankedSettlementCard(
     rank: Int,
     result: ScoredSettlement,
     definitions: Map<String, MetricDefinition>,
+    comparisonBaseline: PreferenceQualityBaseline,
     hasEnabledPreferences: Boolean,
     selected: Boolean,
     favorite: Boolean,
@@ -74,20 +83,24 @@ internal fun RankedSettlementCard(
 ) {
     val strings = LocalUiStrings.current
     val language = LocalUiLanguage.current
-    val explanation = remember(result.score, definitions) {
-        ScoreExplanationBuilder.build(result.score, definitions)
+    val explanation = remember(result.score, definitions, comparisonBaseline) {
+        ScoreExplanationBuilder.build(result.score, definitions, comparisonBaseline)
     }
-    val strongest =
-        explanation.strongest?.let { contribution ->
+    val dataAvailability = remember(result.score) { PreferenceDataAvailabilityBuilder.build(result.score) }
+    val missingPreferenceTitles = remember(dataAvailability, definitions, language) {
+        PreferenceDataAvailabilityPresenter.missingTitles(dataAvailability, definitions, language)
+    }
+    val advantage =
+        explanation.advantage?.let { contribution ->
             val definition = definitions[contribution.contribution.metricId]
-            val title = definition?.let { MetricDisplayNameResolver.resolve(it, language) } ?: contribution.title
-            contributionCue(strings.strongest, title, contribution.contribution.scoreContribution, strings)
+            val title = definition?.let { MetricDisplayNameResolver.resolveCompact(it, language) } ?: contribution.title
+            comparativeCue("↑", title, contribution.contribution.quality)
         }
-    val weakest =
-        explanation.weakest?.let { contribution ->
+    val compromise =
+        explanation.compromise?.let { contribution ->
             val definition = definitions[contribution.contribution.metricId]
-            val title = definition?.let { MetricDisplayNameResolver.resolve(it, language) } ?: contribution.title
-            contributionCue(strings.weakest, title, contribution.contribution.scoreContribution, strings)
+            val title = definition?.let { MetricDisplayNameResolver.resolveCompact(it, language) } ?: contribution.title
+            comparativeCue("↓", title, contribution.contribution.quality)
         }
 
     OutlinedCard(
@@ -152,8 +165,25 @@ internal fun RankedSettlementCard(
                         style = MaterialTheme.typography.labelSmall,
                     )
                 }
-                strongest?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
-                weakest?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
+                if (
+                    hasEnabledPreferences &&
+                    result.score.value == null &&
+                    dataAvailability.isScoreUnavailableBecauseAllPreferenceDataIsMissing
+                ) {
+                    Text(
+                        strings.missingPreferenceSummary(
+                            dataAvailability.missingPreferenceCount,
+                            dataAvailability.totalPreferenceCount,
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Text(
+                        "${strings.missingPreferenceCriteria} ${missingPreferenceTitles.joinToString()}",
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+                advantage?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
+                compromise?.let { Text(it, style = MaterialTheme.typography.labelSmall) }
                 if (selected) {
                     Text(strings.selected, style = MaterialTheme.typography.labelSmall)
                 }
@@ -169,12 +199,11 @@ internal fun RankedSettlementCard(
     }
 }
 
-private fun contributionCue(
-    prefix: String,
+private fun comparativeCue(
+    marker: String,
     title: String,
-    scoreContribution: Double?,
-    strings: UiStrings,
+    quality: Double?,
 ): String {
-    val points = scoreContribution?.let { strings.points(NumberFormatter.compact(it)) }
-    return if (points == null) "$prefix: $title" else "$prefix: $title · $points"
+    val points = quality?.let { " ${(it * 100.0).roundToInt()}/100" }.orEmpty()
+    return "$marker $title$points"
 }

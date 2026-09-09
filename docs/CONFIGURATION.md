@@ -79,7 +79,7 @@ Example:
 ```toml
 [profiles.balanced-living]
 preferences = [
-    { metric_id = "forest.distance_km", enabled = true, target = 1.0, limit = 10.0, weight = 8 },
+    { metric_id = "forest.distance_km", enabled = true, target = 0.25, limit = 3.0, weight = 8 },
     { metric_id = "landfill.distance_km", enabled = true, target = 15.0, limit = 3.0, weight = 9 },
 ]
 ```

@@ -112,8 +112,8 @@ def test_balanced_preference_profile_resolves_against_generated_catalog():
     landfill = next(item for item in defaults if item.metric_id == "landfill.distance_km")
     assert forest.direction == "lower"
     assert forest.default_enabled is True
-    assert forest.target_value == 1.0
-    assert forest.limit_value == 10.0
+    assert forest.target_value == 0.25
+    assert forest.limit_value == 3.0
     assert forest.weight == 8
     assert beach.direction == "lower"
     assert beach.default_enabled is True

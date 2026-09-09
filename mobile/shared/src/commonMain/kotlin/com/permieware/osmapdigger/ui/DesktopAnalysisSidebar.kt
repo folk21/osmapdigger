@@ -21,6 +21,7 @@ import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.presentation.MetricDisplayNameResolver
 import com.permieware.osmapdigger.presentation.MetricFilterPresentationBuilder
 import com.permieware.osmapdigger.presentation.NumberFormatter
+import com.permieware.osmapdigger.presentation.PreferenceQualityBaseline
 import com.permieware.osmapdigger.presentation.UiStrings
 import com.permieware.osmapdigger.search.SettlementSearchService
 
@@ -56,6 +57,7 @@ internal fun DesktopAnalysisSidebar(
     onDeactivateImported: () -> Unit,
     onClearImported: () -> Unit,
     rankedResults: List<ScoredSettlement>,
+    comparisonBaseline: PreferenceQualityBaseline,
     favorites: List<FavoriteSettlement>,
     onFavoriteAdded: (ScoredSettlement) -> Unit,
     onFavoriteRemoved: (String) -> Unit,
@@ -179,6 +181,7 @@ internal fun DesktopAnalysisSidebar(
             RankedResultsHeader(
                 rankedResultCount = rankedResults.size,
                 favoriteCount = favorites.size,
+                hasEnabledPreferences = effectivePreferences.any { it.enabled },
                 onOpenFavorites = onFavoritesRequested,
             )
         }
@@ -188,6 +191,7 @@ internal fun DesktopAnalysisSidebar(
                 rank = index + 1,
                 result = result,
                 definitions = definitionMap,
+                comparisonBaseline = comparisonBaseline,
                 hasEnabledPreferences = effectivePreferences.any { it.enabled },
                 selected = result.settlement.id == selectedId,
                 favorite = result.settlement.id in favoriteIds,

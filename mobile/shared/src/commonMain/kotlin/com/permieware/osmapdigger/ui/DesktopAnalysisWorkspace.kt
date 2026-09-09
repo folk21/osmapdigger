@@ -25,6 +25,7 @@ import com.permieware.osmapdigger.notebook.FavoriteNotebookExporter
 import com.permieware.osmapdigger.preferences.EffectiveMetricPreference
 import com.permieware.osmapdigger.preferences.MetricPreferenceOverride
 import com.permieware.osmapdigger.presentation.DesktopWorkspaceLayoutPolicy
+import com.permieware.osmapdigger.presentation.ScoreExplanationBuilder
 import com.permieware.osmapdigger.search.SettlementListImportResolver
 import com.permieware.osmapdigger.search.SettlementSearchService
 import kotlinx.coroutines.launch
@@ -90,6 +91,9 @@ internal fun DesktopAnalysisWorkspace(
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     val definitionMap = remember(definitions) { definitions.associateBy { it.id } }
+    val comparisonBaseline = remember(rankedCandidatesBySettlementId) {
+        ScoreExplanationBuilder.baseline(rankedCandidatesBySettlementId.values.map { it.result.score })
+    }
     val selectedScore =
         selected?.settlement?.id?.let { selectedId ->
             rankedCandidatesBySettlementId[selectedId]?.result?.score
@@ -174,6 +178,7 @@ internal fun DesktopAnalysisWorkspace(
                     onDeactivateImported = onImportedCandidatesDeactivated,
                     onClearImported = onImportedCandidatesCleared,
                     rankedResults = rankedResults,
+                    comparisonBaseline = comparisonBaseline,
                     favorites = favorites,
                     onFavoriteAdded = onFavoriteAdded,
                     onFavoriteRemoved = onFavoriteRemoved,
@@ -331,6 +336,7 @@ internal fun DesktopAnalysisWorkspace(
                                     score = selectedScore,
                                     hasEnabledPreferences = effectivePreferences.any { it.enabled },
                                     definitions = definitionMap,
+                                    comparisonBaseline = comparisonBaseline,
                                     onBack = { settlementPaneMode = DesktopSettlementPaneMode.SUMMARY },
                                     settlementDisplayName = settlementDisplayName,
                                 )

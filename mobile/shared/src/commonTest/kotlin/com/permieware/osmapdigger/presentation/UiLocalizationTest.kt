@@ -35,6 +35,8 @@ class UiLocalizationTest {
         assertEquals("В избранном: 3", russian.favoriteCount(3))
         assertEquals("Favorites: 3", english.favoriteCount(3))
         assertEquals("Экспорт", russian.exportFavorites)
+        assertEquals("Очистить", russian.clearFavorites)
+        assertEquals("Clear", english.clearFavorites)
         assertEquals("Export", english.exportFavorites)
         assertTrue(russian.favoriteExportCompleted.contains("Экспорт"))
         assertTrue(english.favoriteExportFailed.contains("exported"))
@@ -53,6 +55,14 @@ class UiLocalizationTest {
         assertTrue(russian.externalSearchTermsHint.contains("Сохранить настройки поиска"))
         assertEquals("Оценка недоступна", russian.scoreUnavailable)
         assertEquals("Score unavailable", english.scoreUnavailable)
+        assertTrue(russian.rankedResultsExplanation.contains("↑"))
+        assertTrue(russian.rankedResultsExplanation.contains("от 0 до 100"))
+        assertTrue(english.rankedResultsExplanation.contains("↑"))
+        assertTrue(english.rankedResultsExplanation.contains("0 to 100"))
+        assertEquals(
+            "балл по критерию 38/100 · среднее среди кандидатов 54/100",
+            russian.qualityComparedWithAverage(38, 54),
+        )
         assertEquals("Оценка 82", russian.scoreAndCoverage(82, 100))
         assertEquals("Оценка 82 · полнота 75%", russian.scoreAndCoverage(82, 75))
         assertTrue(russian.favoriteCurrentAnalysis(4, 81, 75, true).contains("рейтинг #4"))
