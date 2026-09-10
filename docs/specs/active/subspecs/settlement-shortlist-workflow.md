@@ -10,7 +10,7 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Active product sub-spec; candidate-source, Favorites/notebook, batch external search, and portable export/share are implemented. Calibration-report tooling is implemented; representative dataset evidence and configured/manual acceptance remain pending.
+Active product sub-spec; candidate-source, Favorites/notebook, batch external search, portable export/share, and a focused shared end-to-end acceptance fixture are implemented. Calibration-report tooling is implemented; representative dataset evidence and configured/manual Desktop/Android acceptance remain pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
@@ -518,7 +518,8 @@ Acceptance requires all of the following:
 13. Configured Gradle tests pass where the toolchain is available.
 14. When local packages are stale, rebuild Andorra/Belarus with the current checked-in preference
     profile and record the distribution sanity check before changing default thresholds/weights.
-15. Stable implementation knowledge is moved into owning implementation/configuration/usage/test docs
+15. A focused shared acceptance fixture covers the cross-feature shortlist contract from reviewed import through ranking, explanation, snapshot/re-analysis bridge, batch search, and deterministic export without replacing platform/manual checks.
+16. Stable implementation knowledge is moved into owning implementation/configuration/usage/test docs
     after acceptance before this sub-spec is archived.
 
 ## Implementation tasks
@@ -533,4 +534,4 @@ Implement in small increments:
 6. **Implemented: Batch external search** — selected available Favorites reuse current localized settlement names and the configured provider catalog to build quoted `OR` queries. Shared construction is deterministic, UTF-8 percent-encoded, and greedily chunked under a conservative final-URL bound; providers that require a `{settlement}` placeholder are not offered for batch search. Desktop shows each generated provider/chunk action explicitly and opens only the action the user clicks. Provider-specific search-term settings are persisted in application settings schema v7 and are shared by single and batch URL generation; an explicit empty override supports site-restricted queries without generic dataset terms.
 7. **Implemented: Export/share** — shared code builds one deterministic versioned Favorites export model with current localized names when available, saved historical names, notes, and frozen snapshot criteria. Platform adapters package the fixed `favorites.json` + `favorites.md` entries into a reproducible ZIP; Desktop saves it through a file chooser and reveals the result, while Android writes a cache-scoped archive and exposes it through `FileProvider` to the system share sheet. Unavailable/stale Favorites remain exportable because export covers the whole notebook rather than only transient checkbox selection.
 8. **Calibration validation tooling implemented; Belarus evidence recorded** — `scripts/preference_calibration_report.py` reads the published runtime SQLite contract, reports enabled group weights, metric known-value/percentile and endpoint-saturation distributions, and overall score/coverage percentiles without changing runtime scoring or defaults. A representative Belarus report over 22,771 settlements showed 93.9% full-quality saturation for the original forest default; the checked-in `forest.distance_km` baseline is therefore tightened from `1/10 km` to `0.25/3 km`, with all other Preference defaults and weights unchanged. Rebuild Belarus and rerun the report to confirm the revised distribution; representative Andorra evidence and final acceptance remain pending.
-9. **Acceptance/documentation** — run configured shared/Desktop/Android tests, record manual workflow acceptance, update owning current-state docs, and archive this sub-spec when complete.
+9. **Acceptance/documentation in progress** — a deterministic shared acceptance fixture now exercises the cross-feature shortlist contract from import through ranking/notebook/batch-search/export. Configured shared/Desktop/Android tests, representative real-dataset checks, and manual workflow acceptance still need to be recorded before owning docs are finalized and this sub-spec is archived.

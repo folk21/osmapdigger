@@ -1,17 +1,15 @@
-PATCH: score unavailable diagnostics
+PATCH: shortlist workflow acceptance hardening
 
 Added:
-- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/presentation/PreferenceDataAvailability.kt
-- mobile/shared/src/commonTest/kotlin/com/permieware/osmapdigger/presentation/PreferenceDataAvailabilityBuilderTest.kt
+- mobile/shared/src/commonTest/kotlin/com/permieware/osmapdigger/workspace/SettlementShortlistWorkflowAcceptanceTest.kt
 
 Modified:
+- Makefile
 - CHANGELOG.md
 - docs/TESTS.md
-- docs/USAGE.md
+- docs/ROADMAP.md
 - docs/specs/active/subspecs/settlement-shortlist-workflow.md
-- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/presentation/UiLocalization.kt
-- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/DesktopSettlementPanels.kt
-- mobile/shared/src/commonMain/kotlin/com/permieware/osmapdigger/ui/RankedResultsUi.kt
+- mobile/IMPLEMENTATION.md
 
 Deleted:
 - none

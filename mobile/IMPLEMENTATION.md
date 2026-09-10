@@ -194,6 +194,10 @@ Android keeps the existing responsive presentation; narrow layouts continue to u
 
 The UI never constructs SQL.
 
+### Shared shortlist acceptance fixture
+
+`workspace/SettlementShortlistWorkflowAcceptanceTest.kt` is the focused cross-feature regression fixture for the current shortlist product increment. It uses a deterministic in-memory `GeoRepository` to connect reviewed imported stable IDs, persisted candidate scope, Required/radius eligibility, preference ranking and missing-data semantics, complete pre-limit ranking, comparative explanation, frozen snapshot serialization, explicit Favorites-to-import transfer, batch external search, and deterministic notebook export. It deliberately stops at shared contracts; real SQLite/settings adapters, Desktop map/browser/save behavior, and Android import/share behavior remain platform/configured acceptance concerns.
+
 ## Desktop adapter
 
 ### `JdbcGeoRepository`

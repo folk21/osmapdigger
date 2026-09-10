@@ -9,6 +9,7 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Add a focused shared shortlist acceptance fixture covering imported candidate identity, Required/radius eligibility, full ranking before top-N, comparative explanation, missing Preference data, frozen snapshots, Favorites-to-import transfer, Cyrillic batch search, and deterministic stale-safe export.
 - Explain unavailable Preference scores with missing-data counts and localized missing-criterion lists in ranked results and settlement details.
 - Replace absolute “strongest contribution” result cues with candidate-relative advantage/compromise explanations based on weighted quality deviation from the complete eligible-candidate average; keep the authoritative weighted score unchanged.
 - Recalibrate the `balanced-living` forest-distance default from 1/10 km to 0.25/3 km after Belarus calibration showed 93.9% of settlements saturated at full forest quality; keep all other Preference thresholds and weights unchanged.

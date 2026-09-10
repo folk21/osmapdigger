@@ -1,4 +1,4 @@
-.PHONY: help check check-all test-python test-mobile test-desktop analysis-acceptance analysis-acceptance-strict preference-calibration build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
+.PHONY: help check check-all test-python test-mobile test-desktop shortlist-acceptance analysis-acceptance analysis-acceptance-strict preference-calibration build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
 
 PYTHON ?= python
 GEO_BUILDER_PYTHONPATH = geo-builder/src
@@ -12,6 +12,7 @@ help:
 	@echo "OsmapDigger targets:"
 	@echo "  check                Run network-free Python checks"
 	@echo "  check-all            Run Python plus configured Kotlin tests"
+	@echo "  shortlist-acceptance Run the focused shared shortlist workflow acceptance fixture"
 	@echo "  analysis-acceptance         Report latest representative Desktop analysis timing"
 	@echo "  analysis-acceptance-strict  Require a representative run with scoring metrics"
 	@echo "  preference-calibration      Report Preference metric/score distributions for a generated dataset"
@@ -45,6 +46,9 @@ test-desktop:
 
 test-mobile:
 	cd mobile && ./gradlew :shared:testAndroidHostTest
+
+shortlist-acceptance:
+	cd mobile && ./gradlew :shared:desktopTest --tests "com.permieware.osmapdigger.workspace.SettlementShortlistWorkflowAcceptanceTest"
 
 build-andorra-data:
 	PYTHONPATH=$(GEO_BUILDER_PYTHONPATH) $(PYTHON) -m osmapdigger_geo.cli build andorra --datasets $(DATASET_CONFIG) --metrics $(METRICS_CONFIG) --skip-map
