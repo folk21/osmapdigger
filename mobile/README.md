@@ -20,7 +20,7 @@ flowchart LR
 | Module | Owns | Direct internal dependencies | Main entry points | Focused validation |
 |---|---|---|---|---|
 | `:shared` | Country-agnostic models, dataset/search/analysis contracts and logic, workspace orchestration, presentation, shared Compose UI, renderer-neutral map contracts | none | `GeoRepository`, `SearchService`, `SettlementAnalysisService`, `AnalysisWorkspaceController`, `OsmapDiggerApp` | `./gradlew :shared:desktopTest`, `./gradlew :shared:testAndroidHostTest` |
-| `:desktopApp` | JVM composition root, JDBC, Desktop filesystem/package loading, Favorites ZIP save/reveal, browser integration, native/JCEF map host | `:shared` | Desktop main host, `JdbcGeoRepository`, `DesktopDataset` | `./gradlew :desktopApp:jvmTest` |
+| `:desktopApp` | JVM composition root, JDBC, Desktop filesystem/package loading, Favorites ZIP save/reveal, browser integration, native/JCEF map host, headless developer automation | `:shared` | Desktop main host, `JdbcGeoRepository`, `DesktopDataset`, `DesktopHeadlessWorkspace` | `./gradlew :desktopApp:jvmTest` |
 | `:androidApp` | Android composition root, Android SQLite, SAF/package installation, Favorites system-share adapter, browser intents, Activity lifecycle | `:shared` | Android Activity, `AndroidGeoRepository`, `AndroidDataset` | `./gradlew :androidApp:assembleDebug` |
 
 See [`IMPLEMENTATION.md`](IMPLEMENTATION.md) for concrete class/platform call paths.
@@ -122,6 +122,25 @@ export OSMAPDIGGER_DATASET_DIR=/absolute/path/to/generated/package
 ```
 
 Without the environment variable, use the in-app dataset import/open action.
+
+
+### Headless developer automation
+
+Desktop exposes a developer-only headless adapter over the same shared `AnalysisWorkspaceController` used by Compose. Mutable application state is stored in an explicitly supplied settings SQLite file, so CLI and tests can reproduce a workflow without touching the user's normal `~/.osmapdigger` state.
+
+Run the real-JDBC/settings acceptance fixture with:
+
+```bash
+make desktop-headless-acceptance
+```
+
+For ad-hoc automation, pass CLI arguments through the root Make target, for example:
+
+```bash
+make headless-cli HEADLESS_ARGS='--dataset ../data/generated/packages/belarus --settings /tmp/osmapdigger-headless.sqlite state'
+```
+
+The CLI is an adapter only; scoring, candidate semantics, Favorites behavior, and persistence contracts remain owned by shared application/domain code and the existing Desktop repositories.
 
 ## Android
 

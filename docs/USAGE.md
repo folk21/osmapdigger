@@ -264,3 +264,16 @@ The language switch changes OsmapDigger-owned controls, labels, status messages,
 ### Selected settlement presentation
 
 The ranked result currently selected from either the list or the map is highlighted in the results list. The lower Desktop summary places active criteria in two balanced rows. With Russian UI, current built-in metric categories use Russian presentation labels; unknown future categories retain their dataset-provided titles. Settlement names use a matching persisted language alias when available (`ru`/`en`) and otherwise fall back to the canonical dataset name.
+
+## Headless Desktop automation
+
+For reproducible developer automation without Compose, use the Desktop headless CLI. It opens a generated package through the normal Desktop dataset reader but stores mutable application state in an explicit settings SQLite path rather than the user's default profile.
+
+```bash
+make headless-cli HEADLESS_ARGS='--dataset data/generated/packages/belarus --settings /tmp/osmapdigger-headless.sqlite state'
+```
+
+Common commands include `import <txt-file>`, `required <metric-id> <min-or-> <max-or->`, `preference <metric-id> <true|false>`, `preference-weight`, `preference-thresholds`, `center`, `radius`, `favorite-add`, `favorite-note`, `favorite-snapshot`, `favorites-to-import`, `batch-search`, and `export`. Import intentionally applies only when every normalized line is uniquely resolved; ambiguous or unresolved rows fail for explicit review instead of being guessed.
+
+The CLI is intended for diagnostics, acceptance scenarios, and CI-style reproduction. It does not replace native smoke checks for MapLibre/JCEF rendering, browser launch, or system save/share dialogs.
+

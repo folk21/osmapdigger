@@ -103,3 +103,13 @@ compose.desktop {
         }
     }
 }
+
+val desktopJvmMain = kotlin.targets.getByName("jvm").compilations.getByName("main")
+
+tasks.register<JavaExec>("runHeadlessCli") {
+    group = "application"
+    description = "Run the Desktop headless OsmapDigger workspace CLI."
+    dependsOn(desktopJvmMain.compileTaskProvider)
+    mainClass.set("com.permieware.osmapdigger.desktop.headless.HeadlessCliKt")
+    classpath(desktopJvmMain.output.allOutputs, desktopJvmMain.runtimeDependencyFiles)
+}

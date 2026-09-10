@@ -128,7 +128,11 @@ class SqliteExternalSearchProviderRepository(
     }
 
     companion object {
-        fun createDefault(): SqliteExternalSearchProviderRepository {
+        fun createDefault(): SqliteExternalSearchProviderRepository =
+            create(DesktopSettingsDatabase.defaultPath())
+
+        /** Build the real Desktop repository against an explicit settings database for headless/test composition. */
+        fun create(databasePath: java.nio.file.Path): SqliteExternalSearchProviderRepository {
             val payload =
                 requireNotNull(
                     SqliteExternalSearchProviderRepository::class.java.classLoader
@@ -137,7 +141,7 @@ class SqliteExternalSearchProviderRepository(
                     .bufferedReader()
                     .use { it.readText() }
             return SqliteExternalSearchProviderRepository(
-                DesktopSettingsDatabase.defaultPath(),
+                databasePath,
                 ExternalSearchProviderCatalog.decode(payload),
             )
         }

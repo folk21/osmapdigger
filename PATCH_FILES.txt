@@ -1,15 +1,7 @@
-PATCH: shortlist workflow acceptance hardening
+PATCH
 
-Added:
-- mobile/shared/src/commonTest/kotlin/com/permieware/osmapdigger/workspace/SettlementShortlistWorkflowAcceptanceTest.kt
+Modified files:
+- mobile/desktopApp/src/jvmTest/kotlin/com/permieware/osmapdigger/desktop/headless/DesktopHeadlessWorkspaceAcceptanceTest.kt
 
-Modified:
-- Makefile
-- CHANGELOG.md
-- docs/TESTS.md
-- docs/ROADMAP.md
-- docs/specs/active/subspecs/settlement-shortlist-workflow.md
-- mobile/IMPLEMENTATION.md
-
-Deleted:
+Deleted files:
 - none

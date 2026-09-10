@@ -77,6 +77,7 @@ class AnalysisWorkspaceController(
 
     private val analysisService = SettlementAnalysisService(repository)
     private var analysisJob: Job? = null
+    private var persistenceJob: Job? = null
     private var analysisGeneration: Long = 0
     private var persistenceGeneration: Long = 0
     private val persistenceMutex = Mutex()
@@ -336,6 +337,17 @@ class AnalysisWorkspaceController(
         scheduleAnalysis(immediate = true, force = true)
     }
 
+    /** Wait until the latest analysis and settings-persistence work triggered by this controller has completed. */
+    suspend fun awaitPendingWork() {
+        while (true) {
+            val pendingAnalysis = analysisJob
+            val pendingPersistence = persistenceJob
+            pendingAnalysis?.join()
+            pendingPersistence?.join()
+            if (pendingAnalysis === analysisJob && pendingPersistence === persistenceJob) return
+        }
+    }
+
     /** Add one ranked settlement with a frozen snapshot of the current authoritative analysis state. */
     fun addFavorite(result: ScoredSettlement) {
         val snapshot = mutableState.value
@@ -501,7 +513,7 @@ class AnalysisWorkspaceController(
         if (!snapshot.initialized) return
         val generation = ++persistenceGeneration
 
-        scope.launch {
+        persistenceJob = scope.launch {
             try {
                 persistenceMutex.withLock {
                     if (generation != persistenceGeneration) return@withLock

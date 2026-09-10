@@ -92,6 +92,16 @@ make shortlist-acceptance
 
 This fixture is an automated regression gate, not a substitute for configured Desktop/Android persistence, map interaction, browser/share adapters, or representative real-dataset calibration/performance acceptance below.
 
+Desktop also has a headless application acceptance layer over the same `AnalysisWorkspaceController` used by Compose:
+
+```bash
+make desktop-headless-acceptance
+```
+
+`DesktopHeadlessWorkspaceAcceptanceTest` uses a temporary generated-style SQLite dataset plus the real `JdbcGeoRepository`, `SqliteUserPreferencesRepository`, and `SqliteFavoriteSettlementRepository`. It drives import, Required/Preferences, ranking with missing data, Favorites/note/snapshot, Favorites-to-import, batch-search planning, deterministic ZIP export, then recreates the application composition against the same settings database and verifies persisted state. Selected SQL assertions verify persistence contracts without making database layout the only acceptance surface.
+
+This headless layer intentionally stops at platform side effects: real MapLibre/JCEF rendering, system browser invocation, save/share dialogs, and visual layout remain small manual smoke checks.
+
 
 ## Imported candidate workflow acceptance
 

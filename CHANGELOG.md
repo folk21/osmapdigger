@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Add Desktop headless application acceptance and a developer CLI over the same shared workspace controller, using explicit real SQLite persistence paths for reproducible automation and restart verification.
+
 - Add a focused shared shortlist acceptance fixture covering imported candidate identity, Required/radius eligibility, full ranking before top-N, comparative explanation, missing Preference data, frozen snapshots, Favorites-to-import transfer, Cyrillic batch search, and deterministic stale-safe export.
 - Explain unavailable Preference scores with missing-data counts and localized missing-criterion lists in ranked results and settlement details.
 - Replace absolute “strongest contribution” result cues with candidate-relative advantage/compromise explanations based on weighted quality deviation from the complete eligible-candidate average; keep the authoritative weighted score unchanged.
