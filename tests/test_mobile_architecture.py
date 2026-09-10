@@ -4,10 +4,12 @@ from collections import defaultdict
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-COMMON_MAIN = REPO_ROOT / "mobile/shared/src/commonMain/kotlin"
+SHARED_COMMON_MAIN = REPO_ROOT / "mobile/shared/src/commonMain/kotlin"
+CORE_COMMON_MAIN = REPO_ROOT / "mobile/core/src/commonMain/kotlin"
+COMMON_MAIN_ROOTS = (CORE_COMMON_MAIN, SHARED_COMMON_MAIN)
 PACKAGE_PREFIX = "com.permieware.osmapdigger."
 
-# Logical package boundaries for the current pre-Gradle-modularization runtime.
+# Logical package boundaries across the current shared KMP modules.
 # This is intentionally a small allow-list: dependency direction is a contract,
 # not an incidental consequence of which classes happen to import each other.
 ALLOWED_DEPENDENCIES: dict[str, set[str]] = {
@@ -50,25 +52,25 @@ def _logical_package(qualified_name: str) -> str | None:
 
 def _source_dependency_graph() -> dict[str, set[str]]:
     graph: dict[str, set[str]] = defaultdict(set)
-    for source in COMMON_MAIN.rglob("*.kt"):
-        package_name: str | None = None
-        imports: list[str] = []
-        for line in source.read_text(encoding="utf-8").splitlines():
-            if line.startswith("package "):
-                package_name = line.removeprefix("package ").strip()
-            elif line.startswith("import "):
-                imports.append(line.removeprefix("import ").strip())
+    for common_main in COMMON_MAIN_ROOTS:
+        for source in common_main.rglob("*.kt"):
+            package_name: str | None = None
+            imports: list[str] = []
+            for line in source.read_text(encoding="utf-8").splitlines():
+                if line.startswith("package "):
+                    package_name = line.removeprefix("package ").strip()
+                elif line.startswith("import "):
+                    imports.append(line.removeprefix("import ").strip())
 
-        assert package_name is not None, f"Missing package declaration: {source}"
-        owner = _logical_package(package_name)
-        assert owner is not None, f"Unexpected package outside OsmapDigger namespace: {source}"
-        graph.setdefault(owner, set())
+            assert package_name is not None, f"Missing package declaration: {source}"
+            owner = _logical_package(package_name)
+            assert owner is not None, f"Unexpected package outside OsmapDigger namespace: {source}"
+            graph.setdefault(owner, set())
 
-        for imported_name in imports:
-            dependency = _logical_package(imported_name)
-            if dependency is not None and dependency != owner:
-                graph[owner].add(dependency)
-
+            for imported_name in imports:
+                dependency = _logical_package(imported_name)
+                if dependency is not None and dependency != owner:
+                    graph[owner].add(dependency)
     return dict(graph)
 
 
@@ -120,8 +122,52 @@ def test_common_main_logical_package_dependencies_are_acyclic_and_explicit() -> 
         )
 
 
+
+def test_gate6_core_module_owns_domain_and_geo_sources() -> None:
+    core_packages = {
+        _logical_package(
+            next(
+                line.removeprefix("package ").strip()
+                for line in source.read_text(encoding="utf-8").splitlines()
+                if line.startswith("package ")
+            )
+        )
+        for source in CORE_COMMON_MAIN.rglob("*.kt")
+    }
+    assert core_packages == {"domain", "geo"}
+
+    for package_name in ("domain", "geo"):
+        old_path = SHARED_COMMON_MAIN / f"com/permieware/osmapdigger/{package_name}"
+        remaining_sources = sorted(old_path.rglob("*.kt")) if old_path.exists() else []
+        assert not remaining_sources, (
+            f"Gate 6 Kotlin source still lives in :shared/{package_name}: "
+            f"{remaining_sources}"
+        )
+
+
+def test_gate6_gradle_module_dependencies_are_acyclic_and_explicit() -> None:
+    expected = {
+        ":core": set(),
+        ":shared": {":core"},
+        ":desktopApp": {":core", ":shared"},
+        ":androidApp": {":core", ":shared"},
+    }
+    module_dirs = {module: module.removeprefix(":") for module in expected}
+    graph: dict[str, set[str]] = {}
+    import re
+
+    for module, directory in module_dirs.items():
+        build_text = (REPO_ROOT / "mobile" / directory / "build.gradle.kts").read_text(encoding="utf-8")
+        dependencies = {f":{name}" for name in re.findall(r"projects\.([A-Za-z0-9_]+)", build_text)}
+        graph[module] = dependencies
+
+    assert graph == expected
+    cycle = _find_cycle(graph)
+    assert cycle is None, f"Cyclic Gradle module dependency: {' -> '.join(cycle or [])}"
+
+
 def test_legacy_unused_dataset_architecture_is_not_present() -> None:
-    dataset_package = COMMON_MAIN / "com/permieware/osmapdigger/dataset"
+    dataset_package = SHARED_COMMON_MAIN / "com/permieware/osmapdigger/dataset"
     stale_files = {
         "DatasetConfig.kt",
         "DatasetManager.kt",
@@ -133,13 +179,14 @@ def test_legacy_unused_dataset_architecture_is_not_present() -> None:
 
 def test_common_main_does_not_bypass_dependency_checks_with_qualified_references() -> None:
     violations: list[str] = []
-    for source in COMMON_MAIN.rglob("*.kt"):
-        for line_number, line in enumerate(source.read_text(encoding="utf-8").splitlines(), start=1):
-            stripped = line.strip()
-            if stripped.startswith("package ") or stripped.startswith("import "):
-                continue
-            if PACKAGE_PREFIX in line:
-                violations.append(f"{source.relative_to(REPO_ROOT)}:{line_number}")
+    for common_main in COMMON_MAIN_ROOTS:
+        for source in common_main.rglob("*.kt"):
+            for line_number, line in enumerate(source.read_text(encoding="utf-8").splitlines(), start=1):
+                stripped = line.strip()
+                if stripped.startswith("package ") or stripped.startswith("import "):
+                    continue
+                if PACKAGE_PREFIX in line:
+                    violations.append(f"{source.relative_to(REPO_ROOT)}:{line_number}")
 
     assert violations == [], (
         "Use explicit imports for internal dependencies so the architecture graph can inspect them: "
@@ -167,7 +214,7 @@ def test_settings_schema_semantics_have_one_shared_owner() -> None:
         / "mobile/androidApp/src/main/kotlin/com/permieware/osmapdigger/settings/AndroidSettingsDatabase.kt"
     ).read_text(encoding="utf-8")
     shared = (
-        COMMON_MAIN
+        SHARED_COMMON_MAIN
         / "com/permieware/osmapdigger/settings/ApplicationSettingsSchema.kt"
     ).read_text(encoding="utf-8")
 
@@ -187,7 +234,7 @@ def test_settings_schema_semantics_have_one_shared_owner() -> None:
 
 def test_dataset_package_layout_and_metadata_parser_are_shared() -> None:
     contract = (
-        COMMON_MAIN
+        SHARED_COMMON_MAIN
         / "com/permieware/osmapdigger/dataset/DatasetPackageContract.kt"
     ).read_text(encoding="utf-8")
     assert 'const val METADATA_FILE = "metadata.json"' in contract
@@ -211,8 +258,8 @@ def test_dataset_package_layout_and_metadata_parser_are_shared() -> None:
 
 def test_meaningful_runtime_paths_do_not_silently_drop_failures() -> None:
     paths = [
-        COMMON_MAIN / "com/permieware/osmapdigger/workspace/AnalysisWorkspaceController.kt",
-        COMMON_MAIN / "com/permieware/osmapdigger/ui/OsmapDiggerApp.kt",
+        SHARED_COMMON_MAIN / "com/permieware/osmapdigger/workspace/AnalysisWorkspaceController.kt",
+        SHARED_COMMON_MAIN / "com/permieware/osmapdigger/ui/OsmapDiggerApp.kt",
         REPO_ROOT / "mobile/androidApp/src/main/kotlin/com/permieware/osmapdigger/MainActivity.kt",
     ]
     violations: list[str] = []
@@ -226,7 +273,7 @@ def test_meaningful_runtime_paths_do_not_silently_drop_failures() -> None:
 
 def test_candidate_query_semantics_have_one_shared_owner() -> None:
     shared_path = (
-        COMMON_MAIN
+        SHARED_COMMON_MAIN
         / "com/permieware/osmapdigger/dataset/DatasetCandidateQueries.kt"
     )
     shared = shared_path.read_text(encoding="utf-8")

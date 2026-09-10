@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Begin physical KMP modularization by extracting immutable domain models and pure geographic calculations into a dependency-free `:core` module, with explicit shared/platform dependencies and architecture checks for the Gradle DAG.
+
 - Add Desktop headless application acceptance and a developer CLI over the same shared workspace controller, using explicit real SQLite persistence paths for reproducible automation and restart verification.
 
 - Add a focused shared shortlist acceptance fixture covering imported candidate identity, Required/radius eligibility, full ranking before top-N, comparative explanation, missing Preference data, frozen snapshots, Favorites-to-import transfer, Cyrillic batch search, and deterministic stale-safe export.

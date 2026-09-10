@@ -13,17 +13,18 @@ This document describes the current Kotlin Multiplatform implementation under `m
 
 | Module | Current responsibility |
 |---|---|
-| `shared` | Logical domain/dataset/search/analysis/preferences/workspace/presentation/map/external boundaries plus shared Compose UI; physical extraction is pending |
+| `core` | Immutable domain/runtime models plus pure WGS84 geographic calculations |
+| `shared` | Dataset/search/analysis/preferences/workspace/presentation/map/external/notebook boundaries plus shared Compose UI |
 | `desktopApp` | JVM app host, dataset JDBC SQLite, settings SQLite, filesystem/ZIP loading, Desktop browser integration |
 | `androidApp` | Android app host, dataset/settings SQLite, SAF ZIP import, app-private installation, browser intents |
 
-`shared/commonMain` contains no Android/JDBC/filesystem implementation APIs.
+`core/commonMain` and `shared/commonMain` contain no Android/JDBC/filesystem implementation APIs. `:shared`, `:desktopApp`, and `:androidApp` depend explicitly on `:core` where they compile against its model contracts.
 
-The current logical package graph inside `:shared` is documented in [`README.md`](README.md) and enforced by the network-free `tests/test_mobile_architecture.py` check. The graph is intentionally acyclic before any package is extracted into a physical Gradle module.
+The current logical package graph across `:core` and `:shared` is documented in [`README.md`](README.md) and enforced by the network-free `tests/test_mobile_architecture.py` check. The physical Gradle dependency graph is also checked to prevent `:core` from acquiring upward dependencies.
 
-## Shared domain model
+## Core domain model
 
-`domain/Models.kt` defines:
+`core/src/commonMain/kotlin/com/permieware/osmapdigger/domain/Models.kt` defines:
 
 - `GeoPoint` — WGS84 coordinate;
 - `DatasetInfo` — runtime dataset identity/initial camera/map availability;
@@ -37,11 +38,11 @@ The current logical package graph inside `:shared` is documented in [`README.md`
 - `MetricValue` — hydrated metric definition/value;
 - `SettlementDetails` — settlement plus all available metrics.
 
-Models are intentionally immutable and do not know SQL/OSM selector semantics.
+Models are intentionally immutable and do not know SQL/OSM selector semantics. `core/src/commonMain/kotlin/com/permieware/osmapdigger/geo/GeoMath.kt` owns pure Haversine distance and bounding-box calculations over those models.
 
 ## Shared runtime boundaries
 
-KMP architecture hardening iterations 1–5 keep semantic ownership explicit inside the still-physical `:shared` module and reduce source-context hotspots before physical Gradle extraction:
+KMP architecture hardening iterations 1–5 established acyclic semantic ownership and reduced source-context hotspots. Gate 6 physically extracts the stable `domain` and `geo` packages into `:core`; dataset/search/analysis/workspace/presentation/UI remain in `:shared` for later bounded extraction:
 
 - `dataset/GeoRepository.kt` owns the read-only analytical dataset boundary;
 - `map/MapPackage.kt` owns platform-resolved local map assets;
@@ -315,7 +316,8 @@ Current dependency families:
 
 ## Tests
 
-- `shared/commonTest` covers geography, deterministic preference scoring/ranking, rank-before-limit analysis orchestration, exact-radius analysis semantics, debounced shared analysis-state orchestration, filter summaries, external links, preference payloads, and restore semantics;
+- `core/commonTest` covers domain invariants and pure geographic calculations;
+- `shared/commonTest` covers deterministic preference scoring/ranking, rank-before-limit analysis orchestration, exact-radius analysis semantics, debounced shared analysis-state orchestration, filter summaries, external links, preference payloads, and restore semantics;
 - `shared/desktopTest` covers Desktop MapLibre host capability resolution;
 - `desktopApp/jvmTest` covers legacy dynamic metric SQL, batch scoring-metric retrieval/unknown handling, and preferences/settings SQLite round trips;
 - Android compilation/host tests are separate Gradle tasks.

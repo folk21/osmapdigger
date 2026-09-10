@@ -119,10 +119,14 @@ flowchart TB
     FAV --> PSTORE
 ```
 
+`mobile/core` owns:
+
+- immutable domain/runtime models;
+- pure WGS84 geographic calculations used by shared search semantics.
+
 `mobile/shared` owns:
 
-- immutable domain models;
-- search request semantics;
+- search request semantics and repository contracts;
 - exact radius post-filtering;
 - deterministic filter descriptions;
 - deterministic preference scoring/ranking and dataset-default models;

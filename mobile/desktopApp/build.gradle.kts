@@ -52,6 +52,7 @@ kotlin {
         jvmMain.resources.srcDir(rootProject.file("config"))
 
         jvmMain.dependencies {
+            implementation(projects.core)
             implementation(projects.shared)
             implementation(compose.desktop.currentOs)
             implementation(libs.sqlite.jdbc)

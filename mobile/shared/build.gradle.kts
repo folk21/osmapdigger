@@ -40,6 +40,7 @@ kotlin {
         val commonTest = getByName("commonTest")
 
         commonMain.dependencies {
+            api(projects.core)
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)

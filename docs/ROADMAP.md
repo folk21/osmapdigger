@@ -11,12 +11,12 @@ This roadmap stays intentionally compact. Detailed requirements for significant 
 
 Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
-Architecture note: KMP architecture hardening iterations 1–5 are implemented between feature checkpoints (dependency direction, typed operational failures, shared settings/package semantics, atomic dataset installation, shared analytical candidate-query semantics, and source-responsibility decomposition); physical Gradle module extraction remains interleaved backlog.
+Architecture note: KMP architecture hardening iterations 1–5 are implemented between feature checkpoints, and Gate 6 now begins physical modularization by extracting immutable domain/geography code into `:core`; higher-level feature/presentation extraction remains interleaved backlog.
 
 Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, persistent favorites/notebook, later analysis snapshots, export/share, and batch external search.
 Candidate-source core/workflow, visual ranked affordances, persistent dataset-scoped Favorites, explicit selected-Favorites transfer back into imported candidates, notebook notes/frozen analysis snapshots, explicit bounded batch external search, and portable deterministic export/share are implemented. A focused shared acceptance fixture now locks the cross-feature shortlist contract. Deterministic calibration-report tooling reads generated runtime databases; representative dataset evidence and configured/manual Desktop/Android acceptance remain before archival.
 
-Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — dependency-direction, typed-error, shared settings/package/atomic-install, analytical-query DRY, and source-responsibility gates 1–5 are implemented; later physical-module gates run between completed product increments where they protect the next feature boundary.
+Interleaved architecture track: [`specs/active/subspecs/kmp-modular-architecture-hardening.md`](specs/active/subspecs/kmp-modular-architecture-hardening.md) — gates 1–5 are implemented and Gate 6 introduces the first physical `:core` module for immutable domain/geography code; later feature/presentation module extraction remains bounded and incremental.
 
 Previously implemented Desktop analysis workspace, Desktop map, and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
 

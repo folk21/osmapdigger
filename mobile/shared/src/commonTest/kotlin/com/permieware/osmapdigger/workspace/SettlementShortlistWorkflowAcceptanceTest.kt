@@ -366,8 +366,10 @@ class SettlementShortlistWorkflowAcceptanceTest {
         ): Boolean =
             conditions.all { condition ->
                 val value = metrics[condition.metricId] ?: return@all false
-                (condition.minValue == null || value >= condition.minValue) &&
-                    (condition.maxValue == null || value <= condition.maxValue)
+                val minValue = condition.minValue
+                val maxValue = condition.maxValue
+                (minValue == null || value >= minValue) &&
+                    (maxValue == null || value <= maxValue)
             }
     }
 

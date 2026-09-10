@@ -44,10 +44,10 @@ preference-calibration:
 	$(PYTHON) scripts/preference_calibration_report.py --dataset "$(PREFERENCE_CALIBRATION_DATASET)"
 
 test-desktop:
-	cd mobile && ./gradlew :shared:desktopTest :desktopApp:jvmTest
+	cd mobile && ./gradlew :core:desktopTest :shared:desktopTest :desktopApp:jvmTest
 
 test-mobile:
-	cd mobile && ./gradlew :shared:testAndroidHostTest
+	cd mobile && ./gradlew :core:testAndroidHostTest :shared:testAndroidHostTest
 
 shortlist-acceptance:
 	cd mobile && ./gradlew :shared:desktopTest --tests "com.permieware.osmapdigger.workspace.SettlementShortlistWorkflowAcceptanceTest"

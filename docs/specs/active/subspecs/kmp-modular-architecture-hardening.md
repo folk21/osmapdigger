@@ -18,7 +18,7 @@ This is a bounded architecture-hardening track that may be interleaved with
 [`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md) and later product increments. Architecture work
 must happen only between completed, testable feature increments, not in the middle of an unfinished behavioral change.
 
-Hardening iterations 1–5 are implemented; configured Kotlin validation remains pending in environments where the Gradle distribution/dependencies are unavailable. Logical commonMain ownership is acyclic, runtime contracts and shared persistence/query semantics have focused owners, expected operational failures follow one policy, dataset installation is failure-safe, and the largest Kotlin source hot spots have been decomposed along existing responsibilities. The Favorites/import/notebook workflow remains the current product implementation focus.
+Hardening iterations 1–5 are implemented and Gate 6 now introduces the first physical KMP extraction: immutable `domain` models plus pure `geo` calculations live in `:core`. Configured Kotlin validation remains required on a normal workstation. Logical and physical dependency direction is acyclic, runtime contracts and shared persistence/query semantics have focused owners, expected operational failures follow one policy, dataset installation is failure-safe, and the largest Kotlin source hot spots have been decomposed along existing responsibilities.
 
 The remaining work must continue as independently reviewable PATCH iterations. Each iteration must leave the repository
 in a coherent, testable state; this specification deliberately rejects a single repository-wide rewrite.
@@ -67,15 +67,14 @@ acceptance checks as complete.
 
 ## Current state
 
-The runtime currently has three Gradle modules:
+The runtime now has four Gradle modules:
 
+- `:core`;
 - `:shared`;
 - `:desktopApp`;
 - `:androidApp`.
 
-This was appropriate for the initial vertical slice, but `:shared` now owns domain models, geographic algorithms,
-search orchestration, preference scoring, application-state controllers, persistence models/codecs, presentation,
-localization, map contracts/Compose integration, responsive UI, and the wide Desktop analysis UI.
+Gate 6 extracts the stable immutable `domain` model and pure `geo` calculations into `:core`. `:shared` still owns dataset/search/analysis orchestration, preference/workspace state, persistence contracts/codecs, presentation, localization, map contracts/Compose integration, responsive UI, and the wide Desktop analysis UI.
 
 Package names provide useful semantic grouping, but they do not yet provide build-enforced context boundaries.
 Before iteration 1, package dependencies included `analysis -> preferences -> analysis` and
@@ -665,7 +664,7 @@ Implemented result:
 - network-free architecture validation now protects the three former oversized entry points from silently growing past the approximately 20 KiB responsibility-review threshold;
 - focused Desktop tests cover the extracted interaction codec and pure style/page rewriting contracts. Configured Gradle execution remains required on a normal workstation before this iteration is fully accepted.
 
-### Iteration 6 — first physical Gradle module extraction
+### Iteration 6 — first physical Gradle module extraction — implementation complete, configured validation pending
 
 Scope:
 
@@ -681,6 +680,15 @@ Iteration acceptance:
 - module APIs are smaller than the previous all-purpose `shared` surface;
 - focused module tests can run without compiling unrelated Desktop/JCEF code where the Gradle model permits it;
 - Android/Desktop hosts still compile against the extracted contracts.
+
+Implemented result:
+
+- new `:core` owns the existing `domain` package plus `geo.GeoMath` without changing package names or runtime semantics;
+- `:core` has no internal project dependency and no Compose, JDBC, filesystem, Android framework, or serialization dependency;
+- `:shared` depends downward on `:core`, while Desktop and Android hosts declare direct `:core` dependencies for model contracts they import;
+- domain/geography unit tests move with their owner and can run as focused `:core` Desktop/Android-host tests;
+- network-free architecture checks scan both shared KMP source roots and enforce the documented four-module DAG;
+- scoring, ranking, persistence payloads, dataset format, and platform behavior are unchanged.
 
 ### Iteration 7 — feature/presentation modularization and final architecture gate
 

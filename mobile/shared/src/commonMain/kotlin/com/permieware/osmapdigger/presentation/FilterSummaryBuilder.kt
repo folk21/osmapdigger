@@ -23,8 +23,9 @@ object FilterSummaryBuilder {
         val parts = mutableListOf<String>()
 
         request.center?.let { center ->
-            if (request.radiusKm != null) {
-                parts += text.withinCenter(NumberFormatter.compact(request.radiusKm), center.name)
+            val radiusKm = request.radiusKm
+            if (radiusKm != null) {
+                parts += text.withinCenter(NumberFormatter.compact(radiusKm), center.name)
             } else {
                 parts += text.aroundCenter(center.name)
             }
@@ -35,13 +36,15 @@ object FilterSummaryBuilder {
             .forEach { condition ->
                 val definition = definitions[condition.metricId] ?: return@forEach
                 val unit = if (definition.unit == "count") "" else " ${definition.unit}"
+                val minValue = condition.minValue
+                val maxValue = condition.maxValue
                 parts += when {
-                    condition.minValue != null && condition.maxValue != null ->
-                        "${definition.title}: ${NumberFormatter.compact(condition.minValue)}–${NumberFormatter.compact(condition.maxValue)}$unit"
-                    condition.minValue != null ->
-                        "${definition.title}: ${text.atLeast(NumberFormatter.compact(condition.minValue))}$unit"
-                    condition.maxValue != null ->
-                        "${definition.title}: ${text.upTo(NumberFormatter.compact(condition.maxValue))}$unit"
+                    minValue != null && maxValue != null ->
+                        "${definition.title}: ${NumberFormatter.compact(minValue)}–${NumberFormatter.compact(maxValue)}$unit"
+                    minValue != null ->
+                        "${definition.title}: ${text.atLeast(NumberFormatter.compact(minValue))}$unit"
+                    maxValue != null ->
+                        "${definition.title}: ${text.upTo(NumberFormatter.compact(maxValue))}$unit"
                     else -> return@forEach
                 }
             }
