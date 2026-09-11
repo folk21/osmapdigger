@@ -5,33 +5,41 @@ description: Entry point for the Kotlin Multiplatform runtime, its physical modu
 ---
 # OsmapDigger mobile runtime
 
-`mobile/` contains the Kotlin Multiplatform runtime: low-level core models/geography, shared search/application/UI code, and Android/JVM Desktop hosts.
+`mobile/` contains the Kotlin Multiplatform runtime: low-level core models/geography, headless application logic, deterministic presentation logic, shared Compose UI/map code, and Android/JVM Desktop hosts.
 
 ## Physical Gradle modules
 
-Architecture hardening Gate 6 introduces the first physical extraction: `:core` owns the immutable runtime model plus pure geographic calculations, while `:shared` keeps dataset/search/analysis/workspace/presentation/UI responsibilities. Platform hosts depend explicitly on the low-level contracts they import.
+Architecture hardening Gates 6–7 establish explicit physical boundaries for low-level contracts, headless application behavior, presentation, Compose UI/runtime, and platform hosts.
 
 ```mermaid
 flowchart LR
-    CORE[":core"] --> SHARED[":shared"]
+    CORE[":core"] --> APP[":application"]
+    APP --> PRESENT[":presentation"]
+    CORE --> SHARED[":shared"]
+    APP --> SHARED
+    PRESENT --> SHARED
     CORE --> DESKTOP[":desktopApp"]
-    CORE --> ANDROID[":androidApp"]
+    APP --> DESKTOP
     SHARED --> DESKTOP
+    CORE --> ANDROID[":androidApp"]
+    APP --> ANDROID
     SHARED --> ANDROID
 ```
 
 | Module | Owns | Direct internal dependencies | Main entry points | Focused validation |
 |---|---|---|---|---|
 | `:core` | Immutable country-agnostic runtime models and pure WGS84 geographic calculations | none | `GeoPoint`, `DatasetInfo`, `Settlement`, `MetricDefinition`, `SearchRequest`, `GeoMath` | `./gradlew :core:desktopTest`, `./gradlew :core:testAndroidHostTest` |
-| `:shared` | Dataset/search/analysis contracts and logic, preferences, workspace orchestration, presentation, shared Compose UI, renderer-neutral map/external/notebook contracts | `:core` | `GeoRepository`, `SearchService`, `SettlementAnalysisService`, `AnalysisWorkspaceController`, `OsmapDiggerApp` | `./gradlew :shared:desktopTest`, `./gradlew :shared:testAndroidHostTest` |
-| `:desktopApp` | JVM composition root, JDBC, Desktop filesystem/package loading, Favorites ZIP save/reveal, browser integration, native/JCEF map host, headless developer automation | `:core`, `:shared` | Desktop main host, `JdbcGeoRepository`, `DesktopDataset`, `DesktopHeadlessWorkspace` | `./gradlew :desktopApp:jvmTest` |
-| `:androidApp` | Android composition root, Android SQLite, SAF/package installation, Favorites system-share adapter, browser intents, Activity lifecycle | `:core`, `:shared` | Android Activity, `AndroidGeoRepository`, `AndroidDataset` | `./gradlew :androidApp:assembleDebug` |
+| `:application` | Headless dataset/search/analysis logic, settings contracts, Preferences, Favorites/notebook, external-search contracts, and workspace orchestration | `:core` | `GeoRepository`, `SearchService`, `SettlementAnalysisService`, `AnalysisWorkspaceController` | `./gradlew :application:desktopTest`, `./gradlew :application:testAndroidHostTest` |
+| `:presentation` | Platform-independent localization, formatting, filter summaries, score explanations, and display-name resolution | `:application` | `FilterSummaryBuilder`, `ScoreExplanationBuilder`, `MetricDisplayNameResolver`, `UiStrings` | `./gradlew :presentation:desktopTest`, `./gradlew :presentation:testAndroidHostTest` |
+| `:shared` | Shared Compose UI plus renderer-neutral map/runtime composition contracts | `:core`, `:application`, `:presentation` | `OsmapDiggerApp`, `DesktopAnalysisWorkspace`, `SearchPane`, `MapOverlayGeoJson` | `./gradlew :shared:desktopTest`, `./gradlew :shared:testAndroidHostTest` |
+| `:desktopApp` | JVM composition root, JDBC, Desktop filesystem/package loading, Favorites ZIP save/reveal, browser integration, native/JCEF map host, headless developer automation | `:core`, `:application`, `:shared` | Desktop main host, `JdbcGeoRepository`, `DesktopDataset`, `DesktopHeadlessWorkspace` | `./gradlew :desktopApp:jvmTest` |
+| `:androidApp` | Android composition root, Android SQLite, SAF/package installation, Favorites system-share adapter, browser intents, Activity lifecycle | `:core`, `:application`, `:shared` | Android Activity, `AndroidGeoRepository`, `AndroidDataset` | `./gradlew :androidApp:assembleDebug` |
 
 See [`IMPLEMENTATION.md`](IMPLEMENTATION.md) for concrete class/platform call paths.
 
 ## Current logical ownership across shared KMP modules
 
-Top-level packages remain logical boundaries even when several still share one Gradle module. `domain` and `geo` now live in `:core`; the remaining packages in the graph live in `:shared`. Their dependency direction is intentionally acyclic and is checked by `tests/test_mobile_architecture.py` during `make check`.
+Top-level packages remain logical boundaries inside the physical modules. `domain` and `geo` live in `:core`; headless application packages live in `:application`; `presentation` lives in `:presentation`; and `map`, `runtime`, and `ui` live in `:shared`. Their dependency direction is intentionally acyclic and is checked by `tests/test_mobile_architecture.py` during `make check`.
 
 ```mermaid
 flowchart TD
@@ -102,7 +110,7 @@ flowchart TD
 
 ### Dependency rules
 
-- The physical Gradle module graph and logical package graph must remain DAGs; `:core` must not depend on `:shared`, Compose, or platform hosts.
+- The physical Gradle module graph and logical package graph must remain DAGs; lower modules must not depend upward on presentation, Compose UI, or platform hosts.
 - Lower-level packages must not import `workspace`, `presentation`, or `ui` to reuse incidental helpers.
 - `analysis` owns scoring/ranking; persistence/debounce/application state belongs to `workspace`.
 - `search` owns structured search semantics and must not depend on human-readable presentation formatting.

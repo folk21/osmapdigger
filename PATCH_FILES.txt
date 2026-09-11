@@ -1,7 +1,11 @@
 PATCH
 
-Modified files:
-- mobile/desktopApp/src/jvmTest/kotlin/com/permieware/osmapdigger/desktop/headless/DesktopHeadlessWorkspaceAcceptanceTest.kt
+Added/modified files:
+- CHANGELOG.md
+- docs/ROADMAP.md
+- docs/specs/README.md
+- docs/specs/active/spec-initial-functional-product.md
+- docs/specs/archive/subspecs/kmp-modular-architecture-hardening.md
 
 Deleted files:
-- none
+- docs/specs/active/subspecs/kmp-modular-architecture-hardening.md

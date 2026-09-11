@@ -124,16 +124,16 @@ flowchart TB
 - immutable domain/runtime models;
 - pure WGS84 geographic calculations used by shared search semantics.
 
-`mobile/shared` owns:
+`mobile/application` owns headless application behavior and contracts:
 
-- search request semantics and repository contracts;
-- exact radius post-filtering;
-- deterministic filter descriptions;
-- deterministic preference scoring/ranking and dataset-default models;
-- result-to-GeoJSON conversion;
+- search request/repository semantics and exact-radius filtering;
+- deterministic preference scoring/ranking and workspace orchestration;
 - immutable user-preference/search-context contracts and restore validation;
-- dataset-scoped Favorites/notebook persistence contracts;
-- shared responsive UI and map overlays.
+- dataset-scoped Favorites/notebook, external-search, settings, and operational-failure contracts.
+
+`mobile/presentation` owns deterministic non-Compose presentation: localized strings, metric/display-name formatting, filter summaries, score explanations, and availability diagnostics.
+
+`mobile/shared` owns shared Compose UI plus renderer-neutral map/runtime composition, including result-to-GeoJSON conversion and map overlays.
 
 Platform hosts own:
 

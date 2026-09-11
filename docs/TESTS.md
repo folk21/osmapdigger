@@ -68,7 +68,7 @@ Manual map acceptance should confirm:
 - OSM attribution remains visible in the application;
 - search-result overlays line up with the basemap.
 
-## Kotlin shared/Desktop tests
+## Kotlin module/Desktop tests
 
 When Gradle dependencies are available:
 
@@ -77,18 +77,18 @@ make test-desktop
 make test-mobile
 ```
 
-Shared tests cover Haversine distance, search-input parsing, settlement-list normalization/de-duplication and conservative exact/ambiguous/unresolved alias resolution, deterministic stable-ID batching, shared candidate-query construction/bind ordering, semantic distance/count/coverage filter presentation, deterministic preference scoring/ranking, dataset preference-default contract validation, rank-before-limit analysis orchestration, exact-radius filtering before scoring, missing-score coverage semantics, Preference data-availability diagnostics, analysis-workspace initialization/restore, debounced input coalescing, stale-analysis suppression, preference override recalculation, generic preference editor mutations/reset, legacy no-default manual fallback, deterministic score-explanation grouping, Desktop workspace layout geometry, deterministic number/filter-summary formatting, external-search URL templates/catalog validation, provider-specific default/custom/empty query terms, multi-settlement Cyrillic encoding and deterministic URL-bounded batch chunking, deterministic whole-notebook export JSON/Markdown including stale Favorites, hard-filter, preference-override, and candidate-scope payload round trips, dataset scoping, removed metrics/settlements, dataset-default/override merging, invalid effective preference contracts, unavailable saved centers, and Desktop MapLibre capability resolution. Desktop tests additionally cover reproducible Favorites ZIP byte/entry order, legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, imported stable-ID restriction including a >900-ID chunked query case, unknown scoring values, the no-scoring-metric branch, settings SQLite search/preference round trips, settings migrations through version 7, dataset-scoped favorite add/list/remove/clear persistence plus note/snapshot round trips, provider seeding/custom-row preservation, malformed hard-filter/preference payload behavior, and Intel-macOS renderer selection.
+Focused KMP tests now follow physical ownership: `:core` covers immutable models/geography; `:application` covers search, scoring/ranking, workspace, settings/notebook/external contracts and persistence payloads; `:presentation` covers deterministic formatting/localization/explanation plus the cross-layer shortlist fixture; `:shared` covers shared UI/map adapter behavior. Desktop tests additionally cover reproducible Favorites ZIP byte/entry order, legacy dynamic SQL filtering, persisted preference-default reading plus legacy-v1 empty fallback, batch analysis-candidate retrieval of only requested scoring metrics, imported stable-ID restriction including a >900-ID chunked query case, unknown scoring values, the no-scoring-metric branch, settings SQLite search/preference round trips, settings migrations through version 7, dataset-scoped favorite add/list/remove/clear persistence plus note/snapshot round trips, provider seeding/custom-row preservation, malformed hard-filter/preference payload behavior, and Intel-macOS renderer selection.
 
 
 ## Automated shortlist workflow acceptance
 
-When Gradle dependencies are available, run the focused shared acceptance fixture independently:
+When Gradle dependencies are available, run the focused cross-layer acceptance fixture independently:
 
 ```bash
 make shortlist-acceptance
 ```
 
-`SettlementShortlistWorkflowAcceptanceTest` exercises one deterministic synthetic product scenario across shared contracts rather than duplicating UI or platform-adapter tests. It covers normalized import/de-duplication and conservative resolution, candidate-scope persistence, repository-side Required filtering, shared exact-radius filtering, complete ranking before visible top-N, candidate-relative explanation, missing Preference data, frozen snapshot codec round-trip, explicit Favorites-to-import transfer that excludes stale IDs, UTF-8 batch external-search encoding, and deterministic whole-notebook export that retains unavailable Favorites.
+`SettlementShortlistWorkflowAcceptanceTest` exercises one deterministic synthetic product scenario across application and presentation contracts rather than duplicating Compose UI or platform-adapter tests. It covers normalized import/de-duplication and conservative resolution, candidate-scope persistence, repository-side Required filtering, shared exact-radius filtering, complete ranking before visible top-N, candidate-relative explanation, missing Preference data, frozen snapshot codec round-trip, explicit Favorites-to-import transfer that excludes stale IDs, UTF-8 batch external-search encoding, and deterministic whole-notebook export that retains unavailable Favorites.
 
 This fixture is an automated regression gate, not a substitute for configured Desktop/Android persistence, map interaction, browser/share adapters, or representative real-dataset calibration/performance acceptance below.
 
@@ -105,7 +105,7 @@ This headless layer intentionally stops at platform side effects: real MapLibre/
 
 ## Imported candidate workflow acceptance
 
-Shared tests cover one-name-per-line parsing, normalized de-duplication, unique exact resolution, radius-limited duplicate-name review, ambiguous multi-selection, fuzzy suggestions without auto-selection, explicit reviewed choices, stable-ID candidate restriction, retained source-text/candidate payload round trips, and restore behavior when saved imported IDs become stale. Desktop settings tests cover candidate-source round trips through the current settings schema and malformed candidate-source payloads.
+Application tests cover one-name-per-line parsing, normalized de-duplication, unique exact resolution, radius-limited duplicate-name review, ambiguous multi-selection, fuzzy suggestions without auto-selection, explicit reviewed choices, stable-ID candidate restriction, retained source-text/candidate payload round trips, and restore behavior when saved imported IDs become stale. Desktop settings tests cover candidate-source round trips through the current settings schema and malformed candidate-source payloads.
 
 On wide Desktop, verify that **Candidate source** can switch between the full dataset and an imported list. Paste and UTF-8 `.txt` loading must populate the review surface inside the left pane. Reopening **Edit list** must preserve the previous user-entered lines and expose **Clear**. With a center and positive radius, duplicate-name choices and suggestions must show only settlements inside that radius; ambiguous exact rows must support selecting one, several, or **Select all**. Applying the review recalculates only reviewed stable IDs. **Disable import** must preserve the saved list while returning analysis to the full dataset so Required/Preferences operate normally; **Enable import** must reuse the reviewed IDs; **Delete saved list** must clear the retained source and restriction. Restart must restore both activation state and retained list. The import surface must not overlap the native/JCEF map rectangle. Android must continue to compile and read/write the same candidate-source payload even though its document-import UI is deferred.
 

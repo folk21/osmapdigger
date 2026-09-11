@@ -22,9 +22,9 @@ Current implementation sub-spec:
 
 - [`subspecs/settlement-shortlist-workflow.md`](subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate lists, frozen analysis snapshots, export/share, and batch external searches.
 
-Active architecture-hardening work:
+Completed architecture-hardening track:
 
-- [`subspecs/kmp-modular-architecture-hardening.md`](subspecs/kmp-modular-architecture-hardening.md) — iterations 1–5 are implemented through source-responsibility decomposition and Gate 6 begins physical modularization with `:core`; remaining higher-level module extraction is intentionally interleaved between completed, testable product increments.
+- [`../archive/subspecs/kmp-modular-architecture-hardening.md`](../archive/subspecs/kmp-modular-architecture-hardening.md) — iterations 1–7 were accepted and archived after establishing the current `:core` → `:application` → `:presentation` → `:shared` dependency direction and configured Kotlin validation.
 
 The implemented [`subspecs/desktop-analysis-workspace.md`](subspecs/desktop-analysis-workspace.md) remains verification-pending while its strict country-scale scored acceptance and remaining configured checks are completed.
 

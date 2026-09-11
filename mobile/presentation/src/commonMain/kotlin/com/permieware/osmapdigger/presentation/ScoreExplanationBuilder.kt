@@ -69,12 +69,13 @@ object ScoreExplanationBuilder {
             score.contributions.map { contribution ->
                 val definition = definitions[contribution.metricId]
                 val averageQuality = baseline.averageQualityByMetricId[contribution.metricId]
+                val quality = contribution.quality
                 val comparativeImpact =
-                    if (score.totalWeight == 0 || contribution.quality == null || averageQuality == null) {
+                    if (score.totalWeight == 0 || quality == null || averageQuality == null) {
                         null
                     } else {
                         SCORE_SCALE * contribution.weight.toDouble() / score.totalWeight *
-                            (contribution.quality - averageQuality)
+                            (quality - averageQuality)
                     }
                 ExplainedPreferenceContribution(
                     contribution = contribution,

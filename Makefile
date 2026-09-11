@@ -12,7 +12,7 @@ help:
 	@echo "OsmapDigger targets:"
 	@echo "  check                Run network-free Python checks"
 	@echo "  check-all            Run Python plus configured Kotlin tests"
-	@echo "  shortlist-acceptance        Run the focused shared shortlist workflow acceptance fixture"
+	@echo "  shortlist-acceptance        Run the focused cross-layer shortlist workflow acceptance fixture"
 	@echo "  desktop-headless-acceptance Run shortlist acceptance through real Desktop JDBC/settings SQLite"
 	@echo "  headless-cli                Run developer CLI; pass HEADLESS_ARGS='...'"
 	@echo "  analysis-acceptance         Report latest representative Desktop analysis timing"
@@ -44,13 +44,13 @@ preference-calibration:
 	$(PYTHON) scripts/preference_calibration_report.py --dataset "$(PREFERENCE_CALIBRATION_DATASET)"
 
 test-desktop:
-	cd mobile && ./gradlew :core:desktopTest :shared:desktopTest :desktopApp:jvmTest
+	cd mobile && ./gradlew :core:desktopTest :application:desktopTest :presentation:desktopTest :shared:desktopTest :desktopApp:jvmTest
 
 test-mobile:
-	cd mobile && ./gradlew :core:testAndroidHostTest :shared:testAndroidHostTest
+	cd mobile && ./gradlew :core:testAndroidHostTest :application:testAndroidHostTest :presentation:testAndroidHostTest :shared:testAndroidHostTest
 
 shortlist-acceptance:
-	cd mobile && ./gradlew :shared:desktopTest --tests "com.permieware.osmapdigger.workspace.SettlementShortlistWorkflowAcceptanceTest"
+	cd mobile && ./gradlew :presentation:desktopTest --tests "com.permieware.osmapdigger.workspace.SettlementShortlistWorkflowAcceptanceTest"
 
 desktop-headless-acceptance:
 	cd mobile && ./gradlew :desktopApp:jvmTest --tests "com.permieware.osmapdigger.desktop.headless.DesktopHeadlessWorkspaceAcceptanceTest"

@@ -53,6 +53,7 @@ kotlin {
 
         jvmMain.dependencies {
             implementation(projects.core)
+            implementation(projects.application)
             implementation(projects.shared)
             implementation(compose.desktop.currentOs)
             implementation(libs.sqlite.jdbc)

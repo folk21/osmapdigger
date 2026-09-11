@@ -9,8 +9,10 @@ Root [`../AGENTS.md`](../AGENTS.md) applies. Read [`README.md`](README.md), [`IM
 
 ## Module ownership
 
-- `core` owns immutable domain/runtime models plus pure geographic calculations and must not depend on `shared`, Compose, or platform APIs.
-- `shared` owns dataset/search/analysis orchestration, dynamic filter UI, filter descriptions, GeoJSON overlays, and shared MapLibre presentation.
+- `core` owns immutable domain/runtime models plus pure geographic calculations and must not depend upward.
+- `application` owns headless dataset/search/analysis/preferences/workspace/settings/notebook/external contracts and logic.
+- `presentation` owns platform-independent localization, formatting, summaries, and score explanations.
+- `shared` owns shared Compose UI plus renderer-neutral map/runtime composition contracts.
 - `desktopApp` owns JDBC SQLite, JVM filesystem/ZIP import, Desktop browser integration, and Desktop resource lifecycle.
 - `androidApp` owns Android SQLite, Storage Access Framework import, app-private package installation, browser intents, and Activity lifecycle.
 - External-search provider definitions are configuration-driven; do not hardcode provider/country branches in shared UI. The settings SQLite is the runtime source of truth after packaged seed configuration is inserted.
@@ -19,7 +21,7 @@ Common code must not import Android/JVM filesystem or database APIs.
 
 ## Logical dependency graph
 
-[`README.md`](README.md) owns the current physical Gradle module table and logical `commonMain` package dependency DAG across `core` and `shared`. `tests/test_mobile_architecture.py` enforces both documented logical dependency direction and the physical Gradle DAG during `make check`.
+[`README.md`](README.md) owns the current physical Gradle module table and logical `commonMain` package dependency DAG across `core`, `application`, `presentation`, and `shared`. `tests/test_mobile_architecture.py` enforces both documented logical dependency direction and the physical Gradle DAG during `make check`.
 
 When intentionally adding or changing a top-level shared package dependency, update the README graph/table and the architecture check in the same patch. Do not bypass a dependency rule by moving reusable code into a generic `util`, `common`, or `helpers` package.
 
@@ -62,7 +64,9 @@ Search-result GeoJSON is transient presentation data; do not persist it as an an
 ## Testing
 
 - `core/commonTest` for immutable domain invariants and pure geographic calculations.
-- `shared/commonTest` for filter-summary/link/search/analysis/workspace behavior.
+- `application/commonTest` for search/analysis/preferences/workspace/settings/notebook/external behavior.
+- `presentation/commonTest` for deterministic formatting/localization/explanation behavior.
+- `shared/commonTest` for Compose-adapter and map/runtime integration behavior.
 - `desktopApp/jvmTest` for JDBC SQL/readers and Desktop package behavior where practical.
 - Android compilation/host tests for Android-specific contracts.
 - Real package/map acceptance belongs in repository `docs/TESTS.md`.

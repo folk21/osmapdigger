@@ -4,9 +4,11 @@ from collections import defaultdict
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-SHARED_COMMON_MAIN = REPO_ROOT / "mobile/shared/src/commonMain/kotlin"
 CORE_COMMON_MAIN = REPO_ROOT / "mobile/core/src/commonMain/kotlin"
-COMMON_MAIN_ROOTS = (CORE_COMMON_MAIN, SHARED_COMMON_MAIN)
+APPLICATION_COMMON_MAIN = REPO_ROOT / "mobile/application/src/commonMain/kotlin"
+PRESENTATION_COMMON_MAIN = REPO_ROOT / "mobile/presentation/src/commonMain/kotlin"
+SHARED_COMMON_MAIN = REPO_ROOT / "mobile/shared/src/commonMain/kotlin"
+COMMON_MAIN_ROOTS = (CORE_COMMON_MAIN, APPLICATION_COMMON_MAIN, PRESENTATION_COMMON_MAIN, SHARED_COMMON_MAIN)
 PACKAGE_PREFIX = "com.permieware.osmapdigger."
 
 # Logical package boundaries across the current shared KMP modules.
@@ -145,12 +147,14 @@ def test_gate6_core_module_owns_domain_and_geo_sources() -> None:
         )
 
 
-def test_gate6_gradle_module_dependencies_are_acyclic_and_explicit() -> None:
+def test_gradle_module_dependencies_are_acyclic_and_explicit() -> None:
     expected = {
         ":core": set(),
-        ":shared": {":core"},
-        ":desktopApp": {":core", ":shared"},
-        ":androidApp": {":core", ":shared"},
+        ":application": {":core"},
+        ":presentation": {":application"},
+        ":shared": {":application", ":core", ":presentation"},
+        ":desktopApp": {":application", ":core", ":shared"},
+        ":androidApp": {":application", ":core", ":shared"},
     }
     module_dirs = {module: module.removeprefix(":") for module in expected}
     graph: dict[str, set[str]] = {}
@@ -166,8 +170,41 @@ def test_gate6_gradle_module_dependencies_are_acyclic_and_explicit() -> None:
     assert cycle is None, f"Cyclic Gradle module dependency: {' -> '.join(cycle or [])}"
 
 
+
+def test_gate7_physical_package_ownership_is_explicit() -> None:
+    expected_packages = {
+        CORE_COMMON_MAIN: {"domain", "geo"},
+        APPLICATION_COMMON_MAIN: {
+            "analysis",
+            "dataset",
+            "error",
+            "external",
+            "notebook",
+            "preferences",
+            "search",
+            "settings",
+            "workspace",
+        },
+        PRESENTATION_COMMON_MAIN: {"presentation"},
+        SHARED_COMMON_MAIN: {"map", "runtime", "ui"},
+    }
+
+    for source_root, expected in expected_packages.items():
+        actual = {
+            package
+            for source in source_root.rglob("*.kt")
+            if (package := _logical_package(
+                next(
+                    line.removeprefix("package ").strip()
+                    for line in source.read_text(encoding="utf-8").splitlines()
+                    if line.startswith("package ")
+                )
+            )) is not None
+        }
+        assert actual == expected, f"Unexpected package ownership in {source_root}: {sorted(actual)}"
+
 def test_legacy_unused_dataset_architecture_is_not_present() -> None:
-    dataset_package = SHARED_COMMON_MAIN / "com/permieware/osmapdigger/dataset"
+    dataset_package = APPLICATION_COMMON_MAIN / "com/permieware/osmapdigger/dataset"
     stale_files = {
         "DatasetConfig.kt",
         "DatasetManager.kt",
@@ -214,7 +251,7 @@ def test_settings_schema_semantics_have_one_shared_owner() -> None:
         / "mobile/androidApp/src/main/kotlin/com/permieware/osmapdigger/settings/AndroidSettingsDatabase.kt"
     ).read_text(encoding="utf-8")
     shared = (
-        SHARED_COMMON_MAIN
+        APPLICATION_COMMON_MAIN
         / "com/permieware/osmapdigger/settings/ApplicationSettingsSchema.kt"
     ).read_text(encoding="utf-8")
 
@@ -234,7 +271,7 @@ def test_settings_schema_semantics_have_one_shared_owner() -> None:
 
 def test_dataset_package_layout_and_metadata_parser_are_shared() -> None:
     contract = (
-        SHARED_COMMON_MAIN
+        APPLICATION_COMMON_MAIN
         / "com/permieware/osmapdigger/dataset/DatasetPackageContract.kt"
     ).read_text(encoding="utf-8")
     assert 'const val METADATA_FILE = "metadata.json"' in contract
@@ -258,7 +295,7 @@ def test_dataset_package_layout_and_metadata_parser_are_shared() -> None:
 
 def test_meaningful_runtime_paths_do_not_silently_drop_failures() -> None:
     paths = [
-        SHARED_COMMON_MAIN / "com/permieware/osmapdigger/workspace/AnalysisWorkspaceController.kt",
+        APPLICATION_COMMON_MAIN / "com/permieware/osmapdigger/workspace/AnalysisWorkspaceController.kt",
         SHARED_COMMON_MAIN / "com/permieware/osmapdigger/ui/OsmapDiggerApp.kt",
         REPO_ROOT / "mobile/androidApp/src/main/kotlin/com/permieware/osmapdigger/MainActivity.kt",
     ]
@@ -273,7 +310,7 @@ def test_meaningful_runtime_paths_do_not_silently_drop_failures() -> None:
 
 def test_candidate_query_semantics_have_one_shared_owner() -> None:
     shared_path = (
-        SHARED_COMMON_MAIN
+        APPLICATION_COMMON_MAIN
         / "com/permieware/osmapdigger/dataset/DatasetCandidateQueries.kt"
     )
     shared = shared_path.read_text(encoding="utf-8")

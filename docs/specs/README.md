@@ -64,7 +64,7 @@ OsmapDigger documentation uses an Open Knowledge Format (OKF)-compatible YAML fr
 Specification files additionally use only the relationship/workflow fields that are currently needed:
 
 - `document_role` — `umbrella` or `subspec`;
-- `spec_status` — project workflow state such as `active`;
+- `spec_status` — project workflow state such as `active` or `archived`;
 - `parent` — parent umbrella path for a sub-spec;
 - `current_focus` — current sub-spec path for an umbrella.
 
@@ -98,9 +98,9 @@ Current implementation focus:
 
 - [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate sets, frozen analysis snapshots, export/share, and batch external searches.
 
-Active interleaved architecture track:
+Archived completed sub-specs:
 
-- [`active/subspecs/kmp-modular-architecture-hardening.md`](active/subspecs/kmp-modular-architecture-hardening.md) — iteration 1 is implemented; later dependency/error/storage/module gates are scheduled between completed product increments when relevant.
+- [`archive/subspecs/kmp-modular-architecture-hardening.md`](archive/subspecs/kmp-modular-architecture-hardening.md) — accepted KMP architecture-hardening track covering dependency cleanup, operational failures, shared persistence/query semantics, source decomposition, and physical `:core`/`:application`/`:presentation` modularization.
 
 Verification-pending completed increments:
 

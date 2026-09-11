@@ -34,6 +34,8 @@ plugins {
 }
 
 include(":core")
+include(":application")
+include(":presentation")
 include(":shared")
 include(":androidApp")
 include(":desktopApp")

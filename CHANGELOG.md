@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Complete and archive the KMP architecture-hardening track after configured validation of the `:core`, headless `:application`, deterministic `:presentation`, shared Compose/map `:shared`, and platform-host module DAG without changing runtime semantics.
+
 - Begin physical KMP modularization by extracting immutable domain models and pure geographic calculations into a dependency-free `:core` module, with explicit shared/platform dependencies and architecture checks for the Gradle DAG.
 
 - Add Desktop headless application acceptance and a developer CLI over the same shared workspace controller, using explicit real SQLite persistence paths for reproducible automation and restart verification.

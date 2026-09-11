@@ -1,29 +1,24 @@
 ---
 type: Specification
 title: KMP modular architecture and runtime hardening
-description: Active interleaved sub-spec for making the Kotlin runtime incrementally modular, dependency-directed, DRY, and consistent in error handling alongside bounded feature growth.
+description: Archived architecture-hardening sub-spec that established the dependency-directed KMP module graph, shared runtime contracts, and operational hardening rules.
 document_role: subspec
-spec_status: active
-parent: ../spec-initial-functional-product.md
+spec_status: archived
+parent: ../../active/spec-initial-functional-product.md
 ---
 # KMP modular architecture and runtime hardening
 
 ## Status
 
-Active interleaved architecture-hardening sub-spec; not the current product implementation focus.
+Accepted and archived.
 
-Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
+Parent specification: [`../../active/spec-initial-functional-product.md`](../../active/spec-initial-functional-product.md).
 
-This is a bounded architecture-hardening track that may be interleaved with
-[`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md) and later product increments. Architecture work
-must happen only between completed, testable feature increments, not in the middle of an unfinished behavioral change.
+Hardening iterations 1–7 are complete. The final runtime graph separates dependency-free `:core`, headless `:application`, deterministic `:presentation`, shared Compose/map/runtime `:shared`, and the Desktop/Android platform hosts. The configured Kotlin test suite passed on the development workstation after Gate 7 cleanup, while network-free architecture checks continue to enforce package ownership and the physical Gradle DAG.
 
-Hardening iterations 1–5 are implemented and Gate 6 now introduces the first physical KMP extraction: immutable `domain` models plus pure `geo` calculations live in `:core`. Configured Kotlin validation remains required on a normal workstation. Logical and physical dependency direction is acyclic, runtime contracts and shared persistence/query semantics have focused owners, expected operational failures follow one policy, dataset installation is failure-safe, and the largest Kotlin source hot spots have been decomposed along existing responsibilities.
+Current architecture, module ownership, error/storage rules, and concrete implementation paths are owned by `mobile/README.md`, `mobile/AGENTS.md`, `mobile/IMPLEMENTATION.md`, and the cross-project architecture/implementation documents. This archived specification preserves the rationale and staged acceptance history only; it is no longer a source of current requirements.
 
-The remaining work must continue as independently reviewable PATCH iterations. Each iteration must leave the repository
-in a coherent, testable state; this specification deliberately rejects a single repository-wide rewrite.
-
-The first Favorites/import/notebook feature checkpoints are complete through persistent Favorites, frozen snapshots, and bounded batch external search. Hardening iterations 2–5 are now also implemented: selected meaningful runtime paths use the shared typed operational-failure contract, settings schema/migrations have one shared semantic owner, package metadata/layout parsing is shared, Desktop/Android replacement installation is staging-based and failure-safe, compatibility-sensitive candidate SQL is produced once by shared `DatasetCandidateQueries`, and oversized UI/JCEF entry files are split into cohesive semantic components. Configured Gradle validation remains pending in environments without an available Gradle distribution. Portable Favorites export/share remains the next product increment.
+The product implementation focus remains [`../../active/subspecs/settlement-shortlist-workflow.md`](../../active/subspecs/settlement-shortlist-workflow.md) under the active umbrella.
 
 ## Goal
 
@@ -67,14 +62,7 @@ acceptance checks as complete.
 
 ## Current state
 
-The runtime now has four Gradle modules:
-
-- `:core`;
-- `:shared`;
-- `:desktopApp`;
-- `:androidApp`.
-
-Gate 6 extracts the stable immutable `domain` model and pure `geo` calculations into `:core`. `:shared` still owns dataset/search/analysis orchestration, preference/workspace state, persistence contracts/codecs, presentation, localization, map contracts/Compose integration, responsive UI, and the wide Desktop analysis UI.
+Before physical extraction, the runtime had four Gradle modules: `:core`, `:shared`, `:desktopApp`, and `:androidApp`. Gate 7 completes the six-module graph by extracting headless dataset/search/analysis/preferences/workspace/settings/notebook/external behavior into `:application` and deterministic localization/formatting/explanation into `:presentation`; `:shared` is reduced to Compose UI plus map/runtime composition.
 
 Package names provide useful semantic grouping, but they do not yet provide build-enforced context boundaries.
 Before iteration 1, package dependencies included `analysis -> preferences -> analysis` and
@@ -530,6 +518,15 @@ Acceptance of the complete sub-spec requires:
 15. current-state architecture/module/error-handling knowledge is moved from this specification into owning docs before
     archival.
 
+
+Final acceptance result:
+
+- the documented six-module Gradle DAG and logical package ownership match the build and are guarded by network-free architecture tests;
+- shared settings/package/query/error semantics and failure-safe dataset installation remain owned by the documented application/platform boundaries;
+- focused moved-contract tests plus existing scoring/search/persistence regressions remain in the owning modules;
+- configured Desktop/shared/Android Kotlin tests passed on the development workstation after Gate 7 cleanup;
+- stable current-state architecture knowledge lives in the owning mobile and cross-project documentation rather than this specification.
+
 No individual iteration should wait for every later acceptance item. Each iteration below has its own narrower gate.
 
 ## Small implementation iterations
@@ -543,7 +540,7 @@ Later iterations may be adjusted after earlier dependency cleanup reveals a bett
 into one large patch without a concrete reason. Prefer hardening the dependency subtree that the next product increment
 will extend.
 
-### Iteration 1 — dependency map and direction cleanup — implementation complete, configured validation pending
+### Iteration 1 — dependency map and direction cleanup — accepted
 
 Scope:
 
@@ -564,7 +561,7 @@ Iteration acceptance:
 - no product behavior or persisted format changes;
 - mobile documentation records the cleaned logical ownership graph.
 
-### Iteration 2 — unified Kotlin error contract — implementation complete, configured validation pending
+### Iteration 2 — unified Kotlin error contract — accepted
 
 Scope:
 
@@ -590,7 +587,7 @@ Implemented result:
 - malformed persisted preference payloads are now a typed settings failure rather than being confused with missing saved state;
 - application-owned UI maps stable failure kinds to localized text and no longer renders raw platform exception messages on migrated paths.
 
-### Iteration 3 — shared persistence/package semantics and atomic installation — implementation complete, configured validation pending
+### Iteration 3 — shared persistence/package semantics and atomic installation — accepted
 
 Scope:
 
@@ -615,7 +612,7 @@ Implemented result:
 - both ZIP installers extract and validate in staging before replacing the installed target and preserve/restore the previous package around publication;
 - Iteration 3 completed while the application settings schema was version 3 and left `geo-format` unchanged. The subsequent candidate-source feature increment advanced the same shared-owned settings schema to version 4, and the later Favorites foundation advances it to version 5 with a normalized favorite table, without changing the ownership established by this gate.
 
-### Iteration 4 — DRY analytical repository semantics
+### Iteration 4 — DRY analytical repository semantics — accepted
 
 Scope:
 
@@ -638,7 +635,7 @@ Implemented result:
 - network-free architecture checks prevent the migrated SQL fragments/bind-budget constant from returning to platform repositories;
 - focused shared query tests cover range/filter argument ordering, sparse-scoring `LEFT JOIN`, no-scoring-metric behavior, empty imported scopes, and >900-ID deterministic batching.
 
-### Iteration 5 — source responsibility/size cleanup — implementation complete, configured validation pending
+### Iteration 5 — source responsibility/size cleanup — accepted
 
 Scope:
 
@@ -664,7 +661,7 @@ Implemented result:
 - network-free architecture validation now protects the three former oversized entry points from silently growing past the approximately 20 KiB responsibility-review threshold;
 - focused Desktop tests cover the extracted interaction codec and pure style/page rewriting contracts. Configured Gradle execution remains required on a normal workstation before this iteration is fully accepted.
 
-### Iteration 6 — first physical Gradle module extraction — implementation complete, configured validation pending
+### Iteration 6 — first physical Gradle module extraction — accepted
 
 Scope:
 
@@ -690,7 +687,7 @@ Implemented result:
 - network-free architecture checks scan both shared KMP source roots and enforce the documented four-module DAG;
 - scoring, ranking, persistence payloads, dataset format, and platform behavior are unchanged.
 
-### Iteration 7 — feature/presentation modularization and final architecture gate
+### Iteration 7 — feature/presentation modularization and final architecture gate — accepted
 
 Scope:
 
@@ -708,6 +705,15 @@ Iteration acceptance:
 - no cyclic project dependencies or generic dependency-magnet module is introduced;
 - all complete-sub-spec validation items are satisfied or explicitly recorded as environment-dependent acceptance
   checks.
+
+Implemented result:
+
+- new `:application` owns headless dataset/search/analysis/preferences/workspace/settings/notebook/external/error packages and depends only on `:core` plus third-party coroutine/serialization libraries;
+- new `:presentation` owns deterministic localization, formatting, summaries, and score explanations and depends downward on `:application`;
+- `:shared` now owns only `map`, `runtime`, and Compose `ui` packages and depends on `:core`, `:application`, and `:presentation`;
+- platform hosts depend directly on `:application` for the contracts they implement while platform APIs remain outside common modules;
+- package ownership and the six-module Gradle DAG are enforced by the network-free architecture test;
+- scoring, ranking, settings schema, dataset format, UI behavior, and persisted payloads are unchanged; configured Gradle validation passed on the development workstation after the final source-move cleanup.
 
 ## Implementation discipline for every iteration
 

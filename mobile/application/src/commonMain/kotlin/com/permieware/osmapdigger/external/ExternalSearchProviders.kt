@@ -103,7 +103,7 @@ object ExternalSearchUrlBuilder {
 }
 
 /** Resolve provider-specific terms while preserving an explicit empty value and legacy null fallback. */
-internal fun ExternalSearchProvider.resolveQueryTerms(datasetTerms: String): String =
+fun ExternalSearchProvider.resolveQueryTerms(datasetTerms: String): String =
     (queryTermsOverride ?: datasetTerms).trim()
 
 internal fun percentEncode(value: String): String =

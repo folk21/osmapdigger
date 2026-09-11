@@ -36,7 +36,7 @@ An active spec owns the intended delta while implementation is in progress. Curr
 - `geo-builder/` owns OSM parsing, configured feature extraction, metric calculation, map generation, package validation, and package publication.
 - `geo-format/` owns persisted SQLite/metadata semantics and compatibility versioning.
 - `mobile/core` owns immutable country-agnostic domain models and pure geographic calculations.
-- `mobile/shared` owns deterministic search/analysis orchestration, filter summaries, shared Compose UI, and map/result presentation contracts.
+- `mobile/application` owns headless search/analysis/workspace/settings/notebook/external contracts and logic; `mobile/presentation` owns platform-independent formatting/localization/explanation; `mobile/shared` owns shared Compose UI plus map/runtime composition contracts.
 - `mobile/desktopApp` and `mobile/androidApp` own filesystem APIs, SQLite adapters, package import, browser opening, and platform lifecycle.
 - UI must not construct SQL, parse SQLite rows, parse metadata JSON directly, or know OSM selector details.
 - Python configuration must not leak directly into runtime code; generated `metric_definition` rows are the runtime metric/filter contract and additive `metric_preference_default` rows are the separate dataset scoring-default contract.

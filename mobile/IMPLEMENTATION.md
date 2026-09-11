@@ -14,13 +14,15 @@ This document describes the current Kotlin Multiplatform implementation under `m
 | Module | Current responsibility |
 |---|---|
 | `core` | Immutable domain/runtime models plus pure WGS84 geographic calculations |
-| `shared` | Dataset/search/analysis/preferences/workspace/presentation/map/external/notebook boundaries plus shared Compose UI |
+| `application` | Headless dataset/search/analysis/preferences/workspace/settings/notebook/external contracts and logic |
+| `presentation` | Platform-independent localization, formatting, summaries, and score explanations |
+| `shared` | Shared Compose UI plus map/runtime composition contracts |
 | `desktopApp` | JVM app host, dataset JDBC SQLite, settings SQLite, filesystem/ZIP loading, Desktop browser integration |
 | `androidApp` | Android app host, dataset/settings SQLite, SAF ZIP import, app-private installation, browser intents |
 
-`core/commonMain` and `shared/commonMain` contain no Android/JDBC/filesystem implementation APIs. `:shared`, `:desktopApp`, and `:androidApp` depend explicitly on `:core` where they compile against its model contracts.
+`core/commonMain`, `application/commonMain`, `presentation/commonMain`, and `shared/commonMain` contain no Android/JDBC/filesystem implementation APIs. `:application` depends on `:core`; `:presentation` depends on `:application`; `:shared` depends on those lower layers; platform hosts implement application contracts and own platform APIs.
 
-The current logical package graph across `:core` and `:shared` is documented in [`README.md`](README.md) and enforced by the network-free `tests/test_mobile_architecture.py` check. The physical Gradle dependency graph is also checked to prevent `:core` from acquiring upward dependencies.
+The current logical package graph across `:core`, `:application`, `:presentation`, and `:shared` is documented in [`README.md`](README.md) and enforced by the network-free `tests/test_mobile_architecture.py` check. The physical Gradle dependency graph is also checked to prevent `:core` from acquiring upward dependencies.
 
 ## Core domain model
 
@@ -42,7 +44,7 @@ Models are intentionally immutable and do not know SQL/OSM selector semantics. `
 
 ## Shared runtime boundaries
 
-KMP architecture hardening iterations 1–5 established acyclic semantic ownership and reduced source-context hotspots. Gate 6 physically extracts the stable `domain` and `geo` packages into `:core`; dataset/search/analysis/workspace/presentation/UI remain in `:shared` for later bounded extraction:
+KMP architecture hardening iterations 1–5 established acyclic semantic ownership and reduced source-context hotspots. Gate 6 extracted `domain` and `geo` into `:core`; Gate 7 now places headless application behavior in `:application`, deterministic non-Compose presentation in `:presentation`, and leaves Compose UI plus map/runtime composition in `:shared`:
 
 - `dataset/GeoRepository.kt` owns the read-only analytical dataset boundary;
 - `map/MapPackage.kt` owns platform-resolved local map assets;
@@ -66,7 +68,7 @@ KMP architecture hardening iterations 1–5 established acyclic semantic ownersh
 
 Wide Desktop orchestration remains in `ui/DesktopAnalysisWorkspace.kt`, but its previous independent responsibilities are split into focused sibling files: `DesktopAnalysisSidebar.kt` owns sidebar composition and candidate/result controls, `DesktopPreferencesUi.kt` owns generic Preference editing, and `DesktopSettlementPanels.kt` owns the lower summary/details/external-search panes. `SearchPane.kt` remains the responsive composition entry point while `SearchAreaUi.kt`, `DynamicFiltersUi.kt`, and `ResponsiveSettlementDetailsUi.kt` own reusable center/radius, metric-filter, and selected-settlement surfaces. Shared numeric metric rendering is centralized in presentation-owned `MetricValueFormatter` rather than duplicated inside UI files.
 
-This is a source-responsibility split only: all files remain in the same `ui` logical package and `:shared` Gradle module, so dependency direction, Compose state ownership, scoring/search semantics, persistence, and platform boundaries are unchanged.
+These UI files remain in the `ui` logical package and `:shared` Gradle module; scoring/search/workspace behavior now comes from `:application`, while deterministic display formatting comes from `:presentation`.
 
 ## User preferences
 
@@ -317,7 +319,9 @@ Current dependency families:
 ## Tests
 
 - `core/commonTest` covers domain invariants and pure geographic calculations;
-- `shared/commonTest` covers deterministic preference scoring/ranking, rank-before-limit analysis orchestration, exact-radius analysis semantics, debounced shared analysis-state orchestration, filter summaries, external links, preference payloads, and restore semantics;
+- `application/commonTest` covers deterministic search/scoring/ranking, workspace orchestration, persistence payloads, notebook/external-search contracts, and restore semantics;
+- `presentation/commonTest` covers deterministic formatting/localization/explanation semantics and the cross-layer shortlist acceptance fixture;
+- `shared/commonTest` covers shared UI/map adapter behavior;
 - `shared/desktopTest` covers Desktop MapLibre host capability resolution;
 - `desktopApp/jvmTest` covers legacy dynamic metric SQL, batch scoring-metric retrieval/unknown handling, and preferences/settings SQLite round trips;
 - Android compilation/host tests are separate Gradle tasks.
