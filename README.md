@@ -19,6 +19,10 @@ The initial product is useful to:
 
 The runtime is country-agnostic. The first production-oriented package is expected to cover Belarus because a whole-country OSM extract is practical at that scale. The repository uses a small Andorra PBF as a real local integration fixture. Large countries are expected to be represented by separately downloadable regional PBF extracts or other practical dataset scopes.
 
+## Desktop application
+
+![OsmapDigger Desktop application showing ranked settlement analysis and the offline map](docs/images/osmapdigger_screen.png)
+
 ## System at a glance
 
 ```mermaid

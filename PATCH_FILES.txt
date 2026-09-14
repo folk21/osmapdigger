@@ -1,11 +1,7 @@
-PATCH
+PATCH: add Desktop application screenshot to root README
 
 Added/modified files:
-- CHANGELOG.md
-- docs/ROADMAP.md
-- docs/specs/README.md
-- docs/specs/active/spec-initial-functional-product.md
-- docs/specs/archive/subspecs/kmp-modular-architecture-hardening.md
+- README.md
 
 Deleted files:
-- docs/specs/active/subspecs/kmp-modular-architecture-hardening.md
+- none
