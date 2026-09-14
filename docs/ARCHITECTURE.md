@@ -16,7 +16,7 @@ The active initial product requirements are in [`specs/active/spec-initial-funct
 OsmapDigger separates expensive geographic preparation from lightweight offline runtime search.
 
 ```mermaid
-flowchart LR
+flowchart TD
     OSM[Local OSM PBF] --> BUILD[Python Geo Builder]
     BUILD --> SQLITE[GeoRisk SQLite]
     BUILD --> TILES[PMTiles basemap]
@@ -83,7 +83,7 @@ SQLite is normalized around dynamic metric definitions. Runtime code does not re
 Build configuration defines categories and generated measures. The builder publishes those measures as runtime `metric_definition` records and may additionally publish resolved dataset-provided scoring defaults as `metric_preference_default` rows. Preference defaults are intentionally separate from metric-generation profiles and hard-filter `default_enabled` metadata.
 
 ```mermaid
-flowchart LR
+flowchart TD
     METRICS[metrics.toml] --> PY[Python metric catalog]
     MPROFILE[metric-profiles.toml] --> PY
     PPROFILE[preference-profiles.toml] --> PREF[Preference profile resolver]

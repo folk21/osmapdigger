@@ -12,7 +12,7 @@ description: Entry point for the Kotlin Multiplatform runtime, its physical modu
 Architecture hardening Gates 6–7 establish explicit physical boundaries for low-level contracts, headless application behavior, presentation, Compose UI/runtime, and platform hosts.
 
 ```mermaid
-flowchart LR
+flowchart TD
     CORE[":core"] --> APP[":application"]
     APP --> PRESENT[":presentation"]
     CORE --> SHARED[":shared"]

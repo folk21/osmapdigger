@@ -21,12 +21,14 @@ The runtime is country-agnostic. The first production-oriented package is expect
 
 ## Desktop application
 
-![OsmapDigger Desktop application showing ranked settlement analysis and the offline map](docs/images/osmapdigger_screen.png)
+The screenshot below shows an example of the current OsmapDigger Desktop interface running on macOS. It illustrates the ranked settlement workflow together with the offline map and the details panel for the selected settlement.
+
+![OsmapDigger Desktop application on macOS](docs/images/osmapdigger_screen.png)
 
 ## System at a glance
 
 ```mermaid
-flowchart LR
+flowchart TD
     PBF[Local OSM .osm.pbf] --> B[Python Geo Builder]
     B --> DB[GeoRisk SQLite]
     B --> MAP[PMTiles vector map]

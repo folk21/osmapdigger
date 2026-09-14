@@ -63,7 +63,7 @@ gate.
 A useful conceptual split is:
 
 ```mermaid
-flowchart LR
+flowchart TD
     SOURCE[Candidate source] --> ELIGIBLE[Eligible candidate IDs]
     ELIGIBLE --> HARD[Required constraints + optional radius]
     HARD --> SCORE[Existing preference scoring]

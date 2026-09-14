@@ -1,7 +1,10 @@
-PATCH: add Desktop application screenshot to root README
+PATCH: vertical Mermaid diagrams and Desktop screenshot caption
 
-Added/modified files:
+Modified files:
 - README.md
+- docs/ARCHITECTURE.md
+- mobile/README.md
+- geo-builder/README.md
+- docs/specs/active/subspecs/settlement-shortlist-workflow.md
 
-Deleted files:
-- none
+Deleted files: none

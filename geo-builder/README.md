@@ -10,7 +10,7 @@ description: Entry point for the build-time Python geospatial processing subsyst
 ## Pipeline
 
 ```mermaid
-flowchart LR
+flowchart TD
     C[Dataset + metric/preference config] --> P[PbfReader / Pyrosm]
     P --> S[Settlement extraction]
     P --> F[Configured feature categories]
