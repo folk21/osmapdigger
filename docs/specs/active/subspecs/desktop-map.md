@@ -16,10 +16,20 @@ Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-
 
 This sub-spec is no longer the current coding focus. Its implementation remains verification-pending
 until the remaining acceptance checks are recorded. The active umbrella now points to
-[`desktop-analysis-workspace.md`](desktop-analysis-workspace.md) as the current implementation focus.
+[`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md) as the current implementation focus.
 
 The implementation here covers the Desktop part of the existing offline-map requirements without
 changing analytical search semantics or the generated dataset format.
+
+## Feature scope
+
+- `MAP.OFFLINE` — local PMTiles basemap rendering without a remote tile backend.
+- `MAP.RESULTS` — search-result overlays and selected-settlement visualization.
+- `PLATFORM.DESKTOP` — native/JCEF Desktop renderer selection and lifecycle.
+- `PLATFORM.KMP` — renderer-neutral shared map/runtime boundary.
+- `FORMAT.GEODATA` — unchanged generated package compatibility.
+
+Feature identifiers are defined in [`../../../FEATURES.md`](../../../FEATURES.md).
 
 ## Goal
 
@@ -53,6 +63,16 @@ platform-owned JCEF + MapLibre GL JS renderer because MapLibre Compose 0.13.x ha
 `macos-amd64` JNI runtime. The Intel renderer was manually exercised on an x86-64 macOS development
 workstation and successfully displayed the map while preserving settlement-selection/details behavior.
 Shared search semantics and the dataset package contract remain unchanged.
+
+## Requirement map
+
+| Requirement | Feature ID | Purpose |
+|---|---|---|
+| DM-R1, DM-R9, DM-R10-DM-R11 | `MAP.OFFLINE`, `PLATFORM.DESKTOP` | Offline renderer behavior, attribution, and Intel macOS adapter boundary |
+| DM-R2-DM-R3, DM-R7 | `PLATFORM.DESKTOP` | Supported-host renderer selection and graceful fallback |
+| DM-R4-DM-R5 | `MAP.RESULTS` | Result overlay and selected-settlement visualization |
+| DM-R6 | `PLATFORM.KMP` | Shared/platform map boundary |
+| DM-R8 | `FORMAT.GEODATA` | No generated-format change |
 
 ## Requirements
 

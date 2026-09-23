@@ -19,6 +19,20 @@ This sub-spec is no longer the current coding focus. The umbrella now points to
 analysis acceptance and the remaining configured Desktop/Android checks still must be recorded before
 this sub-spec can be archived; changing the coding focus does not imply acceptance.
 
+## Feature scope
+
+- `ANALYSIS.PREFERENCES` — generic weighted Preference model and dataset defaults.
+- `ANALYSIS.RANKING` — normalized quality, weighted coverage, score, and stable ranking.
+- `ANALYSIS.EXPLANATION` — deterministic contribution/diagnostic presentation.
+- `SEARCH.FILTERING` and `SEARCH.RADIUS` — hard eligibility and exact center/radius semantics.
+- `PRESENTATION.ANALYSIS_WORKSPACE` — map-first Required/Preferences/results/details workflow.
+- `MAP.RESULTS` — list/map selection and map-driven center interactions.
+- `SETTINGS.PERSISTENCE` — persisted preference/search-context state.
+- `PLATFORM.KMP` — shared logic with platform-owned adapters.
+- `FORMAT.GEODATA` — compatibility-sensitive generated metric/default contract.
+
+Feature identifiers are defined in [`../../../FEATURES.md`](../../../FEATURES.md).
+
 ## Goal
 
 Turn the wide Desktop application from a form-oriented search pane beside a map into a map-first local
@@ -92,6 +106,19 @@ Dataset-provided preference defaults are now implemented independently from hard
 `GeoRepository.preferenceDefaults()` exposes the catalog on Desktop and Android. Updated readers probe for the additive table and return an empty list for legacy format-v1 packages that predate it; older readers safely ignore the table in newly generated v1 packages. `AnalysisWorkspaceController` consumes these defaults generically, and the Desktop workspace exposes them through progressive preference editing without reading builder configuration directly.
 
 Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, preference-default validation, shared analysis-workspace state behavior, preference editor mutations, and deterministic score-explanation grouping. User-customized scoring overrides are persisted in the application-owned settings database and deterministically merged with dataset defaults. `AnalysisWorkspaceController` owns restored hard constraints, effective preferences, center/radius, persistence, debounced ranked recalculation, and stale-result suppression. The Desktop host now renders the map-first workspace with generic preference editors, ranked result scores/coverage, a compact lower settlement summary, and explicit lower-pane Details/External-search views; Android continues to use the existing responsive Search/Map presentation.
+
+## Requirement map
+
+| Requirement | Feature ID | Purpose |
+|---|---|---|
+| DA-R1, DA-R11-DA-R12, DA-R14 | `PRESENTATION.ANALYSIS_WORKSPACE` | Wide Desktop analysis composition and progressive editing/details |
+| DA-R2-DA-R5 | `SEARCH.FILTERING`, `ANALYSIS.PREFERENCES` | Required/Preference separation and generic defaults |
+| DA-R6-DA-R10, DA-R16 | `ANALYSIS.RANKING` | Quality, score, coverage, batching, stable rank-before-limit, recalculation |
+| DA-R13, DA-R17, DA-R19 | `MAP.RESULTS`, `SEARCH.RADIUS` | List/map selection, map-driven center, search/map separation |
+| DA-R15 | `ANALYSIS.EXPLANATION` | Explainable ranked-analysis breakdown |
+| DA-R18 | `SETTINGS.PERSISTENCE` | Application-owned Preference persistence |
+| DA-R20 | `PLATFORM.KMP` | Shared/platform responsibility boundary |
+| DA-R21 | `FORMAT.GEODATA` | Explicit dataset compatibility contract |
 
 ## Requirements
 

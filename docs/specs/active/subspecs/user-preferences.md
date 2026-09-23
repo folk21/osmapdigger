@@ -18,6 +18,16 @@ The implementation is no longer the current coding focus. Desktop persistence an
 have been exercised successfully; Android runtime validation remains pending before archival. This
 sub-spec continues to document that bounded change until its remaining validation is complete.
 
+## Feature scope
+
+- `SETTINGS.PERSISTENCE` — application-owned schema/versioned persistence of mutable search context.
+- `SEARCH.RADIUS` — persisted center/radius semantics.
+- `SEARCH.FILTERING` — persisted dynamic Required filter state.
+- `PLATFORM.KMP` — shared persistence contract with platform-specific storage adapters.
+- `TESTING.DETERMINISTIC_LOCAL` — deterministic persistence/restore coverage.
+
+Feature identifiers are defined in [`../../../FEATURES.md`](../../../FEATURES.md).
+
 ## Goal
 
 Persist the user's current dataset-scoped search context locally and restore it after application
@@ -41,9 +51,19 @@ criteria of the original initial vertical slice.
 
 ## Current state
 
-The implementation now provides a shared immutable preferences contract, versioned dynamic-filter payload, dataset-aware restore validation, Desktop settings SQLite, Android app-private settings SQLite, and shared Compose startup/save wiring. Generated dataset SQLite remains read-only and separate.
+The implementation now provides an application-owned immutable preferences contract, versioned dynamic-filter payload, dataset-aware restore validation, Desktop settings SQLite, Android app-private settings SQLite, and shared Compose startup/save wiring. Generated dataset SQLite remains read-only and separate.
 
 The sub-spec remains active until configured Gradle tests/builds and Android runtime restoration are validated on the normal development toolchain.
+
+## Requirement map
+
+| Requirement | Feature ID | Purpose |
+|---|---|---|
+| UP-R1-UP-R3, UP-R7, UP-R9-UP-R10 | `SETTINGS.PERSISTENCE` | Separate application-owned state, dataset scope, tolerant restore, schema lifecycle |
+| UP-R4-UP-R5 | `SEARCH.RADIUS`, `SETTINGS.PERSISTENCE` | Center identity and radius semantics |
+| UP-R6 | `SEARCH.FILTERING`, `SETTINGS.PERSISTENCE` | Dynamic filter persistence |
+| UP-R8 | `PLATFORM.KMP` | Shared contract with platform-owned storage |
+| UP-R11 | `TESTING.DETERMINISTIC_LOCAL` | Deterministic persistence behavior |
 
 ## Requirements
 
@@ -52,10 +72,9 @@ The sub-spec remains active until configured Gradle tests/builds and Android run
 User preferences must be stored separately from generated dataset artifacts. `georisk.sqlite` remains
 read-only runtime data and must not contain mutable user state.
 
-### UP-R2 — shared persistence contract
+### UP-R2 — application persistence contract
 
-`mobile/shared` must own immutable preference models and a small persistence interface. Shared code
-must not depend on JDBC, Android SQLite, filesystem APIs, or another platform persistence API.
+`mobile/application` must own immutable preference models and the small persistence interface. `mobile/shared` may consume that contract but must not depend on JDBC, Android SQLite, filesystem APIs, or another platform persistence API.
 
 ### UP-R3 — dataset-scoped search context
 
@@ -183,12 +202,12 @@ Acceptance requires:
 Implemented in this increment:
 
 1. Add immutable shared preference/search-context models.
-2. Add a small shared `UserPreferencesRepository` contract.
+2. Add a small application-owned `UserPreferencesRepository` contract.
 3. Define the versioned dynamic-filter persistence representation.
 4. Implement Desktop application-owned SQLite storage under `~/.osmapdigger/settings/`.
 5. Restore state after the matching dataset and metric definitions are available.
 6. Persist relevant search-context changes through application state rather than directly from UI controls.
-7. Implement the Android app-private adapter using the same shared contract.
+7. Implement the Android app-private adapter using the same application contract.
 8. Add focused shared and Desktop tests; Android adapter compilation/device validation remains part of acceptance.
 
 After configured validation succeeds, update any final validation notes, archive this sub-spec, and select the next implementation focus under the umbrella specification.

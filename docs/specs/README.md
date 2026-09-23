@@ -1,85 +1,135 @@
 ---
 type: Specification Guide
 title: Change specifications
-description: Specification hierarchy, lifecycle, and OKF-compatible metadata conventions.
+description: OsmapDigger specification hierarchy, lifecycle, feature references, and minimal metadata conventions.
 ---
 # Change specifications
 
-`docs/specs/` contains specifications for significant planned or in-progress changes to OsmapDigger. A specification defines the intended delta/acceptance target before that work is considered complete; it is **not** canonical documentation of what the repository already does.
+## Purpose
 
-Current product and implementation truth remains in owning documents such as [`../ARCHITECTURE.md`](../ARCHITECTURE.md), [`../IMPLEMENTATION.md`](../IMPLEMENTATION.md), [`../CONFIGURATION.md`](../CONFIGURATION.md), [`../USAGE.md`](../USAGE.md), plus subproject `IMPLEMENTATION.md` files.
+`docs/specs/` contains specifications for significant planned or in-progress changes to OsmapDigger.
 
-## Specification hierarchy
+A specification defines intended behavior and acceptance criteria. It is not the source of truth for behavior that is already accepted and implemented.
 
-The active specification tree uses a deliberately small two-level structure:
+Current implementation truth belongs in:
+
+- [`../ARCHITECTURE.md`](../ARCHITECTURE.md);
+- [`../IMPLEMENTATION.md`](../IMPLEMENTATION.md);
+- [`../CONFIGURATION.md`](../CONFIGURATION.md);
+- [`../USAGE.md`](../USAGE.md);
+- owning subproject `README.md`/`IMPLEMENTATION.md` files.
+
+Stable capability names belong in [`../FEATURES.md`](../FEATURES.md).
+
+## Feature, requirement, and specification IDs
+
+Keep these concepts separate:
+
+- **Feature ID** — stable capability vocabulary from [`../FEATURES.md`](../FEATURES.md), for example `ANALYSIS.RANKING`.
+- **Requirement ID** — normative rule inside one specification, for example `R12`, `DA-R7`, or `SS-R9`.
+- **Specification name** — one implementation/change slice, for example `settlement-shortlist-workflow`.
+
+A feature may be introduced or refined by several specifications. A completed specification is archived, but its feature IDs remain stable.
+
+Do not invent feature IDs in tests, code comments, documentation, or specifications. Add a genuinely new durable capability to `docs/FEATURES.md` first.
+
+Requirement IDs are local to their specification. They remain stable while that specification is active and when it is archived, but they must not be reused as repository-wide feature vocabulary.
+
+## Active tree
+
+Keep the active tree shallow:
 
 ```text
 active/
     spec-<umbrella>.md
     subspecs/
-        <current-focus>.md
+        <bounded-focus>.md
 ```
 
-- `spec-*.md` is an active umbrella specification that owns the broader product or architectural target.
-- `subspecs/*.md` refines one bounded implementation increment under the umbrella.
-- At most one sub-spec is the current implementation focus at a time.
-- The umbrella links to the current sub-spec, and the sub-spec links back to its parent.
-- A long-lived architecture-hardening sub-spec may remain active but non-current while bounded hardening gates are interleaved between completed, testable product increments. Do not switch into structural refactoring in the middle of an unfinished feature increment.
-- Completing a sub-spec does not imply that its umbrella specification is complete.
+Rules:
 
-This hierarchy is intentionally shallow. Do not create deeper specification trees unless a real product need makes the two-level model insufficient.
+- the umbrella defines the active product/system target;
+- one sub-spec is the current implementation focus;
+- other sub-specs may remain active only while they define unresolved supporting or verification-pending constraints;
+- completing one sub-spec does not complete the umbrella;
+- do not create deeper trees without a concrete need.
+
+The current bounded product focus is `settlement-shortlist-workflow`. Desktop analysis, Desktop map, and user-preferences sub-specs remain active only because acceptance verification is incomplete.
 
 ## When to create a sub-spec
 
-Create a sub-spec when an implementation increment:
+Create a sub-spec when a change materially affects one or more of these areas:
 
-- introduces a substantial product capability;
-- changes an application-owned persisted contract or important runtime boundary;
-- spans multiple implementation sessions;
-- benefits from stable requirements and acceptance scenarios without expanding the umbrella specification with implementation detail.
+- product behavior spanning multiple implementation sessions;
+- Gradle/module ownership or dependency direction;
+- persisted dataset or application-owned storage semantics;
+- search/ranking/failure behavior shared across platforms;
+- platform boundaries or package installation/lifecycle behavior;
+- user-visible workflows that need stable acceptance scenarios;
+- work that benefits from explicit migration/compatibility rules.
 
-Small bug fixes, local refactors, narrow documentation improvements, and routine dependency maintenance do not require a sub-spec.
+Do not create a sub-spec for:
+
+- small bugs;
+- local refactors;
+- narrow documentation cleanup;
+- routine dependency maintenance.
 
 ## Lifecycle
 
-1. Keep the active umbrella specification under `docs/specs/active/spec-*.md`.
-2. Put the current bounded implementation focus under `docs/specs/active/subspecs/`.
-3. Record the parent/current-focus relationship in both YAML frontmatter and Markdown links.
-4. Give important sub-spec requirements stable IDs so tests and reviews can refer to them.
-5. Implement while preserving root/local `AGENTS.md` invariants.
-6. After sub-spec acceptance, move stable knowledge into the owning current-state documentation.
-7. Move the completed sub-spec to `docs/specs/archive/subspecs/`.
-8. Keep the umbrella active until its own acceptance target is complete; then archive it separately.
+1. Keep the umbrella under `docs/specs/active/spec-*.md`.
+2. Put the current bounded implementation slice under `docs/specs/active/subspecs/`.
+3. Record its parent and lifecycle state in frontmatter.
+4. Keep umbrella `current_focus`, human-readable status, and `docs/specs/README.md` synchronized.
+5. Reference stable feature IDs from `docs/FEATURES.md` in a `Feature scope` section.
+6. Give important normative requirements stable local IDs when tests/reviews need them.
+7. Implement and validate the slice while preserving root/local `AGENTS.md` invariants.
+8. After developer acceptance, move stable behavior into current-state documentation.
+9. Move the completed sub-spec to `docs/specs/archive/subspecs/`.
+10. Archive the umbrella only when its own acceptance target is complete.
 
-Archived specifications preserve historical design intent but are not current source of truth. `concat_osmapdigger.sh` excludes archived specs so routine LLM context contains current code/docs plus active intended work.
+A specification must exist in exactly one lifecycle location. Archival is a move, not a copy.
+
+An implemented but unverified slice may remain active with `spec_status: verification-pending`.
+
+After acceptance:
+
+- current-state documentation owns the behavior;
+- the archived spec is historical context only;
+- archived specifications are excluded from routine project context unless historical reasoning is needed.
 
 ## Document metadata
 
-OsmapDigger documentation uses an Open Knowledge Format (OKF)-compatible YAML frontmatter profile. The project intentionally starts with a minimal subset:
+Managed documentation uses minimal YAML frontmatter:
 
-- `type` — document kind;
-- `title` — concise human-readable title;
-- `description` — one sentence that helps humans and LLMs decide whether the document is relevant.
+- `type`;
+- `title`;
+- `description`.
 
-Specification files additionally use only the relationship/workflow fields that are currently needed:
+Specifications may additionally use:
 
 - `document_role` — `umbrella` or `subspec`;
-- `spec_status` — project workflow state such as `active` or `archived`;
-- `parent` — parent umbrella path for a sub-spec;
-- `current_focus` — current sub-spec path for an umbrella.
+- `spec_status` — `active`, `verification-pending`, or `archived`;
+- `parent` — umbrella path for a sub-spec;
+- `current_focus` — only when an umbrella points to one active implementation sub-spec.
 
-These additional fields are OsmapDigger extensions. Do not add metadata that merely duplicates the Markdown body or Git history. Extend the profile only when a field has a concrete navigation, validation, or maintenance use.
+Do not add metadata that only repeats the body or Git history. Extend the profile only when a field has a concrete navigation, validation, or maintenance use.
 
-## Suggested sub-spec structure
+## Writing structure
+
+Prefer a small predictable structure. Use only sections that add value.
 
 ```text
 # <Change name>
 
 ## Status
+## Feature scope
 ## Goal
-## Relationship to the umbrella specification
 ## Current state
+## Requirement map              # when several requirements map to stable features
 ## Requirements
+## Processing sequence          # when order matters
+## Failure semantics            # when failures need separate rules
 ## Scenarios
 ## Non-goals
 ## Design constraints
@@ -87,6 +137,19 @@ These additional fields are OsmapDigger extensions. Do not add metadata that mer
 ## Validation
 ## Implementation tasks
 ```
+
+Additional domain-specific sections are allowed when they own real requirements or explanatory context. Do not create headings merely to satisfy the template.
+
+Writing rules:
+
+- keep normative requirements precise;
+- use `must`, `must not`, `should`, and `may` consistently;
+- prefer short paragraphs with one main assertion;
+- use lists for independent rules or ordered processing steps;
+- keep processing order separate from invariants and failure semantics;
+- distinguish implemented behavior from intended changes and verification-pending work;
+- do not restate accepted current-state detail when a current-state document already owns it;
+- keep feature IDs stable and requirement IDs local to the spec.
 
 ## Active specifications
 
@@ -96,14 +159,16 @@ Umbrella:
 
 Current implementation focus:
 
-- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate sets, frozen analysis snapshots, export/share, and batch external searches.
+- [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `ANALYSIS.EXPLANATION`, and `EXTERNAL.PROPERTY_SEARCH` workflow.
 
-Archived completed sub-specs:
+Verification-pending supporting increments:
 
-- [`archive/subspecs/kmp-modular-architecture-hardening.md`](archive/subspecs/kmp-modular-architecture-hardening.md) — accepted KMP architecture-hardening track covering dependency cleanup, operational failures, shared persistence/query semantics, source decomposition, and physical `:core`/`:application`/`:presentation` modularization.
+- [`active/subspecs/desktop-analysis-workspace.md`](active/subspecs/desktop-analysis-workspace.md) — `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, and `PRESENTATION.ANALYSIS_WORKSPACE`; strict country-scale scoring and remaining configured acceptance checks are pending.
+- [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — `MAP.OFFLINE`, `MAP.RESULTS`, and Desktop renderer behavior; remaining acceptance verification pending.
+- [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — `SETTINGS.PERSISTENCE` for dataset-scoped search context; remaining cross-platform verification pending.
 
-Verification-pending completed increments:
+## Recently completed sub-specifications
 
-- [`active/subspecs/desktop-analysis-workspace.md`](active/subspecs/desktop-analysis-workspace.md) — weighted ranking/map-first implementation complete; strict country-scale scoring and remaining configured acceptance checks are pending.
-- [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — Desktop offline map implementation complete; remaining acceptance verification pending.
-- [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — local search-context persistence implementation complete; remaining cross-platform verification pending.
+- [`archive/subspecs/kmp-modular-architecture-hardening.md`](archive/subspecs/kmp-modular-architecture-hardening.md) — accepted `PLATFORM.MODULAR_KMP` hardening track covering dependency cleanup, operational failures, shared persistence/query semantics, source decomposition, and physical `:core`/`:application`/`:presentation` modularization.
+
+Create another architecture-hardening spec only when a concrete new structural requirement justifies one. Do not reactivate the archived spec as a permanent bucket for unrelated refactoring.

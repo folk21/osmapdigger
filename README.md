@@ -21,7 +21,7 @@ The runtime is country-agnostic. The first production-oriented package is expect
 
 ## Desktop application
 
-The screenshot below shows an example of the current OsmapDigger Desktop interface running on macOS. It illustrates the ranked settlement workflow together with the offline map and the details panel for the selected settlement.
+The screenshot below is an example of the current Desktop interface running on macOS. It shows ranked settlement analysis alongside the offline map and selected-settlement details; renderer details may differ on other supported Desktop hosts.
 
 ![OsmapDigger Desktop application on macOS](docs/images/osmapdigger_screen.png)
 
@@ -50,6 +50,7 @@ Commands below run from the repository root unless noted otherwise.
 | Goal | Read / run |
 |---|---|
 | Understand product requirements and the active initial scope | [`docs/specs/README.md`](docs/specs/README.md), [`docs/specs/active/spec-initial-functional-product.md`](docs/specs/active/spec-initial-functional-product.md) |
+| Understand stable feature/capability IDs | [`docs/FEATURES.md`](docs/FEATURES.md) |
 | Understand stable system boundaries | [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) |
 | Understand current classes, files, data contracts, security boundaries, and known limitations | [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) |
 | Set up Python, JDK, Android, and map tooling | [`docs/INSTALLATION.md`](docs/INSTALLATION.md) |

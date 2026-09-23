@@ -9,6 +9,8 @@ description: Deterministic test strategy, integration checks, and acceptance val
 
 Default checks must be deterministic and runnable without network access, Docker, tilemaker, Android SDK, or a production PBF. Real GIS/toolchain validation is layered on top as explicit integration checks.
 
+Feature-level tests may reference stable capability IDs from [`FEATURES.md`](FEATURES.md) when that improves traceability. Requirement IDs remain local to their specification; tests must not invent ad-hoc repository-wide feature codes.
+
 ## Default repository check
 
 ```bash

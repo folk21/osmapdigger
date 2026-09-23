@@ -23,6 +23,24 @@ substantially complete and remains verification-pending until strict country-sca
 remaining configured Desktop/Android acceptance checks are recorded. Moving the coding focus to this
 sub-spec does not mark that work or the parent umbrella specification as accepted.
 
+## Feature scope
+
+- `CANDIDATES.IMPORT` — reviewed stable-ID candidate sources.
+- `FAVORITES.NOTEBOOK` — persistent dataset-scoped saved settlements and notes.
+- `FAVORITES.SNAPSHOTS` — explicit frozen analysis history.
+- `FAVORITES.EXPORT` — deterministic portable notebook export/share.
+- `ANALYSIS.RANKING` — authoritative scoring/ranking reused by shortlist workflows.
+- `ANALYSIS.PREFERENCES` — calibrated Preference defaults consumed by the workflow.
+- `MAP.RESULTS` — Favorite/result selection and repeat-focus bridge.
+- `FORMAT.GEODATA` and `DATASET.BUILD` — generated-data compatibility and rebuild expectations without storing notebook state in the dataset.
+- `ANALYSIS.EXPLANATION` — compact comparative result cues and missing-data diagnostics.
+- `EXTERNAL.PROPERTY_SEARCH` — explicit single/batch external property discovery.
+- `SETTINGS.PERSISTENCE` — imported candidate/Favorites/provider-setting persistence.
+- `PRESENTATION.ANALYSIS_WORKSPACE` — Desktop-first shortlist interaction surface.
+- `TESTING.DETERMINISTIC_LOCAL` — shared/headless deterministic acceptance.
+
+Feature identifiers are defined in [`../../../FEATURES.md`](../../../FEATURES.md).
+
 ## Goal
 
 Turn ranked analysis into a practical settlement research workflow in which a user can:
@@ -171,6 +189,23 @@ thresholds are easier to explain across datasets; empirical distribution checks 
 not hidden runtime adaptation.
 
 Belarus calibration evidence recorded on a generated package with 22,771 settlements found that the original `forest.distance_km` default (`target = 1 km`, `limit = 10 km`) saturated at full quality for 93.9% of settlements, while the other enabled Preferences retained materially broader transition ranges. The checked-in baseline therefore tightens only the forest default to `target = 0.25 km` and `limit = 3 km`, keeping weight 8 and leaving all other Preference defaults unchanged. This is a bounded product-default adjustment based on representative generated data, not a percentile-derived runtime rule.
+
+## Requirement map
+
+| Requirement | Feature ID | Purpose |
+|---|---|---|
+| SS-R1 | `ANALYSIS.RANKING` | One authoritative scoring engine |
+| SS-R2-SS-R4 | `CANDIDATES.IMPORT`, `ANALYSIS.RANKING` | Stable-ID imported candidate source and scalable restriction |
+| SS-R5 | `ANALYSIS.EXPLANATION`, `PRESENTATION.ANALYSIS_WORKSPACE` | Compact ranked-result explanation and missing-data visibility |
+| SS-R6 | `FAVORITES.NOTEBOOK`, `CANDIDATES.IMPORT`, `MAP.RESULTS` | Persistent Favorites and explicit re-analysis bridge |
+| SS-R7-SS-R8 | `FAVORITES.SNAPSHOTS`, `FAVORITES.NOTEBOOK` | Notes and frozen/updateable analysis snapshots |
+| SS-R9 | `FAVORITES.EXPORT` | Portable deterministic notebook export/share |
+| SS-R10-SS-R11 | `EXTERNAL.PROPERTY_SEARCH` | Bounded explicit batch discovery without ingestion |
+| SS-R12 | `PRESENTATION.ANALYSIS_WORKSPACE`, `PLATFORM.KMP` | Dataset/language/platform compatibility |
+| SS-R13 | `SETTINGS.PERSISTENCE`, `FORMAT.GEODATA` | User state remains separate from generated dataset format |
+| SS-R14 | `DATASET.BUILD`, `ANALYSIS.PREFERENCES` | Rebuild expectations for calibrated dataset defaults |
+| SS-R15 | `PLATFORM.KMP`, `PRESENTATION.ANALYSIS_WORKSPACE` | Desktop-first UI with reusable shared contracts |
+| SS-R16 | `TESTING.DETERMINISTIC_LOCAL` | Deterministic offline acceptance |
 
 ## Requirements
 

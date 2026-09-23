@@ -19,6 +19,16 @@ Root [`../AGENTS.md`](../AGENTS.md) applies. Read [`README.md`](README.md), [`IM
 
 Common code must not import Android/JVM filesystem or database APIs.
 
+## Public module boundaries
+
+- `core` must not depend on `application`, `presentation`, `shared`, or platform hosts.
+- `application` may depend on `core`; it must not depend on `presentation`, `shared`, or platform hosts.
+- `presentation` may depend on `core`/`application`; it must not depend on `shared` or platform hosts.
+- `shared` may depend downward on `core`, `application`, and `presentation`; it must not import Desktop/Android implementations.
+- `desktopApp` and `androidApp` are composition/adaptation hosts. They may depend on lower shared modules but must not depend on each other.
+- Cross-module contracts stay with the module that owns their semantics. Do not move a type into a generic `util`, `common`, or `api` bucket merely to make an import convenient.
+- Introduce an interface only for a real boundary, substitution point, lifecycle owner, or test seam; do not create `Foo`/`FooImpl` pairs mechanically.
+
 ## Logical dependency graph
 
 [`README.md`](README.md) owns the current physical Gradle module table and logical `commonMain` package dependency DAG across `core`, `application`, `presentation`, and `shared`. `tests/test_mobile_architecture.py` enforces both documented logical dependency direction and the physical Gradle DAG during `make check`.

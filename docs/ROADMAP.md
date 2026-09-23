@@ -6,6 +6,7 @@ description: Compact product roadmap and current implementation focus.
 # Roadmap
 
 This roadmap stays intentionally compact. Detailed requirements for significant active work belong in [`specs/`](specs/README.md).
+Stable capability names used below are defined in [`FEATURES.md`](FEATURES.md); roadmap entries reuse those IDs instead of inventing stage-specific feature codes.
 
 ## P0 — accept the initial functional vertical slice
 
@@ -13,10 +14,10 @@ Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/sp
 
 Architecture note: the KMP architecture-hardening track is complete and archived; the runtime now separates `:core`, headless `:application`, deterministic `:presentation`, shared Compose/map runtime `:shared`, and platform hosts with an enforced acyclic Gradle DAG.
 
-Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — imported candidate sets, persistent favorites/notebook, later analysis snapshots, export/share, and batch external search.
+Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `ANALYSIS.EXPLANATION`, and `EXTERNAL.PROPERTY_SEARCH`.
 Candidate-source core/workflow, visual ranked affordances, persistent dataset-scoped Favorites, explicit selected-Favorites transfer back into imported candidates, notebook notes/frozen analysis snapshots, explicit bounded batch external search, and portable deterministic export/share are implemented. A focused shared acceptance fixture now locks the cross-feature shortlist contract. Deterministic calibration-report tooling reads generated runtime databases; representative dataset evidence and configured/manual Desktop/Android acceptance remain before archival.
 
-Completed architecture track: [`specs/archive/subspecs/kmp-modular-architecture-hardening.md`](specs/archive/subspecs/kmp-modular-architecture-hardening.md) — gates 1–7 are accepted and archived; future structural work should use a new bounded specification when a concrete need appears.
+Completed architecture track: [`specs/archive/subspecs/kmp-modular-architecture-hardening.md`](specs/archive/subspecs/kmp-modular-architecture-hardening.md) — `PLATFORM.MODULAR_KMP` gates 1–7 are accepted and archived; future structural work should use a new bounded specification when a concrete need appears.
 
 Previously implemented Desktop analysis workspace, Desktop map, and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
 

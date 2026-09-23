@@ -11,6 +11,10 @@ This document owns the stable system boundaries: what each subsystem is responsi
 
 The active initial product requirements are in [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
 
+## Feature vocabulary
+
+Stable cross-document capability names are defined in [`FEATURES.md`](FEATURES.md). Feature IDs provide navigation across specifications, current-state documentation, tests, and important implementation boundaries; they do not replace the ownership rules in this document or the concrete implementation inventory in [`IMPLEMENTATION.md`](IMPLEMENTATION.md).
+
 ## Core architectural decision
 
 OsmapDigger separates expensive geographic preparation from lightweight offline runtime search.

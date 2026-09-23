@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Introduce a stable `docs/FEATURES.md` capability vocabulary, align active specifications around explicit feature scope and requirement maps, and strengthen repository agent/documentation rules for source ownership, validation, and spec lifecycle.
+
 - Complete and archive the KMP architecture-hardening track after configured validation of the `:core`, headless `:application`, deterministic `:presentation`, shared Compose/map `:shared`, and platform-host module DAG without changing runtime semantics.
 
 - Begin physical KMP modularization by extracting immutable domain models and pure geographic calculations into a dependency-free `:core` module, with explicit shared/platform dependencies and architecture checks for the Gradle DAG.

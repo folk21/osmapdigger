@@ -16,6 +16,22 @@ This spec captures the initial product slice discussed before code generation. M
 
 After acceptance, move stable behavior into owning implementation/architecture docs as needed and archive this spec.
 
+## Feature scope
+
+This umbrella owns the initial offline product target across these stable capabilities:
+
+- `RUNTIME.OFFLINE_FIRST`;
+- `DATASET.SCOPE`, `DATASET.BUILD`, `DATASET.PACKAGE`, `DATASET.IMPORT`, and future `DATASET.USER_BUILD`;
+- `FORMAT.GEODATA`;
+- `METRICS.GENERATION` and `METRICS.RUNTIME_CONTRACT`;
+- `SEARCH.FILTERING`, `SEARCH.DESCRIPTION`, `SEARCH.RADIUS`, and `SEARCH.SETTLEMENTS`;
+- `MAP.OFFLINE` and `MAP.RESULTS`;
+- `PLATFORM.KMP`;
+- `EXTERNAL.PROPERTY_SEARCH`;
+- `TESTING.DETERMINISTIC_LOCAL`.
+
+Current and verification-pending sub-specs refine additional analysis, Favorites, settings, and presentation features under this umbrella. Feature identifiers are defined in [`../../FEATURES.md`](../../FEATURES.md).
+
 ## Active implementation focus
 
 Current implementation sub-spec:
@@ -60,7 +76,31 @@ The repository contains a functional vertical-slice implementation:
 - Android SQLite/ZIP import;
 - external search actions.
 
-Synthetic Python tests and platform-independent Kotlin checks were performed during generation. Real Pyrosm/tilemaker/full Gradle end-to-end validation remains the acceptance blocker.
+Network-free repository checks and configured Kotlin/Gradle validation have been exercised during current development. Real PBF/PMTiles generation plus the remaining native/manual Desktop and Android acceptance scenarios still block umbrella acceptance.
+
+## Requirement map
+
+This table is a navigation index. The detailed requirement text below remains normative.
+
+| Requirement | Feature ID | Purpose |
+|---|---|---|
+| R1 | `DATASET.SCOPE` | Country-agnostic whole/regional/custom dataset scope |
+| R2 | `RUNTIME.OFFLINE_FIRST` | Local source/generated data isolation and offline runtime |
+| R3 | `DATASET.BUILD` | Build-time OSM PBF processing |
+| R4 | `METRICS.GENERATION` | Generated analytical metrics |
+| R5 | `METRICS.RUNTIME_CONTRACT`, `SEARCH.FILTERING` | Dynamic runtime metric/filter contract |
+| R6 | `DATASET.PACKAGE`, `FORMAT.GEODATA` | Generated validated runtime package |
+| R7 | `MAP.OFFLINE` | Offline vector basemap |
+| R8 | `PLATFORM.KMP` | Shared Desktop/Android runtime |
+| R9 | `SEARCH.FILTERING` | Generic visual filter builder |
+| R10 | `SEARCH.DESCRIPTION` | Deterministic human-readable filter description |
+| R11 | `SEARCH.RADIUS` | Center/radius search |
+| R12 | `SEARCH.SETTLEMENTS` | Settlement search and details |
+| R13 | `MAP.RESULTS` | Search-result/selection map visualization |
+| R14 | `EXTERNAL.PROPERTY_SEARCH` | Explicit external property discovery |
+| R15 | `DATASET.IMPORT`, `DATASET.PACKAGE` | Safe runtime package import |
+| R16 | `DATASET.USER_BUILD` | Future user-driven local dataset build path |
+| R17 | `TESTING.DETERMINISTIC_LOCAL` | Deterministic default validation |
 
 ## Requirements
 
