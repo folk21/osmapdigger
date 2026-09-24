@@ -7,7 +7,12 @@ rm -f "$OUT"
 zip -qr "$OUT" osmapdigger \
   -x 'osmapdigger/.git/*' \
   -x 'osmapdigger/.idea/*' \
+  -x 'osmapdigger/.vscode/*' \
   -x 'osmapdigger/.venv/*' \
+  -x 'osmapdigger/.pytest_cache/*' \
+  -x 'osmapdigger/.mypy_cache/*' \
+  -x 'osmapdigger/.ruff_cache/*' \
+  -x 'osmapdigger/__pycache__/*' \
   -x 'osmapdigger/**/__pycache__/*' \
   -x 'osmapdigger/**/osmapdigger_geo_builder.egg-info/*' \
   -x 'osmapdigger/**/.pytest_cache/*' \

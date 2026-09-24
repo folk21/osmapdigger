@@ -3,14 +3,8 @@ PATCH
 Added/modified files:
 - PATCH_FILES.txt
 - PATCH_NOTES.md
-- CHANGELOG.md
-- docs/FEATURES.md
-- docs/ROADMAP.md
-- docs/TESTS.md
-- docs/specs/README.md
-- docs/specs/active/spec-initial-functional-product.md
-- docs/specs/planned/subspecs/settlement-interpretation-and-goal-profiles.md
-- tests/test_documentation_contracts.py
+- archive.sh
+- tests/test_archive_contracts.py
 
 Deleted files:
 - docs/specs/planned/user-preferences.md

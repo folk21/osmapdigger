@@ -1,9 +1,17 @@
 # PATCH
 
-Add a planned goal-oriented analysis interpretation slice that turns existing metric/ranking evidence into transparent dimensions, goal profiles, practical strengths/trade-offs, and accessible compact summaries without introducing a hidden second score.
+Finish the previously incomplete documentation/archive cleanup against the current FULL repository.
 
-The current P0 acceptance focus is unchanged. The new sub-spec stays under `docs/specs/planned/` until explicitly promoted.
+The obsolete `docs/specs/planned/user-preferences.md` duplicate is deleted. The authoritative verification-pending specification remains `docs/specs/active/subspecs/user-preferences.md`.
 
-The obsolete pre-frontmatter `docs/specs/planned/user-preferences.md` duplicate is deleted because the current `docs/specs/active/subspecs/user-preferences.md` is the authoritative specification for that capability.
+`archive.sh` now excludes `.vscode/` plus repository-root pytest/mypy/ruff/Python cache metadata in addition to the existing nested IDE/build/cache exclusions. A deterministic repository test protects these shareable-FULL archive exclusions.
 
-Validation: `make check` -> 67 passed, 2 existing PyProj/NumPy warnings.
+Validation:
+
+- `python -m pytest -q tests/test_documentation_contracts.py tests/test_archive_contracts.py` -> 7 passed.
+- `make check` -> 68 passed, 2 existing PyProj/NumPy deprecation warnings.
+- Functional `archive.sh` smoke -> generated FULL contained no `.vscode`, `.idea`, `.pytest_cache`, `__pycache__`, build, `.gradle`, or `.kotlin` entries and did not contain the deleted planned spec.
+
+`make check-all` was not run because this patch changes no Kotlin/runtime code or Gradle contracts.
+
+Commit summary: remove the superseded planned preferences spec and harden FULL archive metadata exclusions.
