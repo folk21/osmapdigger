@@ -1,17 +1,16 @@
 # PATCH
 
-Finish the previously incomplete documentation/archive cleanup against the current FULL repository.
+Record the completed representative Belarus Preference calibration for the current `balanced-living` defaults and narrow `settlement-shortlist-workflow` to genuinely remaining acceptance.
 
-The obsolete `docs/specs/planned/user-preferences.md` duplicate is deleted. The authoritative verification-pending specification remains `docs/specs/active/subspecs/user-preferences.md`.
+The recorded Belarus package contains 22,771 settlements. With the current forest thresholds, `forest.distance_km` is 53.4% full quality, 46.4% in transition, and 0.2% at zero quality; no enabled Preference crosses the configured 90% endpoint-saturation warning.
 
-`archive.sh` now excludes `.vscode/` plus repository-root pytest/mypy/ruff/Python cache metadata in addition to the existing nested IDE/build/cache exclusions. A deterministic repository test protects these shareable-FULL archive exclusions.
+The local Andorra package reported `no such table: metric_preference_default`, so it is explicitly treated as stale relative to the current additive Preference-default contract and must be rebuilt before it can supply independent calibration evidence.
 
-Validation:
+Validation evidence supplied from the configured development workstation:
+- `make shortlist-acceptance` -> BUILD SUCCESSFUL.
+- `make desktop-headless-acceptance` -> BUILD SUCCESSFUL.
+- `make check-all` -> 68 Python tests passed; Desktop and Android host Gradle test tasks BUILD SUCCESSFUL.
+- Belarus `make preference-calibration` -> 22,771 settlements; revised forest distribution 53.4% full / 46.4% transition / 0.2% zero; no enabled metric crossed the 90% saturation warning.
+- Andorra calibration -> blocked by stale local package without `metric_preference_default`; rebuild required.
 
-- `python -m pytest -q tests/test_documentation_contracts.py tests/test_archive_contracts.py` -> 7 passed.
-- `make check` -> 68 passed, 2 existing PyProj/NumPy deprecation warnings.
-- Functional `archive.sh` smoke -> generated FULL contained no `.vscode`, `.idea`, `.pytest_cache`, `__pycache__`, build, `.gradle`, or `.kotlin` entries and did not contain the deleted planned spec.
-
-`make check-all` was not run because this patch changes no Kotlin/runtime code or Gradle contracts.
-
-Commit summary: remove the superseded planned preferences spec and harden FULL archive metadata exclusions.
+Validation run again in the patch workspace: `make check` -> 68 passed, 2 existing PyProj/NumPy warnings.

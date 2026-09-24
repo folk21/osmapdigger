@@ -136,7 +136,9 @@ make preference-calibration \
 
 The report includes enabled weight by persisted metric group, known-value coverage, p10/p25/p50/p75/p90 metric distributions, the percentage of known values saturated at full quality / in transition / at zero quality, and overall score/weighted-coverage percentiles. A warning is emitted when at least 90% of known values for one enabled Preference saturate at one scoring endpoint. That warning is review evidence, not an automatic threshold rewrite or hidden runtime adaptation.
 
-Record representative Andorra/Belarus output when accepting or deliberately recalibrating `balanced-living`. If a report exposes extreme saturation or accidental group-weight dominance, review the product rationale before changing configuration and rebuild the dataset afterward. The report must not be used to derive per-dataset runtime thresholds automatically.
+Record representative Andorra/Belarus output when accepting or deliberately recalibrating `balanced-living`. The current representative Belarus package contains 22,771 settlements and records the recalibrated `forest.distance_km` distribution as 53.4% full quality, 46.4% transition, and 0.2% zero quality; no enabled metric crosses the configured 90% endpoint-saturation warning. If a report exposes extreme saturation or accidental group-weight dominance, review the product rationale before changing configuration and rebuild the dataset afterward. The report must not be used to derive per-dataset runtime thresholds automatically.
+
+An Andorra package that fails calibration because `metric_preference_default` is absent predates the current additive Preference-default contract. Rebuild that local package with the current repository before using it as calibration evidence; do not treat a legacy-package failure as an accepted independent sanity check.
 
 Focused deterministic tests for the report live in `tests/test_preference_calibration_report.py` and use a synthetic SQLite database.
 

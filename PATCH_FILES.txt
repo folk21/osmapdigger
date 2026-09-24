@@ -3,8 +3,10 @@ PATCH
 Added/modified files:
 - PATCH_FILES.txt
 - PATCH_NOTES.md
-- archive.sh
-- tests/test_archive_contracts.py
+- docs/CONFIGURATION.md
+- docs/ROADMAP.md
+- docs/TESTS.md
+- docs/specs/active/subspecs/settlement-shortlist-workflow.md
 
 Deleted files:
-- docs/specs/planned/user-preferences.md
+- none
