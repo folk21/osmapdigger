@@ -10,18 +10,13 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Active product sub-spec; candidate-source, Favorites/notebook, batch external search, portable export/share, shared end-to-end acceptance, and a real Desktop headless JDBC/settings acceptance harness are implemented. Calibration-report tooling is implemented; representative dataset evidence and remaining native/manual Desktop/Android acceptance remain pending.
+Active product sub-spec; implementation is complete through reviewed candidate import, persistent Favorites/notebook, frozen snapshots, batch external search, portable export/share, deterministic shared acceptance, and real-SQLite Desktop headless acceptance.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-Architecture-hardening iterations 1–5 established dependency direction, typed failures, shared persistence/query ownership, and source-responsibility decomposition used by this workflow. Gates 6–7 now physically separate immutable `:core`, headless `:application`, deterministic `:presentation`, and shared Compose/map layers without changing shortlist behavior.
+Remaining work is acceptance-oriented: representative calibration evidence still needs to be completed for the current checked-in defaults, and native/manual Desktop/Android checks must be recorded before archival. Stable implementation detail belongs in the owning implementation/configuration/usage/test documents rather than in this status section.
 
-The bounded feature increments through portable export/share are implemented. Shared/runtime contracts parse and conservatively resolve imported settlement text, ranked analysis carries an imported stable-ID scope, and Desktop/Android dataset adapters restrict candidate retrieval in deterministic bounded batches. Wide Desktop adds paste/UTF-8 file import plus explicit review of ambiguous/non-exact matches, while application settings schema version 4 persists the reviewed dataset-scoped candidate source. Ranked result cards expose the existing numeric score as a 0–100 visual bar, candidate-relative advantage/compromise cues derived from the complete eligible set, and incomplete coverage. The earlier transient shortlist concept has been superseded by persistent dataset-scoped Favorites: application settings schema version 5 stores favorite settlements in a normalized table. Desktop can browse compact settlement/current-analysis context, select one or many available Favorites, select all, open/remove/clear entries, and explicitly replace/activate the imported candidate list from the selected Favorites before returning to ranked results. Android shares the persistence contract; polished Favorites UI remains Desktop-first. Settings schema version 6 adds optional notes plus one versioned frozen analysis snapshot per Favorite. A snapshot is captured when a ranked settlement is first saved and changes only through the explicit Update analysis snapshot action. Portable export now produces one deterministic ZIP containing a versioned JSON manifest and Markdown summary from the same shared notebook model; Desktop saves/reveals it and Android exposes the archive through the system share sheet.
-
-The previously current [`desktop-analysis-workspace.md`](desktop-analysis-workspace.md) implementation is
-substantially complete and remains verification-pending until strict country-scale scoring and the
-remaining configured Desktop/Android acceptance checks are recorded. Moving the coding focus to this
-sub-spec does not mark that work or the parent umbrella specification as accepted.
+The earlier Desktop analysis workspace remains a separate verification-pending sub-spec; completing this workflow does not implicitly accept that sub-spec or the umbrella.
 
 ## Feature scope
 
@@ -72,8 +67,7 @@ The current runtime already has the essential analytical foundation:
 - dynamic external-search providers;
 - a map-first Desktop analysis workspace with linked ranked results and map selection.
 
-This sub-spec therefore extends the workflow around the current `SettlementAnalysisService` and
-`AnalysisWorkspaceController` rather than replacing them. The parent umbrella originally treated
+This sub-spec extends the existing ranked-analysis application flow rather than introducing a second scoring/search path. The parent umbrella originally treated
 favorites/notes as non-goals for its minimum accepted vertical slice; this is a deliberate follow-up
 increment while that umbrella remains active and does not retroactively enlarge the parent acceptance
 gate.
@@ -188,7 +182,7 @@ Automatic percentile-derived targets are not required for the first implementati
 thresholds are easier to explain across datasets; empirical distribution checks are validation evidence,
 not hidden runtime adaptation.
 
-Belarus calibration evidence recorded on a generated package with 22,771 settlements found that the original `forest.distance_km` default (`target = 1 km`, `limit = 10 km`) saturated at full quality for 93.9% of settlements, while the other enabled Preferences retained materially broader transition ranges. The checked-in baseline therefore tightens only the forest default to `target = 0.25 km` and `limit = 3 km`, keeping weight 8 and leaving all other Preference defaults unchanged. This is a bounded product-default adjustment based on representative generated data, not a percentile-derived runtime rule.
+The accepted rationale for the current checked-in baseline belongs in [`../../../CONFIGURATION.md`](../../../CONFIGURATION.md). This active spec retains only the policy that representative distribution evidence must be reviewed before product-default threshold changes.
 
 ## Requirement map
 
@@ -301,7 +295,7 @@ Changing filters/preferences or imported candidate source may remove a favorite 
 
 Favorites/notebook state belongs in the application settings database, never in generated `georisk.sqlite`. The initial normalized `favorite_settlement` table is the persistent foundation and uses `(dataset_id, settlement_id)` as its primary key.
 
-The implemented notebook-enrichment increment adds:
+Notebook enrichment requires:
 
 - optional user note stored on the normalized Favorite row;
 - one frozen versioned analysis snapshot stored in a separate `favorite_analysis_snapshot` row;
@@ -523,12 +517,9 @@ This increment does not require:
 
 ## Compatibility / migration
 
-The generated dataset contract does not change in the first implementation.
+Notebook/import/provider state remains application-owned and must not change the generated `geo-format` contract. Settings migrations must preserve historical semantics and use explicit forward versions for later changes. Stable settlement IDs remain authoritative across candidate scope, Favorites, snapshots, and export.
 
-The application settings database remains independent from `geo-format` and uses one shared semantic schema owner executed by both platforms. Candidate-source persistence uses schema version 4 with `candidate_scope_json`. Persistent Favorites use coordinated settings schema version 5 with normalized `favorite_settlement`. Notebook enrichment uses settings schema version 6: `note_text` is additive on `favorite_settlement` and `favorite_analysis_snapshot` stores one versioned snapshot JSON row per stable `(dataset_id, settlement_id)`. Provider-specific external-search terms use settings schema version 7 through nullable `external_search_provider.query_terms_override`; null inherits dataset terms, empty suppresses extra terms, and non-empty text replaces them. This does not change `geo-format` or require dataset regeneration.
-
-A notebook snapshot/export payload must include its own explicit payload version so later additive or
-incompatible fields can be handled without coupling file format evolution to the SQLite schema version.
+Frozen snapshot/export payloads must carry explicit payload versions so their evolution is independent from both the application-settings schema version and `geo-format`. Older or rebuilt datasets may make a Favorite unavailable, but that must not erase its saved stable identity, note, snapshot, or exportability.
 
 ## Validation
 
@@ -557,16 +548,12 @@ Acceptance requires all of the following:
 16. Stable implementation knowledge is moved into owning implementation/configuration/usage/test docs
     after acceptance before this sub-spec is archived.
 
-## Implementation tasks
+## Remaining work
 
-Implement in small increments:
+1. Rebuild representative Belarus data with the current checked-in Preference defaults and rerun `make preference-calibration`; record whether the revised forest thresholds remove the previous saturation without creating the opposite extreme.
+2. Record representative Andorra calibration evidence so the fixed product defaults have at least one small independent dataset sanity check.
+3. Complete native/manual Desktop acceptance for the integrated workflow: import/review, ranked explanations and missing-data diagnostics, Favorites/note/snapshot, Favorites-to-import, batch browser actions, portable export/save/reveal, restart persistence, map selection, and repeat focus.
+4. Complete the remaining Android compile/import/share/persistence acceptance appropriate to the current Desktop-first UI scope.
+5. Move any newly discovered stable behavior or rationale into the owning configuration/implementation/usage/test docs, then archive this sub-spec.
 
-1. **Implemented: Candidate-source core** — immutable candidate-scope/import models, conservative bulk alias resolution, repository candidate-ID restriction, bounded stable-ID batching, and focused shared/Desktop tests. The core is wired into `AnalysisWorkspaceController` as transient state, but no user-facing import control or persistence is enabled yet.
-2. **Implemented: Candidate-source workflow** — Desktop paste/file import and full-sidebar review UI connect explicit reviewed matches to the shared stable-ID scope; active center/radius bounds the review alternatives, ambiguous exact matches support multi/select-all, the previous source text reopens for editing, and import can be disabled/re-enabled independently from deleting the retained list. Application settings schema version 4 keeps the same SQLite column while candidate-source payload version 2 stores active source plus retained reviewed IDs/source text; restore drops stale IDs without broadening an active import. The same shared contracts remain available for later Android document/text integration.
-3. **Implemented: Visual ranked affordances** — Desktop ranked cards keep the numeric score and add a 0–100 score bar, incomplete-coverage text, and deterministic candidate-relative advantage/compromise cues. The absolute score remains unchanged; explanation compares each known Preference quality with the mean quality across all current eligible candidates before the visible top-N limit. The experimental transient `SettlementShortlist` layer was removed after clarifying that the user collection is persistent Favorites rather than another analysis-input loop.
-4. **Implemented: Persistent Favorites foundation and re-analysis bridge** — add shared `FavoriteSettlementRepository`, settings schema version 5 with normalized `favorite_settlement`, Desktop/Android SQLite adapters, persistent result-card toggles, and a Desktop Favorites pane with compact current context plus browse/open/remove/clear. Favorites selection is transient; individual/select-all actions can explicitly replace and activate the imported stable-ID candidate list and return to ranked results without re-resolving names. Favorites otherwise remain output state and never change candidate source or trigger recalculation.
-5. **Implemented: Notebook enrichment** — settings schema version 6 adds optional notes and a separate one-row versioned frozen analysis snapshot per Favorite. Saving a ranked settlement captures current score/coverage, effective Required criteria, enabled Preferences and contributions; later analysis edits do not mutate it, while explicit Update analysis snapshot replaces it from the current ranked result. Desktop Favorites show the saved context compactly and allow inline note editing.
-6. **Implemented: Batch external search** — selected available Favorites reuse current localized settlement names and the configured provider catalog to build quoted `OR` queries. Shared construction is deterministic, UTF-8 percent-encoded, and greedily chunked under a conservative final-URL bound; providers that require a `{settlement}` placeholder are not offered for batch search. Desktop shows each generated provider/chunk action explicitly and opens only the action the user clicks. Provider-specific search-term settings are persisted in application settings schema v7 and are shared by single and batch URL generation; an explicit empty override supports site-restricted queries without generic dataset terms.
-7. **Implemented: Export/share** — shared code builds one deterministic versioned Favorites export model with current localized names when available, saved historical names, notes, and frozen snapshot criteria. Platform adapters package the fixed `favorites.json` + `favorites.md` entries into a reproducible ZIP; Desktop saves it through a file chooser and reveals the result, while Android writes a cache-scoped archive and exposes it through `FileProvider` to the system share sheet. Unavailable/stale Favorites remain exportable because export covers the whole notebook rather than only transient checkbox selection.
-8. **Calibration validation tooling implemented; Belarus evidence recorded** — `scripts/preference_calibration_report.py` reads the published runtime SQLite contract, reports enabled group weights, metric known-value/percentile and endpoint-saturation distributions, and overall score/coverage percentiles without changing runtime scoring or defaults. A representative Belarus report over 22,771 settlements showed 93.9% full-quality saturation for the original forest default; the checked-in `forest.distance_km` baseline is therefore tightened from `1/10 km` to `0.25/3 km`, with all other Preference defaults and weights unchanged. Rebuild Belarus and rerun the report to confirm the revised distribution; representative Andorra evidence and final acceptance remain pending.
-9. **Acceptance/documentation in progress** — a deterministic shared fixture exercises the cross-feature shortlist contract, and a Desktop headless fixture now repeats the application workflow through real JDBC plus the real settings/Favorites SQLite adapters, including restart persistence and portable ZIP verification. Representative real-dataset checks plus native/manual map/browser/share/layout acceptance still need to be recorded before this sub-spec is archived.
+The completed increment history is intentionally not maintained here; current implementation ownership is documented in [`../../../IMPLEMENTATION.md`](../../../IMPLEMENTATION.md), [`../../../../mobile/IMPLEMENTATION.md`](../../../../mobile/IMPLEMENTATION.md), [`../../../USAGE.md`](../../../USAGE.md), and [`../../../TESTS.md`](../../../TESTS.md).

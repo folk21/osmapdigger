@@ -66,17 +66,9 @@ The first production-oriented package is expected to cover Belarus. The reposito
 
 ## Current state
 
-The repository contains a functional vertical-slice implementation:
+Most of the initial vertical slice is implemented. Stable architecture, package/build behavior, runtime wiring, configuration, and test commands are documented in the owning current-state documents rather than duplicated here.
 
-- Python config-driven PBF/metric pipeline;
-- normalized SQLite schema and package metadata;
-- optional tilemaker PMTiles generation;
-- KMP shared search/filter/map UI;
-- Desktop JDBC package loading;
-- Android SQLite/ZIP import;
-- external search actions.
-
-Network-free repository checks and configured Kotlin/Gradle validation have been exercised during current development. Real PBF/PMTiles generation plus the remaining native/manual Desktop and Android acceptance scenarios still block umbrella acceptance.
+This umbrella remains active because acceptance still requires representative real PBF/PMTiles generation plus the remaining native/manual Desktop and Android end-to-end checks. The current bounded product focus is the linked settlement-shortlist sub-spec.
 
 ## Requirement map
 
@@ -337,14 +329,15 @@ Acceptance requires all of the following on a configured development workstation
 
 Detailed commands belong in [`../../TESTS.md`](../../TESTS.md).
 
-## Implementation tasks
+## Remaining acceptance
 
-Most initial implementation tasks now exist in code. Remaining acceptance/follow-up work for this active spec:
+Remaining umbrella work is acceptance-oriented:
 
-- run real Pyrosm integration on Andorra and fix source-tag/version mismatches discovered by that run;
-- run tilemaker PMTiles generation and verify style/source-layer compatibility;
-- complete full Gradle Desktop/Android builds using actual current dependencies;
-- exercise Android import on emulator/device;
-- verify OSM attribution and local map operation;
-- record acceptance results in implementation/tests docs;
-- archive this spec only after the vertical slice is accepted.
+1. build and validate a representative real data-only package from the checked-in pipeline;
+2. build a full package with non-empty PMTiles and verify style/source-layer compatibility;
+3. exercise the generated package on Desktop with local search, details, map, and offline operation;
+4. build/import the same package on Android and verify the local filtering/map path;
+5. verify package-import safety and repository artifact hygiene;
+6. record the accepted evidence in the owning test/implementation documents and archive this umbrella only when the complete vertical slice is accepted.
+
+Exact commands and the current validation matrix belong in [`../../TESTS.md`](../../TESTS.md).

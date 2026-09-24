@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Refocus active specifications on normative deltas and acceptance by removing completed implementation histories, moving accepted calibration rationale to owning configuration docs, and making verification-pending specs track only remaining evidence.
+
 - Introduce a stable `docs/FEATURES.md` capability vocabulary, align active specifications around explicit feature scope and requirement maps, and strengthen repository agent/documentation rules for source ownership, validation, and spec lifecycle.
 
 - Complete and archive the KMP architecture-hardening track after configured validation of the `:core`, headless `:application`, deterministic `:presentation`, shared Compose/map `:shared`, and platform-host module DAG without changing runtime semantics.

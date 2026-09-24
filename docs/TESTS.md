@@ -21,6 +21,8 @@ Currently this runs Python synthetic/unit tests under `geo-builder/tests/` plus 
 
 The tests cover configuration parsing, metric/preference profile validation, dynamic metric generation, synthetic settlement extraction, selector semantics, distance/count/coverage calculations, SQLite round trips including preference-default constraints, package validation, and a synthetic pipeline path.
 
+Repository-level documentation contract tests also validate active-spec frontmatter/navigation, `current_focus`/parent links, stable Feature ID references against `docs/FEATURES.md`, and the rule that verification-pending specs track remaining acceptance rather than retaining completed implementation diaries.
+
 ## Python unit tests directly
 
 ```bash

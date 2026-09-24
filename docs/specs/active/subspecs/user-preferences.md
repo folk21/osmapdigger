@@ -51,9 +51,9 @@ criteria of the original initial vertical slice.
 
 ## Current state
 
-The implementation now provides an application-owned immutable preferences contract, versioned dynamic-filter payload, dataset-aware restore validation, Desktop settings SQLite, Android app-private settings SQLite, and shared Compose startup/save wiring. Generated dataset SQLite remains read-only and separate.
+Application-owned dataset-scoped search-context persistence is implemented on Desktop and Android behind the shared application contract. Generated dataset SQLite remains read-only and separate. Stable schema/migration history and platform wiring belong in [`../../../../mobile/IMPLEMENTATION.md`](../../../../mobile/IMPLEMENTATION.md) and [`../../../IMPLEMENTATION.md`](../../../IMPLEMENTATION.md).
 
-The sub-spec remains active until configured Gradle tests/builds and Android runtime restoration are validated on the normal development toolchain.
+This sub-spec remains `verification-pending` for the remaining Android runtime restore validation.
 
 ## Requirement map
 
@@ -179,12 +179,9 @@ This increment does not implement:
 
 ## Compatibility / migration
 
-There is no existing persisted preference state to migrate. The first implementation therefore starts
-with a fresh application-owned schema.
+The settings database is application-owned and evolves independently from `geo-format`. Historical migration semantics must remain immutable; later changes require explicit forward migrations.
 
-Persisted filter payloads must contain an explicit payload version before future incompatible JSON
-shape changes are introduced. Database schema evolution must be owned by the preferences adapter, not
-by `geo-format`.
+Persisted dynamic filter/search-context payloads must remain versioned and tolerant of additive dataset evolution. Unknown metric IDs or an unavailable saved center must degrade according to UP-R7 rather than corrupting startup or being silently rebound by display name.
 
 ## Validation
 
@@ -197,17 +194,11 @@ Acceptance requires:
 5. no writes to installed dataset directories or `georisk.sqlite`;
 6. normal search behavior remains unchanged when no preferences have been saved.
 
-## Implementation tasks
+## Remaining acceptance
 
-Implemented in this increment:
+1. Run the configured Android host/build checks for the current persistence adapter.
+2. Verify on Android that reopening the same dataset restores the saved center/radius/filter context and that opening another dataset does not apply it.
+3. Verify unavailable center and removed-metric restore behavior on the current platform implementation.
+4. Record the accepted evidence in the owning test/implementation docs and archive this sub-spec.
 
-1. Add immutable shared preference/search-context models.
-2. Add a small application-owned `UserPreferencesRepository` contract.
-3. Define the versioned dynamic-filter persistence representation.
-4. Implement Desktop application-owned SQLite storage under `~/.osmapdigger/settings/`.
-5. Restore state after the matching dataset and metric definitions are available.
-6. Persist relevant search-context changes through application state rather than directly from UI controls.
-7. Implement the Android app-private adapter using the same application contract.
-8. Add focused shared and Desktop tests; Android adapter compilation/device validation remains part of acceptance.
-
-After configured validation succeeds, update any final validation notes, archive this sub-spec, and select the next implementation focus under the umbrella specification.
+Completed schema versions, adapter classes, and migration mechanics remain documented in the current-state implementation docs rather than repeated here.

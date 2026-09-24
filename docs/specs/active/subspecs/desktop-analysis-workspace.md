@@ -68,44 +68,9 @@ The sub-spec also reuses the application-owned user settings boundary implemente
 
 ## Current state
 
-The current repository already provides most prerequisite boundaries:
+The map-first Desktop analysis workspace, generic Required/Preferences model, deterministic weighted scoring/ranking, candidate-relative explanation, batch candidate retrieval, preference persistence, map/list selection, and map-driven center selection are implemented. Stable implementation detail belongs in [`../../../IMPLEMENTATION.md`](../../../IMPLEMENTATION.md), [`../../../../mobile/IMPLEMENTATION.md`](../../../../mobile/IMPLEMENTATION.md), [`../../../USAGE.md`](../../../USAGE.md), and [`../../../TESTS.md`](../../../TESTS.md).
 
-- generated `metric_definition` records expose stable metric IDs, group/title/unit metadata,
-  `preferred_direction`, default visibility, and deterministic presentation order;
-- `SearchCondition` represents optional minimum/maximum hard ranges;
-- `SearchService` performs generic hard filtering and exact shared-code radius filtering;
-- `GeoRepository.searchCandidates()` performs platform SQL candidate reduction;
-- `GeoRepository.details()` hydrates complete metrics for one selected settlement;
-- settlement lookup uses canonical multilingual aliases and deterministic shared matching/ranking;
-- generated dataset SQLite remains read-only;
-- current search context is persisted separately through the application settings database;
-- result and selected-settlement overlays remain transient map presentation data;
-- Desktop host now explicitly enables the map-first analysis presentation while Android keeps the existing responsive Search/Map workflow;
-- the wide Desktop workspace uses a resizable left analysis panel beside the primary map surface;
-- Required hard constraints and weighted Preferences are visually separate and remain generic over persisted metric IDs;
-- ranked results expose score and incomplete data coverage in the left panel and select/focus the corresponding map marker;
-- selected settlement details now appear in a dedicated lower pane beneath the map with deterministic score explanation and complete raw metrics;
-- Desktop filter/detail surfaces are constrained outside the platform map rectangle, so Intel macOS JCEF does not require z-order, occlusion, or freeze-frame workarounds;
-- map-originated result selection now shares the same selected-settlement state as the ranked list, and map-driven center selection resolves the nearest settlement from the complete dataset for any clicked map location.
-
-A scoring implementation must not call `GeoRepository.details()` once per candidate. Country-scale
-ranking requires a batch repository contract that returns the active scoring metric values for all
-eligible candidates without an N+1 query pattern.
-
-The scoring, repository, dataset-default, user-override, analysis-state, and first Desktop-presentation increments are now implemented. Shared `analysis/PreferenceModels.kt`, `analysis/PreferenceScorer.kt`, and `analysis/SettlementRanker.kt` define validated immutable preference/contribution/score models, pure deterministic `LOWER`/`HIGHER` scoring with explicit unknown-data coverage, and stable score/coverage/name/ID ranking.
-
-`SettlementAnalysisRequest`, domain `SettlementAnalysisCandidate`, and `SettlementAnalysisService` now add
-ranked-analysis orchestration without changing the current UI workflow. Desktop and Android
-`GeoRepository` implementations expose `analysisCandidates()` which applies hard SQL conditions and
-coarse coordinate bounds while batch-loading only requested scoring metrics through one query. Shared
-analysis then applies exact radius filtering, scoring, deterministic ranking, and the final result
-limit. The existing `SearchService`/`searchCandidates()` path remains available unchanged for the responsive compatibility workflow while the Desktop analysis workspace consumes the ranked-analysis path.
-
-Dataset-provided preference defaults are now implemented independently from hard-filter visibility. `geo-builder/config/preference-profiles.toml` defines named defaults over stable generated metric IDs, `datasets.toml` selects a profile, and the builder validates/resolves it only against the metrics physically produced by the selected metric profile. Resolved rows are persisted in additive format-v1 table `metric_preference_default` with explicit direction, target, limit, weight, and enabled state.
-
-`GeoRepository.preferenceDefaults()` exposes the catalog on Desktop and Android. Updated readers probe for the additive table and return an empty list for legacy format-v1 packages that predate it; older readers safely ignore the table in newly generated v1 packages. `AnalysisWorkspaceController` consumes these defaults generically, and the Desktop workspace exposes them through progressive preference editing without reading builder configuration directly.
-
-Focused shared tests cover scoring plus rank-before-limit/exact-radius orchestration, preference-default validation, shared analysis-workspace state behavior, preference editor mutations, and deterministic score-explanation grouping. User-customized scoring overrides are persisted in the application-owned settings database and deterministically merged with dataset defaults. `AnalysisWorkspaceController` owns restored hard constraints, effective preferences, center/radius, persistence, debounced ranked recalculation, and stale-result suppression. The Desktop host now renders the map-first workspace with generic preference editors, ranked result scores/coverage, a compact lower settlement summary, and explicit lower-pane Details/External-search views; Android continues to use the existing responsive Search/Map presentation.
+This sub-spec remains `verification-pending` only because strict representative country-scale scored acceptance and the remaining configured Desktop/Android checks have not yet been recorded. No new product behavior should be added here merely because those checks are pending.
 
 ## Requirement map
 
@@ -661,40 +626,12 @@ candidate volume. Record candidate count, enabled scoring metric count, batch re
 scoring/sort time, and end-to-end recalculation latency. If DA-R16 requires an explicit apply fallback,
 record the measured bottleneck that justifies it.
 
-## Implementation tasks
+## Remaining acceptance
 
-Suggested implementation order:
+1. Run the strict country-scale scoring acceptance on a representative generated package with enabled scoring metrics and record candidate count, scoring metric count, batch retrieval time, shared scoring/sort time, and end-to-end latency.
+2. Complete the remaining configured Desktop/Android validation required by the validation section.
+3. Confirm the real Desktop workspace still satisfies map/list selection, Details/explanation, map-driven center, missing-data coverage, and non-overlap constraints on the supported renderers.
+4. Move any newly discovered stable implementation knowledge into the owning current-state documents rather than expanding this spec.
+5. Archive this sub-spec after the required evidence is recorded.
 
-1. Commit and tag the repository baseline before implementation begins.
-2. **Implemented:** define immutable shared preference, score, coverage, and contribution models.
-3. **Implemented:** add pure deterministic scoring/ranking and focused shared tests.
-4. **Implemented:** define the batch repository input contract needed for scoring without N+1
-   details queries.
-5. **Implemented:** implement Desktop/Android repository support and Desktop regression tests for
-   batch active-metric retrieval; Android adapter compile/device validation remains part of configured
-   validation.
-6. **Implemented:** add independent preference-profile configuration, additive format-v1
-   `metric_preference_default` persistence, Desktop/Android readers with legacy empty fallback, and
-   cross-boundary validation/tests.
-7. **Implemented:** extend application-owned preference persistence with sparse dataset-scoped enabled/target/limit/weight overrides, shared default/override resolution, and Desktop/Android settings schema version 3 migration.
-8. **Implemented:** add parallel ranked-analysis orchestration so hard filtering and exact radius
-   precede scoring and final result limiting follows ranking, while retaining the legacy hard-filter
-   search path until UI migration.
-9. **Implemented:** separate analytical application state from Compose with `AnalysisWorkspaceController`, including dataset/default/override restore and persistence orchestration.
-10. **Implemented:** add the explicit Desktop-host map-first presentation with a resizable left panel and map occupying the remaining workspace; revised to default the left pane to roughly one third of the window.
-11. **Implemented:** add compact generic Required/Preferences sections with one expanded preference editor at a time, target/limit editing, weight slider, enable state, and reset-to-dataset-default behavior. Required-filter controls and chooser descriptions are derived from persisted `measure_type`: distance, count, and coverage use distinct human-facing labels/units so fixed-radius counts cannot be mistaken for nearest-feature distances.
-12. **Implemented:** ranked results live in the left panel with score/coverage; list selection drives the selected marker/camera, activating a ranked marker on native MapLibre or Intel macOS JCEF selects the same settlement, scrolls the ranked list to reveal it, and opens the same lower pane, and ranked markers expose runtime settlement-name labels with selected-label emphasis.
-13. **Implemented for list-originated selection:** without a selection, a shallow lower pane shows ranked-result count/recalculation state; selected settlement state renders a compact summary beneath the map with score/coverage and all participating Required/Preference metrics in a horizontally scrollable criteria strip. An explicit Details action opens scrollable complete details in the same lower pane, and a separate External search action opens configured provider buttons there. **Add filter** opens a full-pane chooser inside the left analysis column. None of these surfaces overlaps the platform map rectangle, so the Intel macOS JCEF renderer uses its original stable windowed rendering path.
-14. **Implemented:** add 250 ms debounced/cancellable automatic ranked recalculation with generation-based stale-result suppression. The Desktop analysis workspace uses this as its primary workflow; explicit Search remains only in compatibility/narrow UI paths.
-15. **Implemented:** map-driven center selection now uses map coordinates rather than marker activation and does not change ranked-result selection or sidebar scroll position. Native MapLibre reports the clicked WGS84 coordinate directly; Intel macOS JCEF sends a bounded same-origin coordinate payload through the loopback server. Shared lookup selects the nearest settlement from the complete dataset settlement index using Haversine distance, then reuses the existing `Settlement` center/radius/persistence path and fills the Search area center name.
-16. **Acceptance workflow implemented; real package measurement pending:** ranked-analysis performance diagnostics record candidate/scoring volumes plus batch retrieval, shared scoring/sort, and end-to-end latency for completed current generations. `make analysis-acceptance` now parses the persistent Desktop diagnostics log, rejects undersized samples, prefers scored runs, and falls back to an explicitly labeled `filter-only` country-scale report when no scoring preferences are available. `make analysis-acceptance-strict` requires `scoringMetrics > 0` and remains the final ranked-scoring acceptance gate. A realistic strict country-scale measurement plus configured Desktop/Android validation still must be recorded before this sub-spec can be accepted.
-17. After acceptance, update owning current-state documentation and archive this sub-spec according to
-    [`../../README.md`](../../README.md).
-
-
-Implementation note: normal Intel macOS ranked-marker selection still uses a practical screen-space hit tolerance. **Pick center on map** does not depend on marker hit testing: it reports the clicked map coordinate and resolves the nearest dataset settlement in shared Kotlin.
-
-
-### Presentation refinements
-
-The selected ranked result must be visually distinct in the left result list whether selection originates from the list or the map. The lower summary should arrange active criteria in two balanced rows rather than one long row. Settlement display names should prefer persisted aliases matching the selected UI language and fall back to the canonical name when unavailable.
+The implemented call paths, file ownership, UI decomposition, persistence schema history, and performance-report tooling are intentionally documented outside this active spec.

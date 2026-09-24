@@ -98,6 +98,17 @@ After acceptance:
 - the archived spec is historical context only;
 - archived specifications are excluded from routine project context unless historical reasoning is needed.
 
+## Active spec hygiene
+
+An active specification is a change contract, not an implementation diary. Keep it useful for review and acceptance rather than accumulating a second copy of current-state documentation.
+
+- `Current state` should be a short status summary plus links to owning current-state documents when detailed wiring already exists there.
+- Keep normative requirements, scenarios, non-goals, compatibility constraints, and acceptance criteria while the change remains active.
+- `Implementation tasks` should contain only work that is still pending. Once an implementation step is complete, move durable behavior/rationale into the owning architecture, implementation, configuration, usage, or test document instead of preserving a long `Implemented:` history in the active spec.
+- A `verification-pending` sub-spec should primarily describe the requirements being verified, the remaining acceptance evidence, and any unresolved compatibility constraint.
+- Do not duplicate schema-version timelines, command matrices, class/file inventories, or accepted UI behavior when an owning current-state document already maintains them.
+- Preserve design rationale in the active spec only when it is still necessary to evaluate the pending change. Accepted rationale that future maintainers need should move to the relevant owning document before archival.
+
 ## Document metadata
 
 Managed documentation uses minimal YAML frontmatter:
@@ -135,7 +146,7 @@ Prefer a small predictable structure. Use only sections that add value.
 ## Design constraints
 ## Compatibility / migration
 ## Validation
-## Implementation tasks
+## Remaining work / acceptance  # prefer this once implementation is substantially complete
 ```
 
 Additional domain-specific sections are allowed when they own real requirements or explanatory context. Do not create headings merely to satisfy the template.

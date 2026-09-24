@@ -1,0 +1,95 @@
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DOCS = ROOT / "docs"
+SPECS = DOCS / "specs"
+ACTIVE = SPECS / "active"
+FEATURE_CATALOG = DOCS / "FEATURES.md"
+
+FEATURE_ID_RE = re.compile(r"`([A-Z][A-Z0-9_]*(?:\.[A-Z0-9_]+)+)`")
+CATALOG_LINE_RE = re.compile(r"^- `([A-Z][A-Z0-9_]*(?:\.[A-Z0-9_]+)+)`\s+—")
+
+
+def _frontmatter(path: Path) -> dict[str, str]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert lines and lines[0] == "---", f"Missing YAML frontmatter start: {path}"
+    try:
+        end = lines.index("---", 1)
+    except ValueError as exc:
+        raise AssertionError(f"Missing YAML frontmatter end: {path}") from exc
+
+    result: dict[str, str] = {}
+    for line in lines[1:end]:
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        key, separator, value = line.partition(":")
+        assert separator, f"Unsupported frontmatter line in {path}: {line!r}"
+        result[key.strip()] = value.strip()
+    return result
+
+
+def _active_specs() -> list[Path]:
+    return sorted(ACTIVE.rglob("*.md"))
+
+
+def _catalog_feature_ids() -> set[str]:
+    result = {
+        match.group(1)
+        for line in FEATURE_CATALOG.read_text(encoding="utf-8").splitlines()
+        if (match := CATALOG_LINE_RE.match(line))
+    }
+    assert result, "Feature catalog unexpectedly contains no feature IDs"
+    return result
+
+
+def test_active_spec_metadata_and_navigation_are_consistent() -> None:
+    active_specs = _active_specs()
+    assert active_specs
+
+    umbrella_specs = []
+    for path in active_specs:
+        metadata = _frontmatter(path)
+        body = path.read_text(encoding="utf-8")
+
+        assert metadata.get("type") == "Specification", f"Unexpected type in {path}"
+        assert metadata.get("document_role") in {"umbrella", "subspec"}, f"Missing role in {path}"
+        assert metadata.get("spec_status") in {"active", "verification-pending"}, f"Unexpected status in {path}"
+        for heading in ("## Status", "## Feature scope", "## Requirement map", "## Validation"):
+            assert heading in body, f"Missing {heading!r} in {path}"
+
+        if metadata["document_role"] == "umbrella":
+            umbrella_specs.append(path)
+            current_focus = metadata.get("current_focus")
+            assert current_focus, f"Umbrella spec has no current_focus: {path}"
+            assert (path.parent / current_focus).is_file(), f"current_focus does not exist: {current_focus}"
+        else:
+            parent = metadata.get("parent")
+            assert parent, f"Sub-spec has no parent: {path}"
+            assert (path.parent / parent).resolve().is_file(), f"Sub-spec parent does not exist: {path} -> {parent}"
+
+    assert len(umbrella_specs) == 1, f"Expected one active umbrella spec, found {len(umbrella_specs)}"
+
+
+def test_active_specs_use_only_cataloged_feature_ids() -> None:
+    catalog = _catalog_feature_ids()
+    for path in _active_specs():
+        referenced = set(FEATURE_ID_RE.findall(path.read_text(encoding="utf-8")))
+        unknown = sorted(referenced - catalog)
+        assert not unknown, f"Unknown feature IDs in {path}: {unknown}"
+
+
+def test_verification_pending_specs_track_acceptance_not_implementation_history() -> None:
+    for path in _active_specs():
+        metadata = _frontmatter(path)
+        body = path.read_text(encoding="utf-8")
+
+        assert "**Implemented:" not in body, f"Active spec contains implementation diary entries: {path}"
+        assert "Implemented in this increment" not in body, f"Active spec contains implementation diary entries: {path}"
+
+        if metadata.get("spec_status") == "verification-pending":
+            assert "## Remaining acceptance" in body, f"Verification-pending spec lacks remaining acceptance: {path}"
+            assert "## Implementation tasks" not in body, f"Verification-pending spec keeps completed implementation tasks: {path}"

@@ -50,19 +50,9 @@ semantics, or Android map behavior.
 
 ## Current state
 
-The repository already contains:
+Desktop local-PMTiles rendering is implemented with native MapLibre on supported hosts, an Intel macOS JCEF/MapLibre GL JS adapter, and a deliberate analytical fallback elsewhere. Search-result overlays and selected-settlement behavior reuse the shared runtime map contract. Stable renderer wiring and host-selection details belong in [`../../../../mobile/IMPLEMENTATION.md`](../../../../mobile/IMPLEMENTATION.md) and [`../../../IMPLEMENTATION.md`](../../../IMPLEMENTATION.md).
 
-- generated local PMTiles and a style template with a runtime-resolved URI;
-- shared `MapOverlayGeoJson` generation for search-result overlays;
-- Android MapLibre rendering;
-- a Desktop `MapPanel` contract;
-- Desktop package loading that resolves the installed PMTiles file into the style JSON.
-
-MapLibre Compose is enabled on hosts with a published native runtime. Intel macOS uses a bounded
-platform-owned JCEF + MapLibre GL JS renderer because MapLibre Compose 0.13.x has no compatible
-`macos-amd64` JNI runtime. The Intel renderer was manually exercised on an x86-64 macOS development
-workstation and successfully displayed the map while preserving settlement-selection/details behavior.
-Shared search semantics and the dataset package contract remain unchanged.
+This sub-spec remains `verification-pending` only for the remaining offline/supported-host acceptance evidence described below.
 
 ## Requirement map
 
@@ -206,16 +196,6 @@ hosts keep using the same application and shared code without resolving an incom
 
 ## Validation
 
-Recorded manual validation on Intel macOS x86-64:
-
-- `make run-desktop` builds and starts the application after the Desktop/JCEF integration fixes;
-- the JCEF-rendered map is visible;
-- selecting a settlement continues to show its details.
-
-The report above does **not** yet establish the network-disabled/offline check, the full marker/camera
-acceptance sequence, or the complete Desktop automated test suite. Those checks remain required before
-this sub-spec is archived.
-
 Acceptance requires:
 
 1. `make test-desktop` passes on a configured Gradle environment.
@@ -223,19 +203,18 @@ Acceptance requires:
 3. The local basemap is visible with network access disabled.
 4. Search results appear as markers and selected settlement highlighting/camera focus works.
 5. A data-only package reports no map without breaking search.
-6. Intel macOS renders the full local package without external network access, or fails closed to the
-   analytical fallback without breaking startup/search.
+6. Intel macOS renders the full local package without external network access, or fails closed to the analytical fallback without breaking startup/search.
 7. Unsupported-host capability resolution is covered by deterministic tests and retains the fallback.
 8. `geo-format/VERSION` and persisted dataset schema remain unchanged.
 
-## Implementation tasks
+Recorded and pending platform evidence belongs in [`../../../TESTS.md`](../../../TESTS.md), especially the Desktop offline-map acceptance section.
 
-- add MapLibre Compose to the Desktop shared source set;
-- select the supported native JNI runtime in `desktopApp`;
-- replace the always-fallback `desktopMain` map with supported-host MapLibre rendering plus fallback;
-- remove unused historical Desktop map source implementations;
-- add host-capability tests;
-- add the Intel macOS JCEF/MapLibre GL JS renderer behind a platform UI contract;
-- serve packaged web assets and local PMTiles-derived vector tiles through a loopback-only adapter;
-- update implementation, installation, test, usage, and roadmap documentation;
-- complete the remaining supported-host/offline acceptance checks before archiving this sub-spec.
+## Remaining acceptance
+
+1. Run the Desktop automated tests on the configured Gradle toolchain.
+2. Verify a full local package renders with external network access disabled.
+3. Verify result markers, selected-settlement highlighting/camera focus, and the data-only-package fallback.
+4. Confirm Intel macOS local rendering or the documented fail-closed analytical fallback.
+5. Record the accepted evidence in the owning test/implementation docs and archive this sub-spec.
+
+Renderer implementation history is intentionally maintained in the current-state Desktop/mobile documentation, not in this verification-pending spec.

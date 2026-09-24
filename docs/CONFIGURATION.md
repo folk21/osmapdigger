@@ -88,6 +88,8 @@ Profile loading validates duplicate IDs, selected-metric availability, scoreable
 
 The checked-in Andorra and Belarus datasets currently select `balanced-living`. Its values are product defaults, not hard constraints: changing them changes initial ranking behavior only after the ranked-analysis UI begins consuming dataset defaults.
 
+The current forest default (`target = 0.25 km`, `limit = 3 km`, weight `8`) is intentionally stricter than the original `1/10 km` baseline. A representative Belarus calibration over 22,771 settlements found that the original target saturated at full quality for 93.9% of settlements, so it contributed little discrimination. This is a fixed product-default adjustment; runtime scoring never derives thresholds from dataset percentiles. Use `make preference-calibration` to review representative distributions before changing these defaults again.
+
 ### External property-search configuration
 
 External-search providers are application-owned runtime configuration rather than dataset-format configuration. `mobile/config/external-search-providers.json` is the packaged seed catalog. On first use its rows are inserted into the local settings SQLite, which then becomes the authoritative runtime registry. Dataset `country_code` selects applicable country rows and `property_search_terms` supplies the fallback query terms. Provider URLs are templates expanded locally by shared Kotlin; the application does not scrape property portals.
