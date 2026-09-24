@@ -12,7 +12,7 @@ current_focus: subspecs/settlement-shortlist-workflow.md
 
 Active umbrella specification — implementation is largely complete; cross-platform and representative-data acceptance remains pending.
 
-This spec captures the initial product slice discussed before code generation. Much of the implementation now exists, but the spec remains active until real PBF, PMTiles, Desktop, and Android end-to-end validation is completed on a configured workstation.
+This spec captures the initial product slice discussed before code generation. Much of the implementation now exists, and representative real Andorra PBF/PMTiles package publication evidence is recorded. The spec remains active until the remaining Desktop, Android, and strict country-scale analysis end-to-end validation is completed on a configured workstation.
 
 After acceptance, move stable behavior into owning implementation/architecture docs as needed and archive this spec.
 
@@ -74,7 +74,7 @@ The first production-oriented package is expected to cover Belarus. The reposito
 
 Most of the initial vertical slice is implemented. Stable architecture, package/build behavior, runtime wiring, configuration, and test commands are documented in the owning current-state documents rather than duplicated here.
 
-This umbrella remains active because acceptance still requires representative real PBF/PMTiles generation plus the remaining native/manual Desktop and Android end-to-end checks. The current bounded acceptance focus is the linked settlement-shortlist sub-spec.
+This umbrella remains active because acceptance still requires the remaining native/manual Desktop and Android end-to-end checks plus strict representative country-scale analysis evidence. Representative Andorra data-only and strict full-package build/publication evidence is complete. The current bounded acceptance focus is the linked settlement-shortlist sub-spec.
 
 ## Acceptance map
 
@@ -82,9 +82,9 @@ The table below is the umbrella-level acceptance index. Stable capability identi
 
 | Capability | Feature IDs | Current state | Remaining umbrella evidence | Owning acceptance source |
 |---|---|---|---|---|
-| Dataset build, format, metrics, and package publication | `DATASET.SCOPE`, `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, `METRICS.GENERATION`, `METRICS.RUNTIME_CONTRACT` | implementation complete / verification-pending | Build and validate representative real data-only and full packages, including non-empty PMTiles and additive dynamic-metric behavior | this umbrella + `docs/TESTS.md` |
-| Search and analysis | `SEARCH.FILTERING`, `SEARCH.DESCRIPTION`, `SEARCH.RADIUS`, `SEARCH.SETTLEMENTS`, `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, `PRESENTATION.ANALYSIS_WORKSPACE` | implementation complete / verification-pending | Strict country-scale scored acceptance plus remaining configured Desktop/native interaction evidence | `subspecs/desktop-analysis-workspace.md` |
-| Shortlist research workflow | `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `EXTERNAL.PROPERTY_SEARCH` | implementation complete / verification-pending supporting refinement | Representative calibration and native/manual Desktop/Android workflow evidence before its sub-spec is archived | `subspecs/settlement-shortlist-workflow.md` |
+| Dataset build, format, metrics, and package publication | `DATASET.SCOPE`, `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, `METRICS.GENERATION`, `METRICS.RUNTIME_CONTRACT` | accepted | None for builder/package publication structure; representative current Andorra data-only and strict full-package evidence is recorded | this umbrella + `docs/TESTS.md` |
+| Search and analysis | `SEARCH.FILTERING`, `SEARCH.DESCRIPTION`, `SEARCH.RADIUS`, `SEARCH.SETTLEMENTS`, `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, `PRESENTATION.ANALYSIS_WORKSPACE` | implementation complete / verification-pending | Strict country-scale scored acceptance plus remaining native Desktop interaction evidence | `subspecs/desktop-analysis-workspace.md` |
+| Shortlist research workflow | `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `EXTERNAL.PROPERTY_SEARCH` | implementation complete / verification-pending supporting refinement | Native/manual Desktop/Android workflow evidence; representative calibration and configured automated gates are recorded | `subspecs/settlement-shortlist-workflow.md` |
 | Offline Desktop map | `MAP.OFFLINE`, `MAP.RESULTS`, `PLATFORM.DESKTOP` | implementation complete / verification-pending | Full-package offline rendering, result/selection focus, data-only fallback, and supported renderer/fallback evidence | `subspecs/desktop-map.md` |
 | Mutable user state | `SETTINGS.PERSISTENCE` | implementation complete / verification-pending | Android restore/isolation behavior, including unavailable center and removed-metric cases | `subspecs/user-preferences.md` |
 | Android package/runtime path | `DATASET.IMPORT`, `PLATFORM.ANDROID`, `PLATFORM.KMP`, `RUNTIME.OFFLINE_FIRST` | implementation complete / verification-pending | Import the same generated package and prove local filtering/map behavior without a backend | this umbrella + `docs/TESTS.md` |
@@ -354,8 +354,7 @@ Close the initial functional product in this order:
 1. Complete and archive the `CANDIDATES.IMPORT` / `FAVORITES.NOTEBOOK` / `FAVORITES.SNAPSHOTS` / `FAVORITES.EXPORT` / `EXTERNAL.PROPERTY_SEARCH` current-focus sub-spec after representative calibration and native/manual evidence are recorded.
 2. Record strict `ANALYSIS.RANKING` / `PRESENTATION.ANALYSIS_WORKSPACE` country-scale evidence and archive the Desktop analysis workspace sub-spec.
 3. Record `MAP.OFFLINE` / `MAP.RESULTS` Desktop renderer evidence and `SETTINGS.PERSISTENCE` Android restore evidence, then archive those verification-pending sub-specs.
-4. Build and validate the representative real data-only package and run `make andorra-full-package-acceptance` for `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, and `METRICS.RUNTIME_CONTRACT`.
-5. Exercise the same generated package through `PLATFORM.DESKTOP` and `PLATFORM.ANDROID`, including `DATASET.IMPORT` and offline local search/map behavior.
-6. Confirm package-import safety and repository artifact hygiene, move any newly discovered stable behavior into owning docs, and archive this umbrella only when every blocking acceptance-map row is accepted.
+4. Exercise the accepted representative Andorra full package through `PLATFORM.DESKTOP` and `PLATFORM.ANDROID`, including `DATASET.IMPORT` and offline local search/map behavior.
+5. Confirm package-import safety and repository artifact hygiene, move any newly discovered stable behavior into owning docs, and archive this umbrella only when every blocking acceptance-map row is accepted.
 
 Exact commands and the current validation matrix belong in [`../../TESTS.md`](../../TESTS.md); the changing cross-feature closure order belongs in [`../../ROADMAP.md`](../../ROADMAP.md).

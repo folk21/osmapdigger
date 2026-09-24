@@ -1,16 +1,13 @@
 # PATCH
 
-Add strict full-package acceptance validation for the current Andorra build path.
+Record successful representative Andorra full-package publication acceptance.
 
-`make andorra-full-package-acceptance` now rebuilds Andorra with PMTiles and validates the published package with `--require-map --require-archive`. Strict validation requires a non-empty metadata-declared PMTiles artifact, a non-empty portable `.omd.zip`, the required runtime archive entries, and a PMTiles archive entry whose size matches the published map artifact.
-
-Normal staging validation and data-only packages remain valid without PMTiles or a portable archive requirement.
+The current Andorra data-only and strict full-package builder/publication evidence is now complete. The roadmap and active umbrella no longer treat PMTiles/package generation as pending. Native Desktop rendering and Android package import remain separate verification-pending acceptance layers. Acceptance-map wording was also reconciled with already recorded configured and calibration evidence.
 
 Validation performed:
-- focused package/pipeline/documentation tests: 11 passed, 2 existing PyProj/NumPy warnings;
-- `make check`: 73 passed, 2 existing PyProj/NumPy warnings;
-- `make -n andorra-full-package-acceptance`: confirmed full build followed by strict validation.
+- `python -m pytest -q tests/test_documentation_contracts.py` -> 6 passed;
+- `make check` -> 73 passed, 2 existing PyProj/NumPy warnings.
 
-Not verified in this environment:
-- real `make andorra-full-package-acceptance`, because the shareable baseline does not contain the ignored Andorra PBF or a configured tilemaker/Docker runtime;
-- native Desktop/Android rendering/import behavior, which remains a separate acceptance layer.
+Not re-run here:
+- `make check-all`, because this patch changes acceptance documentation only;
+- real full-package build, which was recorded from the developer workstation before this evidence patch.

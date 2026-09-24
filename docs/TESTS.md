@@ -59,6 +59,8 @@ make andorra-full-package-acceptance
 
 The target rebuilds the current Andorra package with PMTiles and then runs strict package validation. Strict validation requires the metadata-declared PMTiles file to exist and be non-empty, requires `<dataset-id>.omd.zip`, verifies the required runtime entries inside that archive, and verifies that its PMTiles entry size matches the published PMTiles artifact. This is structural/integrity evidence; it does not prove renderer behavior.
 
+Configured developer-workstation evidence has been recorded for the current Andorra source: `make andorra-full-package-acceptance` completed successfully after rebuilding the package with PMTiles and then passing the strict published-directory/archive checks. Together with the previously recorded current Andorra data-only build/calibration, this closes the representative builder/package-publication structural evidence. It does not accept Desktop renderer behavior or Android package import; those remain separate native runtime checks.
+
 The underlying validator remains available directly:
 
 ```bash

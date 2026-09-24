@@ -15,7 +15,7 @@ The initial functional product is implementation-heavy and acceptance-oriented r
 
 The current acceptance focus is [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md). Its implementation, automated shared/headless acceptance, and representative Belarus/Andorra calibration evidence are complete; native/manual Desktop/Android evidence remains before archival.
 
-`desktop-analysis-workspace`, `desktop-map`, and `user-preferences` are also verification-pending. They remain separate because changing the current focus does not implicitly accept their configured/manual evidence.
+`desktop-analysis-workspace`, `desktop-map`, and `user-preferences` are also verification-pending. They remain separate because changing the current focus does not implicitly accept their configured/manual evidence. The representative Andorra data-only and strict full-package build/publication evidence is now complete; native Desktop/Android consumption remains tracked by the platform rows below.
 
 Status vocabulary used below:
 
@@ -32,7 +32,7 @@ Active umbrella: [`specs/active/spec-initial-functional-product.md`](specs/activ
 
 | Capability | Feature IDs | State | Remaining acceptance gap | Next evidence |
 |---|---|---|---|---|
-| Dataset build, format, metrics, and package publication | `DATASET.SCOPE`, `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, `METRICS.GENERATION`, `METRICS.RUNTIME_CONTRACT` | verification-pending | Representative real package generation and final PMTiles/package compatibility evidence | Run the current Andorra data-only checks and `make andorra-full-package-acceptance`; then record native package/import evidence |
+| Dataset build, format, metrics, and package publication | `DATASET.SCOPE`, `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, `METRICS.GENERATION`, `METRICS.RUNTIME_CONTRACT` | accepted | None for builder/package publication structure; current Andorra data-only and strict full-package evidence is recorded | Keep the structural acceptance target green; native Desktop/Android package consumption is tracked separately below |
 | Search, preferences, ranking, and analysis workspace | `SEARCH.FILTERING`, `SEARCH.DESCRIPTION`, `SEARCH.RADIUS`, `SEARCH.SETTLEMENTS`, `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, `PRESENTATION.ANALYSIS_WORKSPACE` | verification-pending | Strict country-scale scored acceptance plus remaining native Desktop workflow checks | Run strict analysis acceptance on a representative scoring-enabled package, complete native Desktop checks, and archive `desktop-analysis-workspace` after evidence is recorded |
 | Shortlist, Favorites, export, and external discovery | `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `EXTERNAL.PROPERTY_SEARCH` | verification-pending | Native/manual Desktop/Android workflow evidence; representative Belarus/Andorra calibration and configured automated gates are complete | Complete the native checklist, move stable findings to owning docs, then archive the sub-spec |
 | Offline Desktop map and result interaction | `MAP.OFFLINE`, `MAP.RESULTS`, `PLATFORM.DESKTOP` | verification-pending | Offline full-package rendering, marker/focus behavior, data-only fallback, and Intel macOS renderer/fallback evidence | Run native Desktop map smoke and archive `desktop-map` after evidence is recorded |
@@ -46,7 +46,7 @@ Active umbrella: [`specs/active/spec-initial-functional-product.md`](specs/activ
 1. Finish `settlement-shortlist-workflow` calibration/native acceptance and archive it.
 2. Record strict country-scale analysis evidence and close `desktop-analysis-workspace`.
 3. Close `desktop-map` and `user-preferences` native/manual acceptance.
-4. Build the representative real full package, exercise the same package on Desktop and Android, and close the remaining umbrella dataset/import/offline-runtime evidence.
+4. Exercise the accepted representative Andorra full package on Desktop and Android and close the remaining package-import/offline-runtime evidence.
 5. Move any newly discovered stable behavior into owning docs and archive `spec-initial-functional-product` only when every blocking row above is accepted.
 
 Do not start another broad architecture track while these acceptance gaps are open unless a concrete correctness issue blocks them.
