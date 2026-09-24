@@ -179,9 +179,10 @@ The initial Android runtime imports a prebuilt `.omd.zip`; it does not run the P
 ./gradlew :desktopApp:jvmTest
 ./gradlew :core:testAndroidHostTest
 ./gradlew :shared:testAndroidHostTest
+./gradlew :androidApp:assembleDebug
 ```
 
-Root `make check` also validates the current logical package dependency contract without requiring Gradle or network access. Root `make check-all` composes the configured Kotlin/Python checks.
+Root `make check` also validates the current logical package dependency contract without requiring Gradle or network access. Root `make check-all` composes the configured Python, Desktop/KMP, Android-host KMP, and `androidApp` debug-assembly checks.
 
 ## Important boundaries
 

@@ -1,17 +1,19 @@
 # PATCH
 
-Record the completed current-package Andorra Preference calibration as shortlist acceptance evidence.
+Strengthen configured Android validation before the remaining native shortlist acceptance.
 
-- Keep Belarus as the representative product-default calibration dataset.
-- Record Andorra as an independent 75-settlement sanity check with expected compact-geography saturation.
-- Record that missing `beach.distance_km` remains unknown and yields 83.673% weighted coverage instead of zero quality.
-- Remove Andorra calibration from the remaining `settlement-shortlist-workflow` acceptance gap.
-- Leave product defaults unchanged; the calibration warning remains review evidence rather than runtime adaptation.
+- Add `build-android` to the `make check-all` dependency set.
+- Keep shared Android-host tests and additionally compile the real `androidApp` host with `:androidApp:assembleDebug`.
+- Add a network-free repository contract test so the configured gate cannot silently stop compiling `androidApp`.
+- Clarify that remaining Android acceptance is device/emulator runtime evidence for import, share, persistence, map, and local analysis rather than basic compilation.
 
 Validation performed in the patch environment:
-- `python -m pytest -q tests/test_documentation_contracts.py` -> 6 passed.
-- `make check` -> 69 passed, 2 existing PyProj/NumPy warnings.
+- `python -m pytest -q tests/test_mobile_architecture.py` -> 13 passed.
+- `make check` -> 70 passed, 2 existing PyProj/NumPy warnings.
+- `make -n check-all` -> includes Desktop tests, shared Android-host tests, and `:androidApp:assembleDebug`.
+- `make check-all` was attempted but Gradle could not start because `services.gradle.org` DNS/network access is unavailable in this environment.
 
 Not verified here:
+- Actual `:androidApp:assembleDebug` compilation after this gate change.
+- Device/emulator Android import/share/persistence/map behavior.
 - Native/manual Desktop shortlist workflow acceptance.
-- Android import/share/persistence acceptance.

@@ -551,7 +551,7 @@ Acceptance requires all of the following:
 ## Remaining acceptance
 
 1. Complete native/manual Desktop acceptance for the integrated workflow: import/review, ranked explanations and missing-data diagnostics, Favorites/note/snapshot, Favorites-to-import, batch browser actions, portable export/save/reveal, restart persistence, map selection, and repeat focus.
-2. Complete the remaining Android import/share/persistence acceptance appropriate to the current Desktop-first UI scope; configured Android host tests are already part of the green `make check-all` gate.
+2. Complete the remaining Android import/share/persistence device/emulator acceptance appropriate to the current Desktop-first UI scope; `make check-all` now covers both shared Android-host KMP tests and `:androidApp:assembleDebug`, so the remaining gap is runtime/platform-side-effect evidence rather than basic host compilation.
 3. Move any newly discovered stable behavior or rationale into the owning configuration/implementation/usage/test docs, then archive this sub-spec.
 
 The completed increment history is intentionally not maintained here; current implementation ownership is documented in [`../../../IMPLEMENTATION.md`](../../../IMPLEMENTATION.md), [`../../../../mobile/IMPLEMENTATION.md`](../../../../mobile/IMPLEMENTATION.md), [`../../../USAGE.md`](../../../USAGE.md), and [`../../../TESTS.md`](../../../TESTS.md).

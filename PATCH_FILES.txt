@@ -3,10 +3,15 @@ PATCH
 Added/modified files:
 - PATCH_FILES.txt
 - PATCH_NOTES.md
-- docs/CONFIGURATION.md
+- CHANGELOG.md
+- Makefile
+- README.md
 - docs/ROADMAP.md
 - docs/TESTS.md
+- docs/specs/active/subspecs/desktop-analysis-workspace.md
 - docs/specs/active/subspecs/settlement-shortlist-workflow.md
+- mobile/README.md
+- tests/test_mobile_architecture.py
 
 Deleted files:
 - none

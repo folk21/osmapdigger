@@ -243,7 +243,7 @@ details. Network-disabled rendering, the complete result-marker/selected-marker/
 make build-android
 ```
 
-This is currently the primary automated Android host check and compiles the app-private preferences adapter. Package import/map behavior and preference restoration should also be exercised on a device/emulator with a real generated package.
+This is the platform-host compile check for `androidApp`, including `MainActivity`, dataset import/install code, Android settings/Favorites adapters, and the FileProvider-based Favorites share adapter. It is also part of `make check-all`. Package import/map behavior, share-sheet behavior, and preference restoration still require a device/emulator with a real generated package.
 
 ## Full configured check
 
@@ -251,7 +251,7 @@ This is currently the primary automated Android host check and compiles the app-
 make check-all
 ```
 
-Use this before accepting a cross-project change when the local toolchain supports all included tasks.
+Use this before accepting a cross-project change when the local toolchain supports all included tasks. The gate runs the network-free Python/repository checks, Desktop JVM tests, shared Android-host KMP tests, and `:androidApp:assembleDebug` so platform-host source cannot remain uncompiled behind an otherwise green configured gate.
 
 ## Persisted-format changes
 

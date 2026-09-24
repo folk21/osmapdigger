@@ -171,6 +171,18 @@ def test_gradle_module_dependencies_are_acyclic_and_explicit() -> None:
 
 
 
+
+def test_full_configured_gate_compiles_android_app_host() -> None:
+    makefile = (REPO_ROOT / "Makefile").read_text(encoding="utf-8")
+    check_all_line = next(
+        line for line in makefile.splitlines() if line.startswith("check-all:")
+    )
+
+    dependencies = set(check_all_line.removeprefix("check-all:").split())
+    assert {"check", "test-desktop", "test-mobile", "build-android"} <= dependencies
+    assert "./gradlew :androidApp:assembleDebug" in makefile
+
+
 def test_gate7_physical_package_ownership_is_explicit() -> None:
     expected_packages = {
         CORE_COMMON_MAIN: {"domain", "geo"},

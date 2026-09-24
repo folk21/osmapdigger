@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Strengthen `make check-all` so the configured repository gate also assembles the real `androidApp`, preventing Android platform adapters from remaining uncompiled while shared Android-host tests are green.
+
 - Add strict headless real-package ranked-analysis acceptance through the Desktop JDBC/shared-controller path, with isolated settings, candidate/scoring guards, and copy-ready execution diagnostics while keeping native UI/map acceptance separate.
 
 - Add a planned `ANALYSIS.INTERPRETATION` product slice for goal-oriented dimensions, reusable goal profiles, traceable strengths/trade-offs, accessible visual bands, and a deterministic path from raw OSM-derived metrics to practical conclusions without introducing a hidden second score.

@@ -85,7 +85,7 @@ make check
 
 `make check` is designed to be deterministic and network-free. It uses synthetic GIS fixtures and does not require the Andorra PBF, Docker, tilemaker, or Android SDK.
 
-When the JDK/Gradle/Android environment is available:
+When the JDK/Gradle/Android environment is available, including the Android SDK required to assemble `androidApp`:
 
 ```bash
 make check-all

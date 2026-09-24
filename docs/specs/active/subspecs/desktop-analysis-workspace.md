@@ -615,7 +615,7 @@ Acceptance requires all of the following:
     results.
 13. Map-driven center selection produces the same shared center/radius semantics as name-based center
     selection for the supported center type.
-14. Android/shared builds continue to compile and the existing hard-filter workflow remains usable.
+14. Android/shared builds continue to compile and the existing hard-filter workflow remains usable; the configured gate must compile the real `androidApp` host rather than only shared Android-host source sets.
 15. `make check` remains network-free and passes.
 16. Relevant configured Gradle tests pass where the toolchain is available.
 17. Stable implementation knowledge is moved into owning architecture/implementation/usage/test docs

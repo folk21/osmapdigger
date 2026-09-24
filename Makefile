@@ -13,7 +13,7 @@ ANDORRA_ACCEPTANCE_DATASET ?= data/generated/packages/andorra
 help:
 	@echo "OsmapDigger targets:"
 	@echo "  check                Run network-free Python checks"
-	@echo "  check-all            Run Python plus configured Kotlin tests"
+	@echo "  check-all            Run Python, configured Kotlin tests, and Android debug build"
 	@echo "  shortlist-acceptance        Run the focused cross-layer shortlist workflow acceptance fixture"
 	@echo "  desktop-headless-acceptance Run shortlist acceptance through real Desktop JDBC/settings SQLite"
 	@echo "  desktop-headless-analysis-acceptance Run strict scored analysis against a real generated package"
@@ -32,7 +32,7 @@ help:
 check: test-python
 	@echo "Lightweight checks passed."
 
-check-all: check test-desktop test-mobile
+check-all: check test-desktop test-mobile build-android
 	@echo "All configured checks passed."
 
 test-python:
