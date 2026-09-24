@@ -3,6 +3,8 @@ from __future__ import annotations
 import importlib.util
 import sqlite3
 import sys
+
+import pytest
 from pathlib import Path
 
 MODULE_PATH = Path(__file__).parents[1] / "scripts" / "preference_calibration_report.py"
@@ -88,6 +90,24 @@ def create_dataset(path: Path) -> Path:
     connection.close()
     return database
 
+
+
+
+def test_build_report_explains_legacy_package_without_preference_table(tmp_path: Path) -> None:
+    database = tmp_path / "georisk.sqlite"
+    connection = sqlite3.connect(database)
+    connection.executescript(
+        """
+        CREATE TABLE settlement (
+            settlement_id TEXT PRIMARY KEY NOT NULL
+        );
+        """
+    )
+    connection.commit()
+    connection.close()
+
+    with pytest.raises(ValueError, match="legacy or stale generated package"):
+        build_report(tmp_path, saturation_warning_pct=90.0)
 
 def test_percentile_interpolates_deterministically() -> None:
     values = [0.0, 10.0, 20.0, 30.0]

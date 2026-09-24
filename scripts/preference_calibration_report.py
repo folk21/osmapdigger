@@ -154,6 +154,15 @@ def resolve_database_path(path: Path) -> Path:
 def load_preferences(connection: sqlite3.Connection) -> list[PreferenceDefinition]:
     """Load all runtime preference defaults from the generated dataset contract."""
 
+    has_preference_table = connection.execute(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'metric_preference_default'"
+    ).fetchone()
+    if has_preference_table is None:
+        raise ValueError(
+            "Dataset has no metric_preference_default table; this is likely a legacy or stale generated "
+            "package. Rebuild the dataset with the current builder before preference calibration."
+        )
+
     rows = connection.execute(
         """
         SELECT

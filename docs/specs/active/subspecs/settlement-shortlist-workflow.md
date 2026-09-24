@@ -14,7 +14,7 @@ Verification-pending product sub-spec; implementation is complete through review
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-Remaining work is acceptance-oriented: an independent current Andorra calibration sanity check and native/manual Desktop/Android checks must be recorded before archival. Representative Belarus calibration evidence for the current checked-in defaults is recorded in the owning configuration/test documentation. Stable implementation detail belongs in the owning implementation/configuration/usage/test documents rather than in this status section.
+Remaining work is acceptance-oriented: native/manual Desktop/Android checks must be recorded before archival. Representative Belarus calibration and the independent current Andorra sanity check are recorded in the owning configuration/test documentation. Stable implementation detail belongs in the owning implementation/configuration/usage/test documents rather than in this status section.
 
 The earlier Desktop analysis workspace remains a separate verification-pending sub-spec; completing this workflow does not implicitly accept that sub-spec or the umbrella.
 
@@ -550,9 +550,8 @@ Acceptance requires all of the following:
 
 ## Remaining acceptance
 
-1. Rebuild the local Andorra package with the current checked-in Preference defaults when necessary, then record calibration evidence so the fixed product defaults have at least one small independent dataset sanity check.
-2. Complete native/manual Desktop acceptance for the integrated workflow: import/review, ranked explanations and missing-data diagnostics, Favorites/note/snapshot, Favorites-to-import, batch browser actions, portable export/save/reveal, restart persistence, map selection, and repeat focus.
-3. Complete the remaining Android import/share/persistence acceptance appropriate to the current Desktop-first UI scope; configured Android host tests are already part of the green `make check-all` gate.
-4. Move any newly discovered stable behavior or rationale into the owning configuration/implementation/usage/test docs, then archive this sub-spec.
+1. Complete native/manual Desktop acceptance for the integrated workflow: import/review, ranked explanations and missing-data diagnostics, Favorites/note/snapshot, Favorites-to-import, batch browser actions, portable export/save/reveal, restart persistence, map selection, and repeat focus.
+2. Complete the remaining Android import/share/persistence acceptance appropriate to the current Desktop-first UI scope; configured Android host tests are already part of the green `make check-all` gate.
+3. Move any newly discovered stable behavior or rationale into the owning configuration/implementation/usage/test docs, then archive this sub-spec.
 
 The completed increment history is intentionally not maintained here; current implementation ownership is documented in [`../../../IMPLEMENTATION.md`](../../../IMPLEMENTATION.md), [`../../../../mobile/IMPLEMENTATION.md`](../../../../mobile/IMPLEMENTATION.md), [`../../../USAGE.md`](../../../USAGE.md), and [`../../../TESTS.md`](../../../TESTS.md).

@@ -1,1 +1,1 @@
-make check && make test-desktop && make build-android
+make check && make check-all && make test-desktop && make build-android

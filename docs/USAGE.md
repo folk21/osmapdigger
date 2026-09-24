@@ -172,14 +172,20 @@ The checked-in `balanced-living` defaults are fixed product heuristics. Before c
 make preference-calibration
 ```
 
-The default target is `data/generated/packages/belarus`. Override it for another generated package:
+The default target is `data/generated/packages/belarus`. Override it for another current generated package:
 
 ```bash
 make preference-calibration \
   PREFERENCE_CALIBRATION_DATASET=data/generated/packages/andorra
 ```
 
-The command reports actual generated metric distributions, endpoint saturation, enabled-weight grouping, and overall score/coverage percentiles. Treat the report as calibration evidence only: OsmapDigger does not derive hidden percentile-based thresholds at runtime. If defaults are changed after review, rebuild the affected analytical packages before evaluating the application again.
+For the acceptance-oriented Andorra sanity check, rebuild first so an older local database cannot be mistaken for current evidence:
+
+```bash
+make andorra-calibration-acceptance
+```
+
+The command reports actual generated metric distributions, endpoint saturation, enabled-weight grouping, and overall score/coverage percentiles. A package without the additive `metric_preference_default` table is reported as legacy/stale and must be rebuilt before calibration. Treat the report as calibration evidence only: OsmapDigger does not derive hidden percentile-based thresholds at runtime. If defaults are changed after review, rebuild the affected analytical packages before evaluating the application again.
 
 ## Record ranked-analysis acceptance performance
 

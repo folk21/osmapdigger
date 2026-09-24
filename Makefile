@@ -1,4 +1,4 @@
-.PHONY: help check check-all test-python test-mobile test-desktop shortlist-acceptance desktop-headless-acceptance desktop-headless-analysis-acceptance headless-cli analysis-acceptance analysis-acceptance-strict preference-calibration build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
+.PHONY: help check check-all test-python test-mobile test-desktop shortlist-acceptance desktop-headless-acceptance desktop-headless-analysis-acceptance headless-cli analysis-acceptance analysis-acceptance-strict preference-calibration andorra-calibration-acceptance build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
 
 PYTHON ?= python
 GEO_BUILDER_PYTHONPATH = geo-builder/src
@@ -8,6 +8,7 @@ ANALYSIS_LOG ?= $(HOME)/.osmapdigger/logs/desktop.log
 ANALYSIS_MIN_CANDIDATES ?= 1000
 HEADLESS_ANALYSIS_DATASET ?= data/generated/packages/belarus
 PREFERENCE_CALIBRATION_DATASET ?= data/generated/packages/belarus
+ANDORRA_ACCEPTANCE_DATASET ?= data/generated/packages/andorra
 
 help:
 	@echo "OsmapDigger targets:"
@@ -20,6 +21,7 @@ help:
 	@echo "  analysis-acceptance         Report latest representative Desktop analysis timing"
 	@echo "  analysis-acceptance-strict  Require a representative run with scoring metrics"
 	@echo "  preference-calibration      Report Preference metric/score distributions for a generated dataset"
+	@echo "  andorra-calibration-acceptance Rebuild current Andorra data package and run Preference calibration"
 	@echo "  build-andorra-data   Build SQLite/metadata from local Andorra PBF, skip PMTiles"
 	@echo "  build-andorra        Build full Andorra package including PMTiles"
 	@echo "  build-belarus-data   Build Belarus SQLite/metadata from local PBF, skip PMTiles"
@@ -44,6 +46,9 @@ analysis-acceptance-strict:
 
 preference-calibration:
 	$(PYTHON) scripts/preference_calibration_report.py --dataset "$(PREFERENCE_CALIBRATION_DATASET)"
+
+andorra-calibration-acceptance: build-andorra-data
+	$(PYTHON) scripts/preference_calibration_report.py --dataset "$(ANDORRA_ACCEPTANCE_DATASET)"
 
 test-desktop:
 	cd mobile && ./gradlew :core:desktopTest :application:desktopTest :presentation:desktopTest :shared:desktopTest :desktopApp:jvmTest

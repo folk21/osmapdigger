@@ -134,11 +134,19 @@ make preference-calibration \
   PREFERENCE_CALIBRATION_DATASET=data/generated/packages/andorra
 ```
 
+For the shortlist acceptance sanity check, prefer the bounded rebuild-and-calibrate target when the local Andorra PBF is available:
+
+```bash
+make andorra-calibration-acceptance
+```
+
+This target rebuilds the data-only Andorra package with the current checked-in metric/preference configuration before running the calibration report, so a stale local package cannot be mistaken for current evidence.
+
 The report includes enabled weight by persisted metric group, known-value coverage, p10/p25/p50/p75/p90 metric distributions, the percentage of known values saturated at full quality / in transition / at zero quality, and overall score/weighted-coverage percentiles. A warning is emitted when at least 90% of known values for one enabled Preference saturate at one scoring endpoint. That warning is review evidence, not an automatic threshold rewrite or hidden runtime adaptation.
 
-Record representative Andorra/Belarus output when accepting or deliberately recalibrating `balanced-living`. The current representative Belarus package contains 22,771 settlements and records the recalibrated `forest.distance_km` distribution as 53.4% full quality, 46.4% transition, and 0.2% zero quality; no enabled metric crosses the configured 90% endpoint-saturation warning. If a report exposes extreme saturation or accidental group-weight dominance, review the product rationale before changing configuration and rebuild the dataset afterward. The report must not be used to derive per-dataset runtime thresholds automatically.
+Record representative Andorra/Belarus output when accepting or deliberately recalibrating `balanced-living`. The current representative Belarus package contains 22,771 settlements and records the recalibrated `forest.distance_km` distribution as 53.4% full quality, 46.4% transition, and 0.2% zero quality; no enabled metric crosses the configured 90% endpoint-saturation warning. A rebuilt current Andorra package with 75 settlements also completed the sanity check: enabled `forest.distance_km`, `medical.distance_km`, and `supermarket.distance_km` exceed the 90% full-quality warning, `beach.distance_km` is unavailable for all 75 settlements, and overall weighted coverage is therefore 83.673% for every settlement. The disabled `major_road.distance_km` also saturates but does not participate in the default score. This small-dataset saturation is recorded as cross-dataset evidence, not as a reason to derive dataset-specific thresholds. If a representative report exposes accidental group-weight dominance or a product-default problem, review the product rationale before changing configuration and rebuild the dataset afterward. The report must not be used to derive per-dataset runtime thresholds automatically.
 
-An Andorra package that fails calibration because `metric_preference_default` is absent predates the current additive Preference-default contract. Rebuild that local package with the current repository before using it as calibration evidence; do not treat a legacy-package failure as an accepted independent sanity check.
+An Andorra package that lacks `metric_preference_default` predates the current additive Preference-default contract. The calibration command reports this explicitly as a legacy/stale package instead of exposing a raw SQLite error. Rebuild it with `make andorra-calibration-acceptance` before using Andorra as acceptance evidence.
 
 Focused deterministic tests for the report live in `tests/test_preference_calibration_report.py` and use a synthetic SQLite database.
 

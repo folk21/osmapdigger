@@ -1,13 +1,17 @@
 # PATCH
 
-Add a strict headless real-package ranked-analysis acceptance path for the next P0 Desktop analysis gate.
+Record the completed current-package Andorra Preference calibration as shortlist acceptance evidence.
 
-The new `make desktop-headless-analysis-acceptance` target opens a generated package through the real Desktop package/JDBC adapters and the same shared `AnalysisWorkspaceController` used by Compose. It uses an isolated temporary settings SQLite, requires a representative candidate volume and at least one enabled scoring metric, and prints copy-ready retrieval/shared/end-to-end diagnostics from the completed current analysis generation.
+- Keep Belarus as the representative product-default calibration dataset.
+- Record Andorra as an independent 75-settlement sanity check with expected compact-geography saturation.
+- Record that missing `beach.distance_km` remains unknown and yields 83.673% weighted coverage instead of zero quality.
+- Remove Andorra calibration from the remaining `settlement-shortlist-workflow` acceptance gap.
+- Leave product defaults unchanged; the calibration warning remains review evidence rather than runtime adaptation.
 
-This does not replace native Desktop acceptance. Map renderer behavior, layout/non-overlap, map/list interaction, and UI responsiveness still require the existing native checks and `analysis-acceptance-strict` log evidence where applicable.
+Validation performed in the patch environment:
+- `python -m pytest -q tests/test_documentation_contracts.py` -> 6 passed.
+- `make check` -> 69 passed, 2 existing PyProj/NumPy warnings.
 
-Validation in the patch-generation environment:
-
-- `python -m pytest -q tests/test_documentation_contracts.py tests/test_archive_contracts.py tests/test_mobile_architecture.py` -> 19 passed.
-- `make check` -> 68 passed, 2 existing PyProj/NumPy warnings.
-- Focused `:desktopApp:jvmTest` was attempted but could not start because the environment could not resolve `services.gradle.org`; Kotlin/Gradle validation remains to be rerun on the configured workstation.
+Not verified here:
+- Native/manual Desktop shortlist workflow acceptance.
+- Android import/share/persistence acceptance.
