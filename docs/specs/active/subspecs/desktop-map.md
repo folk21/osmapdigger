@@ -14,8 +14,9 @@ Implementation complete; acceptance verification pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-This sub-spec is no longer the current coding focus. Its implementation remains verification-pending
-until the remaining acceptance checks are recorded. The active umbrella now points to
+This sub-spec is no longer the current coding focus. Configured Desktop automated tests are recorded
+as complete; its implementation remains verification-pending until the native map acceptance checks are
+recorded. The active umbrella now points to
 [`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md) as the current implementation focus.
 
 The implementation here covers the Desktop part of the existing offline-map requirements without
@@ -211,10 +212,9 @@ Recorded and pending platform evidence belongs in [`../../../TESTS.md`](../../..
 
 ## Remaining acceptance
 
-1. Run the Desktop automated tests on the configured Gradle toolchain.
-2. Verify a full local package renders with external network access disabled.
-3. Verify result markers, selected-settlement highlighting/camera focus, and the data-only-package fallback.
-4. Confirm Intel macOS local rendering or the documented fail-closed analytical fallback.
-5. Record the accepted evidence in the owning test/implementation docs and archive this sub-spec.
+1. Verify a full local package renders with external network access disabled.
+2. Verify result markers, selected-settlement highlighting/camera focus, and the data-only-package fallback.
+3. Confirm Intel macOS local rendering or the documented fail-closed analytical fallback.
+4. Record the accepted evidence in the owning test/implementation docs and archive this sub-spec.
 
 Renderer implementation history is intentionally maintained in the current-state Desktop/mobile documentation, not in this verification-pending spec.

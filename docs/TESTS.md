@@ -253,6 +253,8 @@ make check-all
 
 Use this before accepting a cross-project change when the local toolchain supports all included tasks. The gate runs the network-free Python/repository checks, Desktop JVM tests, shared Android-host KMP tests, and `:androidApp:assembleDebug` so platform-host source cannot remain uncompiled behind an otherwise green configured gate.
 
+Configured P0 evidence has been recorded from a developer workstation after `androidApp` assembly was added to this gate: `make check-all` completed successfully with the Python/repository checks, Desktop JVM tests, shared Android-host tests, and the Android debug application build. This closes configured compilation/test gaps only; real Desktop rendering/browser/save side effects and Android device/emulator import/share/persistence behavior remain separate acceptance evidence.
+
 ## Persisted-format changes
 
 Any change to `geo-format/schema.sql`, `geo-format/VERSION`, or metadata semantics must test both sides of the boundary:

@@ -10,13 +10,14 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Implementation complete; remaining cross-platform validation is tracked as verification pending.
+Implementation complete; remaining Android runtime validation is tracked as verification pending.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-The implementation is no longer the current coding focus. Desktop persistence and restore behavior
-have been exercised successfully; Android runtime validation remains pending before archival. This
-sub-spec continues to document that bounded change until its remaining validation is complete.
+The implementation is no longer the current coding focus. Desktop persistence/restore behavior and the
+configured Android host/build gate have been exercised successfully; Android runtime restore validation
+remains pending before archival. This sub-spec continues to document that bounded change until its
+remaining validation is complete.
 
 ## Feature scope
 
@@ -53,7 +54,7 @@ criteria of the original initial vertical slice.
 
 Application-owned dataset-scoped search-context persistence is implemented on Desktop and Android behind the shared application contract. Generated dataset SQLite remains read-only and separate. Stable schema/migration history and platform wiring belong in [`../../../../mobile/IMPLEMENTATION.md`](../../../../mobile/IMPLEMENTATION.md) and [`../../../IMPLEMENTATION.md`](../../../IMPLEMENTATION.md).
 
-This sub-spec remains `verification-pending` for the remaining Android runtime restore validation.
+This sub-spec remains `verification-pending` only for the remaining Android runtime restore validation; the configured Android host/build gate is complete.
 
 ## Requirement map
 
@@ -196,9 +197,8 @@ Acceptance requires:
 
 ## Remaining acceptance
 
-1. Run the configured Android host/build checks for the current persistence adapter.
-2. Verify on Android that reopening the same dataset restores the saved center/radius/filter context and that opening another dataset does not apply it.
-3. Verify unavailable center and removed-metric restore behavior on the current platform implementation.
-4. Record the accepted evidence in the owning test/implementation docs and archive this sub-spec.
+1. Verify on Android that reopening the same dataset restores the saved center/radius/filter context and that opening another dataset does not apply it.
+2. Verify unavailable center and removed-metric restore behavior on the current platform implementation.
+3. Record the accepted evidence in the owning test/implementation docs and archive this sub-spec.
 
 Completed schema versions, adapter classes, and migration mechanics remain documented in the current-state implementation docs rather than repeated here.

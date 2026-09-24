@@ -16,8 +16,9 @@ Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-
 
 This sub-spec is no longer the current coding focus. The umbrella now points to
 [`settlement-shortlist-workflow.md`](settlement-shortlist-workflow.md). Strict country-scale ranked
-analysis acceptance and the remaining configured Desktop/Android checks still must be recorded before
-this sub-spec can be archived; changing the coding focus does not imply acceptance.
+analysis acceptance and the remaining native Desktop workspace checks still must be recorded before
+this sub-spec can be archived. The configured Desktop/Android `make check-all` gate has been recorded
+in the owning test documentation; changing the coding focus does not imply acceptance.
 
 ## Feature scope
 
@@ -70,7 +71,7 @@ The sub-spec also reuses the application-owned user settings boundary implemente
 
 The map-first Desktop analysis workspace, generic Required/Preferences model, deterministic weighted scoring/ranking, candidate-relative explanation, batch candidate retrieval, preference persistence, map/list selection, and map-driven center selection are implemented. Stable implementation detail belongs in [`../../../IMPLEMENTATION.md`](../../../IMPLEMENTATION.md), [`../../../../mobile/IMPLEMENTATION.md`](../../../../mobile/IMPLEMENTATION.md), [`../../../USAGE.md`](../../../USAGE.md), and [`../../../TESTS.md`](../../../TESTS.md).
 
-This sub-spec remains `verification-pending` only because strict representative country-scale scored acceptance and the remaining configured Desktop/Android checks have not yet been recorded. No new product behavior should be added here merely because those checks are pending.
+This sub-spec remains `verification-pending` only because strict representative country-scale scored acceptance and the remaining native Desktop workspace checks have not yet been recorded. The configured Desktop/Android gate is complete. No new product behavior should be added here merely because those checks are pending.
 
 ## Requirement map
 
@@ -629,9 +630,8 @@ record the measured bottleneck that justifies it.
 ## Remaining acceptance
 
 1. Run the strict country-scale scoring acceptance on a representative generated package with enabled scoring metrics and record candidate count, scoring metric count, batch retrieval time, shared scoring/sort time, and end-to-end latency.
-2. Complete the remaining configured Desktop/Android validation required by the validation section.
-3. Confirm the real Desktop workspace still satisfies map/list selection, Details/explanation, map-driven center, missing-data coverage, and non-overlap constraints on the supported renderers.
-4. Move any newly discovered stable implementation knowledge into the owning current-state documents rather than expanding this spec.
-5. Archive this sub-spec after the required evidence is recorded.
+2. Confirm the real Desktop workspace still satisfies map/list selection, Details/explanation, map-driven center, missing-data coverage, and non-overlap constraints on the supported renderers.
+3. Move any newly discovered stable implementation knowledge into the owning current-state documents rather than expanding this spec.
+4. Archive this sub-spec after the required evidence is recorded.
 
 The implemented call paths, file ownership, UI decomposition, persistence schema history, and performance-report tooling are intentionally documented outside this active spec.
