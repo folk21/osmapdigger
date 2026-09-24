@@ -3,10 +3,16 @@ PATCH
 Added/modified files:
 - PATCH_FILES.txt
 - PATCH_NOTES.md
-- docs/CONFIGURATION.md
-- docs/ROADMAP.md
+- CHANGELOG.md
+- Makefile
 - docs/TESTS.md
-- docs/specs/active/subspecs/settlement-shortlist-workflow.md
+- docs/USAGE.md
+- mobile/README.md
+- mobile/IMPLEMENTATION.md
+- mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/headless/DesktopHeadlessWorkspace.kt
+- mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/headless/HeadlessCli.kt
+- mobile/desktopApp/src/jvmTest/kotlin/com/permieware/osmapdigger/desktop/headless/DesktopHeadlessWorkspaceAcceptanceTest.kt
+- mobile/desktopApp/src/jvmTest/kotlin/com/permieware/osmapdigger/desktop/headless/HeadlessAnalysisAcceptanceTest.kt
 
 Deleted files:
 - none

@@ -162,7 +162,7 @@ make analysis-acceptance
 
 `make analysis-acceptance` prefers a country-scale sample with enabled scoring metrics. If the current installed dataset has no preference defaults, it reports the latest qualifying run as `filter-only` instead of failing. That report validates repository/radius throughput but does not complete ranked-scoring acceptance.
 
-For the strict stage-16 gate after rebuilding/loading a dataset with at least one enabled Preference:
+For the strict stage-16 gate after rebuilding/loading a dataset with at least one enabled Preference, the native Desktop log path remains:
 
 ```bash
 make analysis-acceptance-strict
@@ -177,6 +177,14 @@ make analysis-acceptance \
 ```
 
 A non-zero exit status means no representative sample is available yet. This prevents a small Andorra or zero-preference run from being accidentally recorded as country-scale acceptance evidence. Rapid edits should produce diagnostics only for the latest completed generation; superseded work must not be reported as the accepted measurement. These timings are diagnostic only and must never affect deterministic ranking.
+
+The same strict volume/scoring gate can be exercised without starting Compose by opening the real generated package through `DesktopDataset`/`JdbcGeoRepository` and the same shared `AnalysisWorkspaceController`:
+
+```bash
+make desktop-headless-analysis-acceptance
+```
+
+This target uses a temporary application settings database, defaults to `data/generated/packages/belarus`, requires `ANALYSIS_MIN_CANDIDATES` (1,000 by default), fails when no scoring metric is enabled, and prints a copy-ready Markdown timing/volume record directly from the completed shared analysis generation. Use it as reproducible real-package evidence for the data/application path. It complements rather than replaces `make analysis-acceptance-strict` and the native Desktop workspace/map checks, because headless execution does not validate renderer behavior, layout, list/map interaction, or UI responsiveness.
 
 ## Operational-failure and storage-hardening checks
 

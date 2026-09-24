@@ -275,5 +275,19 @@ make headless-cli HEADLESS_ARGS='--dataset data/generated/packages/belarus --set
 
 Common commands include `import <txt-file>`, `required <metric-id> <min-or-> <max-or->`, `preference <metric-id> <true|false>`, `preference-weight`, `preference-thresholds`, `center`, `radius`, `favorite-add`, `favorite-note`, `favorite-snapshot`, `favorites-to-import`, `batch-search`, and `export`. Import intentionally applies only when every normalized line is uniquely resolved; ambiguous or unresolved rows fail for explicit review instead of being guessed.
 
-The CLI is intended for diagnostics, acceptance scenarios, and CI-style reproduction. It does not replace native smoke checks for MapLibre/JCEF rendering, browser launch, or system save/share dialogs.
+For a strict scored country-scale analysis sample using the same real Desktop JDBC repository and shared workspace controller, run:
+
+```bash
+make desktop-headless-analysis-acceptance
+```
+
+By default this opens `data/generated/packages/belarus`, uses an isolated temporary settings database, requires at least 1,000 repository candidates and at least one enabled Preference, and prints candidate/scoring volumes plus retrieval/shared/end-to-end timings. Override the generated package when needed:
+
+```bash
+make desktop-headless-analysis-acceptance \
+  HEADLESS_ANALYSIS_DATASET=data/generated/packages/<dataset-id> \
+  ANALYSIS_MIN_CANDIDATES=5000
+```
+
+The CLI is intended for diagnostics, acceptance scenarios, and CI-style reproduction. Headless scored acceptance validates the real Desktop data/application path but does not replace native smoke checks for MapLibre/JCEF rendering, browser launch, system save/share dialogs, or visual layout constraints.
 

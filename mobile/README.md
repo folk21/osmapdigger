@@ -147,6 +147,14 @@ Run the real-JDBC/settings acceptance fixture with:
 make desktop-headless-acceptance
 ```
 
+Run strict scored analysis against a representative generated package through the same real JDBC/shared-controller path with:
+
+```bash
+make desktop-headless-analysis-acceptance
+```
+
+The strict headless command uses an isolated temporary settings database, requires at least 1,000 repository candidates and at least one enabled scoring metric by default, and prints a copy-ready timing/volume record. Override `HEADLESS_ANALYSIS_DATASET` or `ANALYSIS_MIN_CANDIDATES` only when the representative dataset scope justifies it. Native map/layout acceptance remains separate.
+
 For ad-hoc automation, pass CLI arguments through the root Make target, for example:
 
 ```bash

@@ -1,4 +1,4 @@
-.PHONY: help check check-all test-python test-mobile test-desktop shortlist-acceptance desktop-headless-acceptance headless-cli analysis-acceptance analysis-acceptance-strict preference-calibration build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
+.PHONY: help check check-all test-python test-mobile test-desktop shortlist-acceptance desktop-headless-acceptance desktop-headless-analysis-acceptance headless-cli analysis-acceptance analysis-acceptance-strict preference-calibration build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
 
 PYTHON ?= python
 GEO_BUILDER_PYTHONPATH = geo-builder/src
@@ -6,6 +6,7 @@ DATASET_CONFIG ?= geo-builder/config/datasets.toml
 METRICS_CONFIG ?= geo-builder/config/metrics.toml
 ANALYSIS_LOG ?= $(HOME)/.osmapdigger/logs/desktop.log
 ANALYSIS_MIN_CANDIDATES ?= 1000
+HEADLESS_ANALYSIS_DATASET ?= data/generated/packages/belarus
 PREFERENCE_CALIBRATION_DATASET ?= data/generated/packages/belarus
 
 help:
@@ -14,6 +15,7 @@ help:
 	@echo "  check-all            Run Python plus configured Kotlin tests"
 	@echo "  shortlist-acceptance        Run the focused cross-layer shortlist workflow acceptance fixture"
 	@echo "  desktop-headless-acceptance Run shortlist acceptance through real Desktop JDBC/settings SQLite"
+	@echo "  desktop-headless-analysis-acceptance Run strict scored analysis against a real generated package"
 	@echo "  headless-cli                Run developer CLI; pass HEADLESS_ARGS='...'"
 	@echo "  analysis-acceptance         Report latest representative Desktop analysis timing"
 	@echo "  analysis-acceptance-strict  Require a representative run with scoring metrics"
@@ -54,6 +56,11 @@ shortlist-acceptance:
 
 desktop-headless-acceptance:
 	cd mobile && ./gradlew :desktopApp:jvmTest --tests "com.permieware.osmapdigger.desktop.headless.DesktopHeadlessWorkspaceAcceptanceTest"
+
+desktop-headless-analysis-acceptance:
+	@settings_dir=$$(mktemp -d); \
+	trap 'rm -rf "$$settings_dir"' EXIT; \
+	cd mobile && ./gradlew :desktopApp:runHeadlessCli --args="--dataset $(abspath $(HEADLESS_ANALYSIS_DATASET)) --settings $$settings_dir/settings.sqlite analysis-acceptance $(ANALYSIS_MIN_CANDIDATES)"
 
 headless-cli:
 	cd mobile && ./gradlew :desktopApp:runHeadlessCli --args='$(HEADLESS_ARGS)'

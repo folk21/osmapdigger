@@ -2,6 +2,7 @@ package com.permieware.osmapdigger.desktop.headless
 
 import com.permieware.osmapdigger.analysis.ImportedCandidateList
 import com.permieware.osmapdigger.analysis.ScoredSettlement
+import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.dataset.GeoRepository
 import com.permieware.osmapdigger.desktop.notebook.FavoriteNotebookZipWriter
 import com.permieware.osmapdigger.desktop.notebook.SqliteFavoriteSettlementRepository
@@ -49,6 +50,7 @@ class DesktopHeadlessWorkspace internal constructor(
     private val preferences: UserPreferencesRepository = SqliteUserPreferencesRepository(settingsDatabase)
     private val favorites = SqliteFavoriteSettlementRepository(settingsDatabase)
     private val providers: ExternalSearchProviderRepository = SqliteExternalSearchProviderRepository.create(settingsDatabase)
+    private var latestAnalysisDiagnostics: SettlementAnalysisDiagnostics? = null
 
     val controller = AnalysisWorkspaceController(
         repository = repository,
@@ -56,6 +58,7 @@ class DesktopHeadlessWorkspace internal constructor(
         scope = scope,
         favoriteSettlements = favorites,
         debounceMillis = 0,
+        onAnalysisDiagnostics = { latestAnalysisDiagnostics = it },
     )
 
     suspend fun initialize(): AnalysisWorkspaceState {
@@ -64,6 +67,16 @@ class DesktopHeadlessWorkspace internal constructor(
     }
 
     suspend fun state(): AnalysisWorkspaceState = awaitSettled()
+
+    /** Run one fresh current-state analysis and return its non-semantic execution diagnostics. */
+    suspend fun runAnalysisDiagnostics(): SettlementAnalysisDiagnostics {
+        awaitSettled()
+        latestAnalysisDiagnostics = null
+        controller.refreshNow()
+        awaitSettled()
+        return latestAnalysisDiagnostics
+            ?: error("No completed ranked-analysis diagnostics are available for the current state.")
+    }
 
     /** Import only uniquely resolved exact settlement names; ambiguous/unresolved rows remain unapplied. */
     suspend fun importCandidates(sourceText: String): HeadlessImportResult {

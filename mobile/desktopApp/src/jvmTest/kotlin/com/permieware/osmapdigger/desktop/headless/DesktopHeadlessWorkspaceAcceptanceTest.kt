@@ -30,6 +30,12 @@ class DesktopHeadlessWorkspaceAcceptanceTest {
         var copiedSettlementIds = emptyList<String>()
 
         openWorkspace(datasetDatabase, settingsDatabase).use { workspace ->
+            val diagnostics = workspace.runAnalysisDiagnostics()
+            assertEquals(4, diagnostics.candidateCount)
+            assertEquals(4, diagnostics.exactEligibleCandidateCount)
+            assertEquals(3, diagnostics.enabledScoringMetricCount)
+            assertEquals(4, diagnostics.resultCount)
+
             val imported = workspace.importCandidates("Альфа\nБета\nГамма")
             assertTrue(imported.applied)
             assertEquals(listOf("alpha", "beta", "gamma"), imported.resolvedSettlementIds)

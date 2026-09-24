@@ -1,16 +1,13 @@
 # PATCH
 
-Record the completed representative Belarus Preference calibration for the current `balanced-living` defaults and narrow `settlement-shortlist-workflow` to genuinely remaining acceptance.
+Add a strict headless real-package ranked-analysis acceptance path for the next P0 Desktop analysis gate.
 
-The recorded Belarus package contains 22,771 settlements. With the current forest thresholds, `forest.distance_km` is 53.4% full quality, 46.4% in transition, and 0.2% at zero quality; no enabled Preference crosses the configured 90% endpoint-saturation warning.
+The new `make desktop-headless-analysis-acceptance` target opens a generated package through the real Desktop package/JDBC adapters and the same shared `AnalysisWorkspaceController` used by Compose. It uses an isolated temporary settings SQLite, requires a representative candidate volume and at least one enabled scoring metric, and prints copy-ready retrieval/shared/end-to-end diagnostics from the completed current analysis generation.
 
-The local Andorra package reported `no such table: metric_preference_default`, so it is explicitly treated as stale relative to the current additive Preference-default contract and must be rebuilt before it can supply independent calibration evidence.
+This does not replace native Desktop acceptance. Map renderer behavior, layout/non-overlap, map/list interaction, and UI responsiveness still require the existing native checks and `analysis-acceptance-strict` log evidence where applicable.
 
-Validation evidence supplied from the configured development workstation:
-- `make shortlist-acceptance` -> BUILD SUCCESSFUL.
-- `make desktop-headless-acceptance` -> BUILD SUCCESSFUL.
-- `make check-all` -> 68 Python tests passed; Desktop and Android host Gradle test tasks BUILD SUCCESSFUL.
-- Belarus `make preference-calibration` -> 22,771 settlements; revised forest distribution 53.4% full / 46.4% transition / 0.2% zero; no enabled metric crossed the 90% saturation warning.
-- Andorra calibration -> blocked by stale local package without `metric_preference_default`; rebuild required.
+Validation in the patch-generation environment:
 
-Validation run again in the patch workspace: `make check` -> 68 passed, 2 existing PyProj/NumPy warnings.
+- `python -m pytest -q tests/test_documentation_contracts.py tests/test_archive_contracts.py tests/test_mobile_architecture.py` -> 19 passed.
+- `make check` -> 68 passed, 2 existing PyProj/NumPy warnings.
+- Focused `:desktopApp:jvmTest` was attempted but could not start because the environment could not resolve `services.gradle.org`; Kotlin/Gradle validation remains to be rerun on the configured workstation.

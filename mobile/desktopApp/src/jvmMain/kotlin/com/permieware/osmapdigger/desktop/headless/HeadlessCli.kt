@@ -1,5 +1,6 @@
 package com.permieware.osmapdigger.desktop.headless
 
+import com.permieware.osmapdigger.analysis.SettlementAnalysisDiagnostics
 import com.permieware.osmapdigger.domain.SearchCondition
 import java.nio.file.Files
 import java.nio.file.Path
@@ -83,6 +84,18 @@ fun main(args: Array<String>) = runBlocking {
                 workspace.exportFavorites(command.destination)
                 println(command.destination.toAbsolutePath())
             }
+            is HeadlessCommand.AnalysisAcceptance -> {
+                val state = workspace.state()
+                val diagnostics = workspace.runAnalysisDiagnostics()
+                validateAnalysisAcceptance(diagnostics, command.minCandidates)
+                println(
+                    renderAnalysisAcceptanceMarkdown(
+                        datasetId = requireNotNull(state.datasetInfo).id,
+                        diagnostics = diagnostics,
+                        minCandidates = command.minCandidates,
+                    ),
+                )
+            }
         }
     }
 }
@@ -128,7 +141,7 @@ private data class HeadlessCliArguments(
         }
 
         private fun usage(): String =
-            "Usage: --dataset <dir> --settings <sqlite> <state|import|import-activate|import-deactivate|import-clear|required|required-remove|preference|preference-weight|preference-thresholds|preference-reset|center|radius|favorite-add|favorite-note|favorite-snapshot|favorite-remove|favorites-clear|favorites-to-import|batch-search|export> ..."
+            "Usage: --dataset <dir> --settings <sqlite> <state|import|import-activate|import-deactivate|import-clear|required|required-remove|preference|preference-weight|preference-thresholds|preference-reset|center|radius|favorite-add|favorite-note|favorite-snapshot|favorite-remove|favorites-clear|favorites-to-import|batch-search|export|analysis-acceptance> ..."
     }
 }
 
@@ -154,6 +167,7 @@ private sealed interface HeadlessCommand {
     data class FavoritesToImport(val settlementIds: Set<String>) : HeadlessCommand
     data class BatchSearch(val providerId: String, val settlementIds: Set<String>) : HeadlessCommand
     data class Export(val destination: Path) : HeadlessCommand
+    data class AnalysisAcceptance(val minCandidates: Int) : HeadlessCommand
 
     companion object {
         fun parse(tokens: List<String>): HeadlessCommand = when (tokens.first()) {
@@ -178,10 +192,46 @@ private sealed interface HeadlessCommand {
             "favorites-to-import" -> FavoritesToImport(tokens.requireArg(1).split(',').filter(String::isNotBlank).toSet())
             "batch-search" -> BatchSearch(tokens.requireArg(1), tokens.requireArg(2).split(',').filter(String::isNotBlank).toSet())
             "export" -> Export(Path(tokens.requireArg(1)))
+            "analysis-acceptance" ->
+                AnalysisAcceptance(tokens.getOrNull(1)?.toInt() ?: DEFAULT_ANALYSIS_MIN_CANDIDATES)
             else -> error("Unknown headless command '${tokens.first()}'")
         }
     }
 }
+
+internal fun validateAnalysisAcceptance(
+    diagnostics: SettlementAnalysisDiagnostics,
+    minCandidates: Int,
+) {
+    require(minCandidates > 0) { "Minimum candidate count must be positive" }
+    check(diagnostics.candidateCount >= minCandidates) {
+        "Headless analysis is not representative: candidates=${diagnostics.candidateCount}, required >= $minCandidates"
+    }
+    check(diagnostics.enabledScoringMetricCount > 0) {
+        "Headless analysis has no enabled scoring metrics. Rebuild/load a package with Preference defaults."
+    }
+}
+
+internal fun renderAnalysisAcceptanceMarkdown(
+    datasetId: String,
+    diagnostics: SettlementAnalysisDiagnostics,
+    minCandidates: Int,
+): String =
+    buildString {
+        appendLine("### Headless ranked-analysis acceptance sample")
+        appendLine()
+        appendLine("- Dataset: `$datasetId`")
+        appendLine("- Candidate threshold: `>= $minCandidates`")
+        appendLine("- Candidates: `${diagnostics.candidateCount}`")
+        appendLine("- Exact-radius eligible: `${diagnostics.exactEligibleCandidateCount}`")
+        appendLine("- Enabled scoring metrics: `${diagnostics.enabledScoringMetricCount}`")
+        appendLine("- Visible results: `${diagnostics.resultCount}`")
+        appendLine("- Batch retrieval: `${"%.3f".format(java.util.Locale.ROOT, diagnostics.batchRetrievalMillis)} ms`")
+        appendLine("- Shared radius/scoring/sort: `${"%.3f".format(java.util.Locale.ROOT, diagnostics.sharedScoringSortMillis)} ms`")
+        append("- End-to-end analysis: `${"%.3f".format(java.util.Locale.ROOT, diagnostics.totalMillis)} ms`")
+    }
+
+private const val DEFAULT_ANALYSIS_MIN_CANDIDATES = 1_000
 
 private fun List<String>.requireArg(index: Int): String = getOrNull(index) ?: error("Missing command argument #$index")
 private fun List<String>.nullableDouble(index: Int): Double? = requireArg(index).takeUnless { it == "-" }?.toDouble()
