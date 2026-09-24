@@ -152,15 +152,17 @@ This ordering protects against a build leaving a half-populated final directory.
 
 ## Package validation
 
-`package.validate_package()` currently checks:
+`package.validate_package()` checks:
 
 - required core files;
 - JSON metadata readability/basic dataset ID access;
 - SQLite integrity;
 - settlement and metric-definition counts;
-- whether a PMTiles file is present.
+- optional metadata-declared PMTiles existence and non-empty content.
 
-It is structural/integrity validation, not cryptographic trust validation.
+Normal staging/data-only validation does not require a map or portable archive. Acceptance/release callers may enable strict validation that requires a declared non-empty PMTiles artifact plus `<dataset-id>.omd.zip`; strict archive validation verifies that the portable ZIP contains the required runtime files and the same-size PMTiles entry as the published directory.
+
+This remains structural/integrity validation, not cryptographic trust validation.
 
 ## Test structure
 

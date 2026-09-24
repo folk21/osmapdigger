@@ -3,11 +3,17 @@ PATCH
 Added/modified files:
 - PATCH_FILES.txt
 - PATCH_NOTES.md
+- CHANGELOG.md
+- Makefile
 - docs/ROADMAP.md
 - docs/TESTS.md
-- docs/specs/active/subspecs/desktop-analysis-workspace.md
-- docs/specs/active/subspecs/desktop-map.md
-- docs/specs/active/subspecs/user-preferences.md
+- docs/USAGE.md
+- docs/specs/active/spec-initial-functional-product.md
+- geo-builder/IMPLEMENTATION.md
+- geo-builder/README.md
+- geo-builder/src/osmapdigger_geo/cli.py
+- geo-builder/src/osmapdigger_geo/package.py
+- geo-builder/tests/test_package.py
 
 Deleted files:
 - none

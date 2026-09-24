@@ -51,17 +51,19 @@ Inspect generated statistics and spot-check settlement/metric content before acc
 
 ## Full package integration
 
-With tilemaker/Docker:
+With tilemaker/Docker, use the full-package acceptance target:
 
 ```bash
-make build-andorra
+make andorra-full-package-acceptance
 ```
 
-Then validate explicitly:
+The target rebuilds the current Andorra package with PMTiles and then runs strict package validation. Strict validation requires the metadata-declared PMTiles file to exist and be non-empty, requires `<dataset-id>.omd.zip`, verifies the required runtime entries inside that archive, and verifies that its PMTiles entry size matches the published PMTiles artifact. This is structural/integrity evidence; it does not prove renderer behavior.
+
+The underlying validator remains available directly:
 
 ```bash
 PYTHONPATH=geo-builder/src python -m osmapdigger_geo.cli validate \
-  data/generated/packages/andorra
+  data/generated/packages/andorra --require-map --require-archive
 ```
 
 Manual map acceptance should confirm:

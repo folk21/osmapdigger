@@ -1,4 +1,4 @@
-.PHONY: help check check-all test-python test-mobile test-desktop shortlist-acceptance desktop-headless-acceptance desktop-headless-analysis-acceptance headless-cli analysis-acceptance analysis-acceptance-strict preference-calibration andorra-calibration-acceptance build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
+.PHONY: help check check-all test-python test-mobile test-desktop shortlist-acceptance desktop-headless-acceptance desktop-headless-analysis-acceptance headless-cli analysis-acceptance analysis-acceptance-strict preference-calibration andorra-calibration-acceptance andorra-full-package-acceptance build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
 
 PYTHON ?= python
 GEO_BUILDER_PYTHONPATH = geo-builder/src
@@ -22,6 +22,7 @@ help:
 	@echo "  analysis-acceptance-strict  Require a representative run with scoring metrics"
 	@echo "  preference-calibration      Report Preference metric/score distributions for a generated dataset"
 	@echo "  andorra-calibration-acceptance Rebuild current Andorra data package and run Preference calibration"
+	@echo "  andorra-full-package-acceptance Build and strictly validate current Andorra full package"
 	@echo "  build-andorra-data   Build SQLite/metadata from local Andorra PBF, skip PMTiles"
 	@echo "  build-andorra        Build full Andorra package including PMTiles"
 	@echo "  build-belarus-data   Build Belarus SQLite/metadata from local PBF, skip PMTiles"
@@ -49,6 +50,9 @@ preference-calibration:
 
 andorra-calibration-acceptance: build-andorra-data
 	$(PYTHON) scripts/preference_calibration_report.py --dataset "$(ANDORRA_ACCEPTANCE_DATASET)"
+
+andorra-full-package-acceptance: build-andorra
+	PYTHONPATH=$(GEO_BUILDER_PYTHONPATH) $(PYTHON) -m osmapdigger_geo.cli validate "$(ANDORRA_ACCEPTANCE_DATASET)" --require-map --require-archive
 
 test-desktop:
 	cd mobile && ./gradlew :core:desktopTest :application:desktopTest :presentation:desktopTest :shared:desktopTest :desktopApp:jvmTest

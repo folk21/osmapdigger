@@ -55,6 +55,14 @@ With tilemaker or Docker available:
 make build-andorra
 ```
 
+For P0 full-package acceptance, prefer the build-and-strict-validate target:
+
+```bash
+make andorra-full-package-acceptance
+```
+
+It requires a non-empty metadata-declared PMTiles artifact and the published portable `.omd.zip`, including the same PMTiles artifact inside the archive. It does not replace native Desktop/Android rendering/import smoke.
+
 Or explicitly choose the backend:
 
 ```bash

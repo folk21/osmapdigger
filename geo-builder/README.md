@@ -74,6 +74,12 @@ PYTHONPATH=geo-builder/src python -m osmapdigger_geo.cli validate \
   data/generated/packages/andorra
 ```
 
+For full-package acceptance with PMTiles and the portable archive required:
+
+```bash
+make andorra-full-package-acceptance
+```
+
 ## Local-data boundary
 
 Source PBF and generated packages live under root `data/` and are ignored by Git. Builder code/configuration must never assume those files are tracked repository fixtures.

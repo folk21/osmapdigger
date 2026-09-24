@@ -42,6 +42,8 @@ def create_parser() -> argparse.ArgumentParser:
 
     validate = sub.add_parser("validate")
     validate.add_argument("package_dir", type=Path)
+    validate.add_argument("--require-map", action="store_true")
+    validate.add_argument("--require-archive", action="store_true")
     return root
 
 
@@ -67,7 +69,13 @@ def main() -> None:
         return
 
     if args.command == "validate":
-        print(validate_package(args.package_dir))
+        print(
+            validate_package(
+                args.package_dir,
+                require_map=args.require_map,
+                require_archive=args.require_archive,
+            )
+        )
         return
 
     raise RuntimeError(f"Unhandled command: {args.command}")

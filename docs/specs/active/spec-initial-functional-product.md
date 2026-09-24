@@ -342,7 +342,7 @@ Use the canonical validation matrix in [`../../TESTS.md`](../../TESTS.md). At mi
 1. `make check` remains the network-free repository gate.
 2. Focused shortlist/headless acceptance targets remain green while the current acceptance-focus sub-spec is open.
 3. `make check-all` provides the configured KMP/Android gate when the local toolchain is available.
-4. `make build-andorra-data` and `make build-andorra` provide representative real PBF/package/PMTiles evidence.
+4. `make build-andorra-data` and `make andorra-full-package-acceptance` provide representative real PBF/package/PMTiles evidence; the latter strictly requires the published PMTiles and portable archive.
 5. Native/manual Desktop and Android checks cover renderer, package import, browser/share, persistence, and visual interaction boundaries that deterministic tests intentionally do not emulate.
 
 Passing a command does not by itself accept unrelated capabilities. Record evidence against the acceptance map and the owning sub-spec.
@@ -354,7 +354,7 @@ Close the initial functional product in this order:
 1. Complete and archive the `CANDIDATES.IMPORT` / `FAVORITES.NOTEBOOK` / `FAVORITES.SNAPSHOTS` / `FAVORITES.EXPORT` / `EXTERNAL.PROPERTY_SEARCH` current-focus sub-spec after representative calibration and native/manual evidence are recorded.
 2. Record strict `ANALYSIS.RANKING` / `PRESENTATION.ANALYSIS_WORKSPACE` country-scale evidence and archive the Desktop analysis workspace sub-spec.
 3. Record `MAP.OFFLINE` / `MAP.RESULTS` Desktop renderer evidence and `SETTINGS.PERSISTENCE` Android restore evidence, then archive those verification-pending sub-specs.
-4. Build and validate the representative real data-only and full packages for `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, and `METRICS.RUNTIME_CONTRACT`.
+4. Build and validate the representative real data-only package and run `make andorra-full-package-acceptance` for `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, and `METRICS.RUNTIME_CONTRACT`.
 5. Exercise the same generated package through `PLATFORM.DESKTOP` and `PLATFORM.ANDROID`, including `DATASET.IMPORT` and offline local search/map behavior.
 6. Confirm package-import safety and repository artifact hygiene, move any newly discovered stable behavior into owning docs, and archive this umbrella only when every blocking acceptance-map row is accepted.
 
