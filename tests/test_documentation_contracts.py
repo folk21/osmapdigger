@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 SPECS = DOCS / "specs"
 ACTIVE = SPECS / "active"
+PLANNED = SPECS / "planned"
 FEATURE_CATALOG = DOCS / "FEATURES.md"
 ROADMAP = DOCS / "ROADMAP.md"
 
@@ -35,6 +36,14 @@ def _frontmatter(path: Path) -> dict[str, str]:
 
 def _active_specs() -> list[Path]:
     return sorted(ACTIVE.rglob("*.md"))
+
+
+def _planned_specs() -> list[Path]:
+    return sorted(PLANNED.rglob("*.md")) if PLANNED.exists() else []
+
+
+def _current_specs() -> list[Path]:
+    return _active_specs() + _planned_specs()
 
 
 def _catalog_feature_ids() -> set[str]:
@@ -75,9 +84,26 @@ def test_active_spec_metadata_and_navigation_are_consistent() -> None:
     assert len(umbrella_specs) == 1, f"Expected one active umbrella spec, found {len(umbrella_specs)}"
 
 
-def test_active_specs_use_only_cataloged_feature_ids() -> None:
+def test_planned_specs_are_non_active_and_navigable() -> None:
+    for path in _planned_specs():
+        metadata = _frontmatter(path)
+        body = path.read_text(encoding="utf-8")
+
+        assert metadata.get("type") == "Specification", f"Unexpected type in {path}"
+        assert metadata.get("document_role") == "subspec", f"Planned spec must be a sub-spec: {path}"
+        assert metadata.get("spec_status") == "planned", f"Unexpected planned-spec status in {path}"
+        parent = metadata.get("parent")
+        assert parent, f"Planned sub-spec has no parent: {path}"
+        assert (path.parent / parent).resolve().is_file(), f"Planned sub-spec parent does not exist: {path} -> {parent}"
+        for heading in ("## Status", "## Feature scope", "## Requirement map", "## Validation"):
+            assert heading in body, f"Missing {heading!r} in {path}"
+
+        assert "current_focus" not in metadata, f"Planned sub-spec must not become current_focus implicitly: {path}"
+
+
+def test_current_specs_use_only_cataloged_feature_ids() -> None:
     catalog = _catalog_feature_ids()
-    for path in _active_specs():
+    for path in _current_specs():
         referenced = set(FEATURE_ID_RE.findall(path.read_text(encoding="utf-8")))
         unknown = sorted(referenced - catalog)
         assert not unknown, f"Unknown feature IDs in {path}: {unknown}"

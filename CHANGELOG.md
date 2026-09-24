@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Add a planned `ANALYSIS.INTERPRETATION` product slice for goal-oriented dimensions, reusable goal profiles, traceable strengths/trade-offs, accessible visual bands, and a deterministic path from raw OSM-derived metrics to practical conclusions without introducing a hidden second score.
+
 - Rework the roadmap and initial-product umbrella around stable Feature IDs, explicit verification-pending gaps, and a concrete P0 closure order; mark the completed shortlist implementation as verification-pending while native/calibration evidence remains.
 
 - Refocus active specifications on normative deltas and acceptance by removing completed implementation histories, moving accepted calibration rationale to owning configuration docs, and making verification-pending specs track only remaining evidence.

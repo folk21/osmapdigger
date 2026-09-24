@@ -51,6 +51,12 @@ remaining acceptance checks are recorded.
 This document remains the active umbrella specification. The linked current-focus sub-spec refines one
 bounded implementation increment and does not replace or supersede the umbrella requirements.
 
+## Planned post-P0 analysis interpretation
+
+A non-blocking follow-up sub-spec is maintained at [`../planned/subspecs/settlement-interpretation-and-goal-profiles.md`](../planned/subspecs/settlement-interpretation-and-goal-profiles.md). It introduces the planned `ANALYSIS.INTERPRETATION` capability: goal-oriented dimensions, explicit goal profiles, traceable strengths/trade-offs, and compact visual semantics over the existing transparent Preference/ranking engine.
+
+This planned work does **not** enlarge the P0 acceptance map above and must not delay archival of the initial functional product once the current acceptance gaps are closed. Promote the planned sub-spec to the active implementation focus only through an explicit roadmap/spec lifecycle change.
+
 ## Goal
 
 Deliver a country-agnostic offline-first application and dataset build pipeline that can:

@@ -71,6 +71,7 @@ Tests and documents must use IDs from this catalog. Do not invent local feature 
 - `ANALYSIS.PREFERENCES` — generic weighted Preference model and dataset-provided default preference parameters. Owner: `mobile/application`. Refines umbrella search/analysis requirements.
 - `ANALYSIS.RANKING` — deterministic normalized quality, weighted coverage, score, and stable ranking of eligible settlements. Owner: `mobile/application`.
 - `ANALYSIS.EXPLANATION` — deterministic score diagnostics and candidate-relative ranking explanations. Owner: `mobile/presentation` over application scoring results.
+- `ANALYSIS.INTERPRETATION` — goal-oriented aggregation of metric qualities into understandable dimensions and traceable practical insights without a hidden second ranking score. Owner: `mobile/application` + `mobile/presentation`, with explicit dataset/runtime configuration where needed.
 - `CANDIDATES.IMPORT` — explicit imported candidate source resolved to stable settlement IDs before analysis. Owner: `mobile/application` + platform import adapters.
 
 ### Favorites, settings, and external discovery

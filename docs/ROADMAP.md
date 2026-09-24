@@ -51,6 +51,24 @@ Active umbrella: [`specs/active/spec-initial-functional-product.md`](specs/activ
 
 Do not start another broad architecture track while these acceptance gaps are open unless a concrete correctness issue blocks them.
 
+## P1 — goal-oriented analysis interpretation
+
+Capability anchors: `ANALYSIS.INTERPRETATION`, `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, `PRESENTATION.ANALYSIS_WORKSPACE`.
+
+Planned sub-spec: [`specs/planned/subspecs/settlement-interpretation-and-goal-profiles.md`](specs/planned/subspecs/settlement-interpretation-and-goal-profiles.md).
+
+The next product-level analysis improvement should make existing metrics easier to understand rather than primarily adding more raw metrics. Planned directions:
+
+- aggregate effective metric qualities into a small set of human-readable dimensions such as nature, everyday services, transport accessibility, seclusion, and environmental comfort;
+- provide explicit goal profiles such as balanced living, nature and quiet, family convenience, and remote retreat;
+- reuse the existing transparent Preference engine when a goal profile affects ranking instead of introducing a second hidden overall score;
+- generate deterministic strengths, trade-offs, and practical conclusions that are traceable back to the exact dimensions and metric evidence that produced them;
+- use compact color/band semantics in ranked-result summaries while keeping text/labels authoritative so color is never the only carrier of meaning;
+- keep missing-data coverage visible and suppress conclusions whose evidence is insufficient;
+- progressively disclose `summary → dimension → contributing metrics` instead of putting every raw metric into the result list.
+
+This work is P1 and does not block the current P0 acceptance closure. The first implementation should remain deterministic and explainable; ML-assisted similarity, personalization, or anomaly detection should be considered only after this evidence model exists and through separate bounded specifications.
+
 ## P1 — dataset experience
 
 Capability anchors: `DATASET.IMPORT`, `DATASET.PACKAGE`, `DATASET.USER_BUILD`, `PLATFORM.DESKTOP`, `PLATFORM.ANDROID`.
@@ -102,6 +120,18 @@ Potential sources:
 - public cadastral/property context where legally and technically available.
 
 Additional sources should enter through builder adapters and versioned metrics rather than bypassing the current SQLite/filter contract.
+
+## P2 — learned decision support
+
+Capability anchors: `ANALYSIS.INTERPRETATION`, `ANALYSIS.RANKING`, `METRICS.RUNTIME_CONTRACT`.
+
+Potential directions after deterministic interpretation is accepted and enough representative data exists:
+
+- settlement similarity and archetype discovery from derived metric vectors;
+- personalized preference learning from explicit Favorites or pairwise choices;
+- OSM completeness/anomaly detection that distinguishes likely missing map data from genuinely absent infrastructure.
+
+Classical interpretable models should be preferred before custom neural networks for tabular metric data. Any learned result must be labeled as inferred, keep provenance/confidence separate from measured facts, and remain explainable enough to trace user-visible recommendations back to input evidence.
 
 ## Deferred
 

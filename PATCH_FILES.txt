@@ -1,10 +1,16 @@
-PATCH: vertical Mermaid diagrams and Desktop screenshot caption
+PATCH
 
-Modified files:
-- README.md
-- docs/ARCHITECTURE.md
-- mobile/README.md
-- geo-builder/README.md
-- docs/specs/active/subspecs/settlement-shortlist-workflow.md
+Added/modified files:
+- PATCH_FILES.txt
+- PATCH_NOTES.md
+- CHANGELOG.md
+- docs/FEATURES.md
+- docs/ROADMAP.md
+- docs/TESTS.md
+- docs/specs/README.md
+- docs/specs/active/spec-initial-functional-product.md
+- docs/specs/planned/subspecs/settlement-interpretation-and-goal-profiles.md
+- tests/test_documentation_contracts.py
 
-Deleted files: none
+Deleted files:
+- docs/specs/planned/user-preferences.md

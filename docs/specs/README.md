@@ -44,7 +44,7 @@ Keep capability identity, changing status, and normative evidence separate:
 - active specifications own normative requirements and the exact remaining evidence for their bounded slice;
 - owning implementation/test documents record accepted current behavior and validation evidence.
 
-When implementation is complete but evidence remains, change the sub-spec to `spec_status: verification-pending` and make it an acceptance focus rather than keeping it artificially `active`. Do not create a new Feature ID merely to express roadmap state or an acceptance phase.
+When implementation is complete but evidence remains, change the sub-spec to `spec_status: verification-pending` and make it an acceptance focus rather than keeping it artificially `active`. A reviewed future slice may live under `docs/specs/planned/` with `spec_status: planned`; planned specs document intent but are not the current implementation contract and must not silently enlarge active acceptance. Do not create a new Feature ID merely to express roadmap state or an acceptance phase.
 
 ## Active tree
 
@@ -66,6 +66,24 @@ Rules:
 - do not create deeper trees without a concrete need.
 
 The current bounded acceptance focus is `settlement-shortlist-workflow`; its implementation is complete and its remaining work is verification evidence. Desktop analysis, Desktop map, and user-preferences sub-specs remain active only because acceptance verification is incomplete.
+
+## Planned tree
+
+Reviewed future slices that are useful to preserve before implementation may live separately:
+
+```text
+planned/
+    subspecs/
+        <future-bounded-slice>.md
+```
+
+Rules:
+
+- planned specs use `spec_status: planned`;
+- a planned spec may reference an active umbrella as its parent, but it does not extend that umbrella's current acceptance gate;
+- planned specs are design intent, not accepted implementation truth and not the current coding focus;
+- before implementation starts, move the selected spec into `active/subspecs/`, change its status to `active`, and update the umbrella `current_focus`/roadmap coherently;
+- do not keep duplicate copies in both planned and active trees.
 
 ## When to create a sub-spec
 
@@ -89,15 +107,16 @@ Do not create a sub-spec for:
 ## Lifecycle
 
 1. Keep the umbrella under `docs/specs/active/spec-*.md`.
-2. Put the current bounded implementation slice under `docs/specs/active/subspecs/`.
-3. Record its parent and lifecycle state in frontmatter.
-4. Keep umbrella `current_focus`, human-readable status, and `docs/specs/README.md` synchronized.
-5. Reference stable feature IDs from `docs/FEATURES.md` in a `Feature scope` section.
-6. Give important normative requirements stable local IDs when tests/reviews need them.
-7. Implement and validate the slice while preserving root/local `AGENTS.md` invariants.
-8. After developer acceptance, move stable behavior into current-state documentation.
-9. Move the completed sub-spec to `docs/specs/archive/subspecs/`.
-10. Archive the umbrella only when its own acceptance target is complete.
+2. A reviewed future slice may start under `docs/specs/planned/subspecs/` with `spec_status: planned`.
+3. When implementation becomes current, move that slice into `docs/specs/active/subspecs/`, set `spec_status: active`, and update umbrella `current_focus`.
+4. Record its parent and lifecycle state in frontmatter.
+5. Keep umbrella `current_focus`, human-readable status, roadmap, and `docs/specs/README.md` synchronized.
+6. Reference stable feature IDs from `docs/FEATURES.md` in a `Feature scope` section.
+7. Give important normative requirements stable local IDs when tests/reviews need them.
+8. Implement and validate the slice while preserving root/local `AGENTS.md` invariants.
+9. After developer acceptance, move stable behavior into current-state documentation.
+10. Move the completed sub-spec to `docs/specs/archive/subspecs/`.
+11. Archive the umbrella only when its own acceptance target is complete.
 
 A specification must exist in exactly one lifecycle location. Archival is a move, not a copy.
 
@@ -131,7 +150,7 @@ Managed documentation uses minimal YAML frontmatter:
 Specifications may additionally use:
 
 - `document_role` — `umbrella` or `subspec`;
-- `spec_status` — `active`, `verification-pending`, or `archived`;
+- `spec_status` — `planned`, `active`, `verification-pending`, or `archived`;
 - `parent` — umbrella path for a sub-spec;
 - `current_focus` — only when an umbrella points to one active implementation sub-spec.
 
@@ -188,6 +207,10 @@ Verification-pending supporting increments:
 - [`active/subspecs/desktop-analysis-workspace.md`](active/subspecs/desktop-analysis-workspace.md) — `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, and `PRESENTATION.ANALYSIS_WORKSPACE`; strict country-scale scoring and remaining configured acceptance checks are pending.
 - [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — `MAP.OFFLINE`, `MAP.RESULTS`, and Desktop renderer behavior; remaining acceptance verification pending.
 - [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — `SETTINGS.PERSISTENCE` for dataset-scoped search context; remaining cross-platform verification pending.
+
+## Planned specifications
+
+- [`planned/subspecs/settlement-interpretation-and-goal-profiles.md`](planned/subspecs/settlement-interpretation-and-goal-profiles.md) — planned `ANALYSIS.INTERPRETATION` layer for goal-oriented dimensions, traceable practical insights, and compact visual summaries over the existing transparent Preference/ranking engine. This is P1 and does not block current P0 acceptance.
 
 ## Recently completed sub-specifications
 
