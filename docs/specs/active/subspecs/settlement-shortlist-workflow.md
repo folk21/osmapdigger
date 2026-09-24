@@ -1,16 +1,16 @@
 ---
 type: Specification
 title: Settlement favorites, import, notebook, and batch actions
-description: Current-focus sub-spec for importing explicit candidate lists, saving ranked settlements as persistent favorites, enriching notebook entries with analysis snapshots, exporting them, and launching batch external searches.
+description: Verification-pending current-focus sub-spec for imported candidate lists, persistent Favorites/notebook workflows, frozen analysis snapshots, export/share, and batch external searches.
 document_role: subspec
-spec_status: active
+spec_status: verification-pending
 parent: ../spec-initial-functional-product.md
 ---
 # Settlement favorites, import, notebook, and batch actions
 
 ## Status
 
-Active product sub-spec; implementation is complete through reviewed candidate import, persistent Favorites/notebook, frozen snapshots, batch external search, portable export/share, deterministic shared acceptance, and real-SQLite Desktop headless acceptance.
+Verification-pending product sub-spec; implementation is complete through reviewed candidate import, persistent Favorites/notebook, frozen snapshots, batch external search, portable export/share, deterministic shared acceptance, and real-SQLite Desktop headless acceptance.
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
@@ -548,7 +548,7 @@ Acceptance requires all of the following:
 16. Stable implementation knowledge is moved into owning implementation/configuration/usage/test docs
     after acceptance before this sub-spec is archived.
 
-## Remaining work
+## Remaining acceptance
 
 1. Rebuild representative Belarus data with the current checked-in Preference defaults and rerun `make preference-calibration`; record whether the revised forest thresholds remove the previous saturation without creating the opposite extreme.
 2. Record representative Andorra calibration evidence so the fixed product defaults have at least one small independent dataset sanity check.

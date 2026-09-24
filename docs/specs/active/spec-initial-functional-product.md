@@ -10,7 +10,7 @@ current_focus: subspecs/settlement-shortlist-workflow.md
 
 ## Status
 
-Active specification — implementation in progress / acceptance pending.
+Active umbrella specification — implementation is largely complete; cross-platform and representative-data acceptance remains pending.
 
 This spec captures the initial product slice discussed before code generation. Much of the implementation now exists, but the spec remains active until real PBF, PMTiles, Desktop, and Android end-to-end validation is completed on a configured workstation.
 
@@ -32,9 +32,9 @@ This umbrella owns the initial offline product target across these stable capabi
 
 Current and verification-pending sub-specs refine additional analysis, Favorites, settings, and presentation features under this umbrella. Feature identifiers are defined in [`../../FEATURES.md`](../../FEATURES.md).
 
-## Active implementation focus
+## Current acceptance focus
 
-Current implementation sub-spec:
+Current acceptance sub-spec:
 
 - [`subspecs/settlement-shortlist-workflow.md`](subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate lists, frozen analysis snapshots, export/share, and batch external searches.
 
@@ -68,7 +68,22 @@ The first production-oriented package is expected to cover Belarus. The reposito
 
 Most of the initial vertical slice is implemented. Stable architecture, package/build behavior, runtime wiring, configuration, and test commands are documented in the owning current-state documents rather than duplicated here.
 
-This umbrella remains active because acceptance still requires representative real PBF/PMTiles generation plus the remaining native/manual Desktop and Android end-to-end checks. The current bounded product focus is the linked settlement-shortlist sub-spec.
+This umbrella remains active because acceptance still requires representative real PBF/PMTiles generation plus the remaining native/manual Desktop and Android end-to-end checks. The current bounded acceptance focus is the linked settlement-shortlist sub-spec.
+
+## Acceptance map
+
+The table below is the umbrella-level acceptance index. Stable capability identity comes from [`../../FEATURES.md`](../../FEATURES.md); detailed acceptance steps remain in the owning sub-spec or [`../../TESTS.md`](../../TESTS.md).
+
+| Capability | Feature IDs | Current state | Remaining umbrella evidence | Owning acceptance source |
+|---|---|---|---|---|
+| Dataset build, format, metrics, and package publication | `DATASET.SCOPE`, `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, `METRICS.GENERATION`, `METRICS.RUNTIME_CONTRACT` | implementation complete / verification-pending | Build and validate representative real data-only and full packages, including non-empty PMTiles and additive dynamic-metric behavior | this umbrella + `docs/TESTS.md` |
+| Search and analysis | `SEARCH.FILTERING`, `SEARCH.DESCRIPTION`, `SEARCH.RADIUS`, `SEARCH.SETTLEMENTS`, `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, `PRESENTATION.ANALYSIS_WORKSPACE` | implementation complete / verification-pending | Strict country-scale scored acceptance plus remaining configured Desktop/native interaction evidence | `subspecs/desktop-analysis-workspace.md` |
+| Shortlist research workflow | `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `EXTERNAL.PROPERTY_SEARCH` | implementation complete / verification-pending supporting refinement | Representative calibration and native/manual Desktop/Android workflow evidence before its sub-spec is archived | `subspecs/settlement-shortlist-workflow.md` |
+| Offline Desktop map | `MAP.OFFLINE`, `MAP.RESULTS`, `PLATFORM.DESKTOP` | implementation complete / verification-pending | Full-package offline rendering, result/selection focus, data-only fallback, and supported renderer/fallback evidence | `subspecs/desktop-map.md` |
+| Mutable user state | `SETTINGS.PERSISTENCE` | implementation complete / verification-pending | Android restore/isolation behavior, including unavailable center and removed-metric cases | `subspecs/user-preferences.md` |
+| Android package/runtime path | `DATASET.IMPORT`, `PLATFORM.ANDROID`, `PLATFORM.KMP`, `RUNTIME.OFFLINE_FIRST` | implementation complete / verification-pending | Import the same generated package and prove local filtering/map behavior without a backend | this umbrella + `docs/TESTS.md` |
+| Deterministic local validation | `TESTING.DETERMINISTIC_LOCAL` | accepted baseline | Keep canonical/focused gates green while collecting the configured evidence above | `docs/TESTS.md` |
+| Physical KMP architecture | `PLATFORM.MODULAR_KMP` | accepted | No remaining evidence for the archived hardening scope | archived hardening sub-spec + current architecture docs |
 
 ## Requirement map
 
@@ -316,28 +331,25 @@ Before changing format semantics, inspect both Python writers and Android/Deskto
 
 ## Validation
 
-Acceptance requires all of the following on a configured development workstation:
+Use the canonical validation matrix in [`../../TESTS.md`](../../TESTS.md). At minimum, acceptance evidence is layered as follows:
 
-1. `make check` passes.
-2. `make build-andorra-data` produces a valid real SQLite package from the local Andorra PBF.
-3. `make build-andorra` produces a non-empty PMTiles artifact and validates the package.
-4. Desktop opens that generated package, displays the map, loads dynamic filters, executes multi-condition search, and selects/details a result.
-5. Android builds and imports the same `.omd.zip`, then performs local filtering/map display.
-6. A configured additive test metric/category can appear without shared UI source modification.
-7. `git status` remains clean with raw/generated geographic data present locally.
-8. ZIP traversal tests or manual hostile-entry checks confirm package import boundaries.
+1. `make check` remains the network-free repository gate.
+2. Focused shortlist/headless acceptance targets remain green while the current acceptance-focus sub-spec is open.
+3. `make check-all` provides the configured KMP/Android gate when the local toolchain is available.
+4. `make build-andorra-data` and `make build-andorra` provide representative real PBF/package/PMTiles evidence.
+5. Native/manual Desktop and Android checks cover renderer, package import, browser/share, persistence, and visual interaction boundaries that deterministic tests intentionally do not emulate.
 
-Detailed commands belong in [`../../TESTS.md`](../../TESTS.md).
+Passing a command does not by itself accept unrelated capabilities. Record evidence against the acceptance map and the owning sub-spec.
 
 ## Remaining acceptance
 
-Remaining umbrella work is acceptance-oriented:
+Close the initial functional product in this order:
 
-1. build and validate a representative real data-only package from the checked-in pipeline;
-2. build a full package with non-empty PMTiles and verify style/source-layer compatibility;
-3. exercise the generated package on Desktop with local search, details, map, and offline operation;
-4. build/import the same package on Android and verify the local filtering/map path;
-5. verify package-import safety and repository artifact hygiene;
-6. record the accepted evidence in the owning test/implementation documents and archive this umbrella only when the complete vertical slice is accepted.
+1. Complete and archive the `CANDIDATES.IMPORT` / `FAVORITES.NOTEBOOK` / `FAVORITES.SNAPSHOTS` / `FAVORITES.EXPORT` / `EXTERNAL.PROPERTY_SEARCH` current-focus sub-spec after representative calibration and native/manual evidence are recorded.
+2. Record strict `ANALYSIS.RANKING` / `PRESENTATION.ANALYSIS_WORKSPACE` country-scale evidence and archive the Desktop analysis workspace sub-spec.
+3. Record `MAP.OFFLINE` / `MAP.RESULTS` Desktop renderer evidence and `SETTINGS.PERSISTENCE` Android restore evidence, then archive those verification-pending sub-specs.
+4. Build and validate the representative real data-only and full packages for `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, and `METRICS.RUNTIME_CONTRACT`.
+5. Exercise the same generated package through `PLATFORM.DESKTOP` and `PLATFORM.ANDROID`, including `DATASET.IMPORT` and offline local search/map behavior.
+6. Confirm package-import safety and repository artifact hygiene, move any newly discovered stable behavior into owning docs, and archive this umbrella only when every blocking acceptance-map row is accepted.
 
-Exact commands and the current validation matrix belong in [`../../TESTS.md`](../../TESTS.md).
+Exact commands and the current validation matrix belong in [`../../TESTS.md`](../../TESTS.md); the changing cross-feature closure order belongs in [`../../ROADMAP.md`](../../ROADMAP.md).

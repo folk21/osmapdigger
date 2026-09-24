@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Rework the roadmap and initial-product umbrella around stable Feature IDs, explicit verification-pending gaps, and a concrete P0 closure order; mark the completed shortlist implementation as verification-pending while native/calibration evidence remains.
+
 - Refocus active specifications on normative deltas and acceptance by removing completed implementation histories, moving accepted calibration rationale to owning configuration docs, and making verification-pending specs track only remaining evidence.
 
 - Introduce a stable `docs/FEATURES.md` capability vocabulary, align active specifications around explicit feature scope and requirement maps, and strengthen repository agent/documentation rules for source ownership, validation, and spec lifecycle.

@@ -9,6 +9,7 @@ DOCS = ROOT / "docs"
 SPECS = DOCS / "specs"
 ACTIVE = SPECS / "active"
 FEATURE_CATALOG = DOCS / "FEATURES.md"
+ROADMAP = DOCS / "ROADMAP.md"
 
 FEATURE_ID_RE = re.compile(r"`([A-Z][A-Z0-9_]*(?:\.[A-Z0-9_]+)+)`")
 CATALOG_LINE_RE = re.compile(r"^- `([A-Z][A-Z0-9_]*(?:\.[A-Z0-9_]+)+)`\s+—")
@@ -93,3 +94,21 @@ def test_verification_pending_specs_track_acceptance_not_implementation_history(
         if metadata.get("spec_status") == "verification-pending":
             assert "## Remaining acceptance" in body, f"Verification-pending spec lacks remaining acceptance: {path}"
             assert "## Implementation tasks" not in body, f"Verification-pending spec keeps completed implementation tasks: {path}"
+
+
+def test_roadmap_uses_only_cataloged_feature_ids() -> None:
+    catalog = _catalog_feature_ids()
+    referenced = set(FEATURE_ID_RE.findall(ROADMAP.read_text(encoding="utf-8")))
+    unknown = sorted(referenced - catalog)
+    assert not unknown, f"Unknown feature IDs in {ROADMAP}: {unknown}"
+
+
+def test_feature_oriented_acceptance_navigation_is_present() -> None:
+    roadmap = ROADMAP.read_text(encoding="utf-8")
+    umbrella = (ACTIVE / "spec-initial-functional-product.md").read_text(encoding="utf-8")
+
+    for heading in ("## Current position", "## P0 — initial functional product acceptance", "### Acceptance map", "### P0 closure order"):
+        assert heading in roadmap, f"Roadmap lacks feature-oriented acceptance navigation: {heading}"
+
+    assert "## Acceptance map" in umbrella, "Umbrella spec lacks a feature-oriented acceptance map"
+    assert "## Remaining acceptance" in umbrella, "Umbrella spec lacks closure-oriented remaining acceptance"

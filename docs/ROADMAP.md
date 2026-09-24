@@ -1,61 +1,98 @@
 ---
 type: Roadmap
 title: Roadmap
-description: Compact product roadmap and current implementation focus.
+description: Feature-oriented product roadmap, acceptance gaps, and next bounded increments.
 ---
 # Roadmap
 
-This roadmap stays intentionally compact. Detailed requirements for significant active work belong in [`specs/`](specs/README.md).
-Stable capability names used below are defined in [`FEATURES.md`](FEATURES.md); roadmap entries reuse those IDs instead of inventing stage-specific feature codes.
+This roadmap is the changing status/navigation view of OsmapDigger capabilities. Stable capability identity belongs in [`FEATURES.md`](FEATURES.md); normative change requirements belong in [`specs/`](specs/README.md); accepted implementation detail belongs in the owning architecture/implementation documents.
 
-## P0 — accept the initial functional vertical slice
+Do not add acceptance state to `FEATURES.md`. Feature IDs remain stable while roadmap/spec status changes over time.
 
-Active spec: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
+## Current position
 
-Architecture note: the KMP architecture-hardening track is complete and archived; the runtime now separates `:core`, headless `:application`, deterministic `:presentation`, shared Compose/map runtime `:shared`, and platform hosts with an enforced acyclic Gradle DAG.
+The initial functional product is implementation-heavy and acceptance-oriented rather than greenfield. The KMP architecture-hardening track is accepted and archived: `PLATFORM.MODULAR_KMP` now enforces the `:core` → `:application` → `:presentation` → `:shared` direction with platform hosts above shared contracts.
 
-Current implementation focus: [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md) — `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `ANALYSIS.EXPLANATION`, and `EXTERNAL.PROPERTY_SEARCH`.
-Candidate-source core/workflow, visual ranked affordances, persistent dataset-scoped Favorites, explicit selected-Favorites transfer back into imported candidates, notebook notes/frozen analysis snapshots, explicit bounded batch external search, and portable deterministic export/share are implemented. A focused shared acceptance fixture now locks the cross-feature shortlist contract. Deterministic calibration-report tooling reads generated runtime databases; representative dataset evidence and configured/manual Desktop/Android acceptance remain before archival.
+The current acceptance focus is [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md). Its implementation and automated shared/headless acceptance are complete; representative calibration plus native/manual Desktop/Android evidence remain before archival.
 
-Completed architecture track: [`specs/archive/subspecs/kmp-modular-architecture-hardening.md`](specs/archive/subspecs/kmp-modular-architecture-hardening.md) — `PLATFORM.MODULAR_KMP` gates 1–7 are accepted and archived; future structural work should use a new bounded specification when a concrete need appears.
+`desktop-analysis-workspace`, `desktop-map`, and `user-preferences` are also verification-pending. They remain separate because changing the current focus does not implicitly accept their configured/manual evidence.
 
-Previously implemented Desktop analysis workspace, Desktop map, and user-preference increments remain verification-pending; changing the coding focus does not mark their acceptance complete.
+Status vocabulary used below:
 
-Acceptance requires a configured workstation to demonstrate:
+- **accepted** — required evidence has been recorded and no active spec remains for that slice;
+- **verification-pending** — implementation exists, but required configured/manual/representative evidence is still missing;
+- **planned** — a likely next capability direction without an active implementation commitment;
+- **deferred** — intentionally outside the current roadmap horizon.
 
-- real Andorra PBF -> valid SQLite;
-- real Andorra PBF -> PMTiles;
-- Desktop opening/searching/filtering/map overlay;
-- Android importing the same `.omd.zip` and performing local search/map display;
-- dynamic metrics appearing without category-specific shared UI code;
-- package data staying outside Git.
+## P0 — initial functional product acceptance
+
+Active umbrella: [`specs/active/spec-initial-functional-product.md`](specs/active/spec-initial-functional-product.md).
+
+### Acceptance map
+
+| Capability | Feature IDs | State | Remaining acceptance gap | Next evidence |
+|---|---|---|---|---|
+| Dataset build, format, metrics, and package publication | `DATASET.SCOPE`, `DATASET.BUILD`, `DATASET.PACKAGE`, `FORMAT.GEODATA`, `METRICS.GENERATION`, `METRICS.RUNTIME_CONTRACT` | verification-pending | Representative real package generation and final PMTiles/package compatibility evidence | Build/validate current Andorra data-only and full packages; record additive-metric/runtime-contract evidence |
+| Search, preferences, ranking, and analysis workspace | `SEARCH.FILTERING`, `SEARCH.DESCRIPTION`, `SEARCH.RADIUS`, `SEARCH.SETTLEMENTS`, `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, `PRESENTATION.ANALYSIS_WORKSPACE` | verification-pending | Strict country-scale scored acceptance plus remaining configured Desktop/native workflow checks | Run strict analysis acceptance on a representative scoring-enabled package and archive `desktop-analysis-workspace` after evidence is recorded |
+| Shortlist, Favorites, export, and external discovery | `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `EXTERNAL.PROPERTY_SEARCH` | verification-pending | Representative Belarus/Andorra calibration and native/manual Desktop/Android workflow evidence | Complete the current shortlist acceptance checklist, move stable findings to owning docs, then archive the sub-spec |
+| Offline Desktop map and result interaction | `MAP.OFFLINE`, `MAP.RESULTS`, `PLATFORM.DESKTOP` | verification-pending | Offline full-package rendering, marker/focus behavior, data-only fallback, and Intel macOS renderer/fallback evidence | Run configured Desktop map smoke and archive `desktop-map` after evidence is recorded |
+| Mutable user state | `SETTINGS.PERSISTENCE` | verification-pending | Android restore/isolation behavior including unavailable center and removed metrics | Run Android persistence acceptance and archive `user-preferences` |
+| Android package/runtime path | `DATASET.IMPORT`, `PLATFORM.ANDROID`, `PLATFORM.KMP`, `RUNTIME.OFFLINE_FIRST` | verification-pending | Import the same generated `.omd.zip`, then prove local filtering/map behavior without a backend | Build/import the representative package on Android and record local search/map evidence |
+| Deterministic repository validation | `TESTING.DETERMINISTIC_LOCAL` | accepted | No P0 gap in the default network-free gate; feature-specific configured evidence still remains above | Keep `make check`, focused acceptance targets, and `make check-all` green while closing the remaining rows |
+| Physical KMP architecture | `PLATFORM.MODULAR_KMP` | accepted | None for the archived hardening scope | Create a new bounded spec only when a concrete structural requirement justifies more architecture work |
+
+### P0 closure order
+
+1. Finish `settlement-shortlist-workflow` calibration/native acceptance and archive it.
+2. Record strict country-scale analysis evidence and close `desktop-analysis-workspace`.
+3. Close `desktop-map` and `user-preferences` configured/manual acceptance.
+4. Build the representative real full package, exercise the same package on Desktop and Android, and close the remaining umbrella dataset/import/offline-runtime evidence.
+5. Move any newly discovered stable behavior into owning docs and archive `spec-initial-functional-product` only when every blocking row above is accepted.
+
+Do not start another broad architecture track while these acceptance gaps are open unless a concrete correctness issue blocks them.
 
 ## P1 — dataset experience
 
+Capability anchors: `DATASET.IMPORT`, `DATASET.PACKAGE`, `DATASET.USER_BUILD`, `PLATFORM.DESKTOP`, `PLATFORM.ANDROID`.
+
+Planned directions:
+
 - installed-dataset manager instead of one current dataset;
-- package metadata/details screen;
-- explicit package compatibility/error UX;
+- package metadata/details and explicit compatibility/error UX;
 - Desktop workflow for selecting a local PBF/config and invoking the Python builder with progress/logging;
 - optional smaller-region package creation from a large local source.
 
+Create new Feature IDs only when a bounded spec makes a durable capability distinct from the existing anchors above.
+
 ## P1 — map quality
+
+Capability anchors: `MAP.OFFLINE`, `MAP.RESULTS`, `PRESENTATION.LOCALIZATION`.
+
+Planned directions:
 
 - richer vector style;
 - offline labels/glyph strategy;
 - icons/sprites where needed;
 - better layer visibility by zoom;
-- selected/result marker interactions;
-- map-driven center selection.
+- richer selected/result marker interactions and map-driven analysis affordances.
 
 ## P1 — user workflow
 
-The active Favorites/import/notebook sub-spec covers favorites-style notebook entries, notes, imported settlement candidate lists, batch external search, and portable export/share, interleaved with bounded KMP architecture-hardening checkpoints. Follow-up P1 work remains:
+Capability anchors: `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `FAVORITES.NOTEBOOK`, `SETTINGS.PERSISTENCE`.
+
+Planned directions after the current shortlist slice is accepted:
 
 - named saved filters/searches;
 - richer comparison of multiple settlements;
 - reusable named preference profiles.
 
+These concepts do not receive new Feature IDs until a concrete spec establishes stable ownership and semantics.
+
 ## P2 — additional data sources
+
+Capability anchors: `METRICS.GENERATION`, `METRICS.RUNTIME_CONTRACT`, `FORMAT.GEODATA`.
+
+Potential sources:
 
 - elevation and slope;
 - flood/hydrology risk;
@@ -64,9 +101,11 @@ The active Favorites/import/notebook sub-spec covers favorites-style notebook en
 - pollution/environmental sources;
 - public cadastral/property context where legally and technically available.
 
-Additional data sources should enter through builder adapters and versioned metrics rather than bypassing the current SQLite/filter contract.
+Additional sources should enter through builder adapters and versioned metrics rather than bypassing the current SQLite/filter contract.
 
 ## Deferred
+
+Deferred until a concrete product requirement justifies a bounded spec:
 
 - cloud account/sync;
 - LLM-driven query parsing;

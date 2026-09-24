@@ -35,6 +35,17 @@ Do not invent feature IDs in tests, code comments, documentation, or specificati
 
 Requirement IDs are local to their specification. They remain stable while that specification is active and when it is archived, but they must not be reused as repository-wide feature vocabulary.
 
+## Roadmap and acceptance status
+
+Keep capability identity, changing status, and normative evidence separate:
+
+- [`../FEATURES.md`](../FEATURES.md) owns stable Feature IDs and must not carry transient implementation/acceptance status;
+- [`../ROADMAP.md`](../ROADMAP.md) owns the compact cross-feature view of current state, acceptance gaps, closure order, and future directions;
+- active specifications own normative requirements and the exact remaining evidence for their bounded slice;
+- owning implementation/test documents record accepted current behavior and validation evidence.
+
+When implementation is complete but evidence remains, change the sub-spec to `spec_status: verification-pending` and make it an acceptance focus rather than keeping it artificially `active`. Do not create a new Feature ID merely to express roadmap state or an acceptance phase.
+
 ## Active tree
 
 Keep the active tree shallow:
@@ -49,12 +60,12 @@ active/
 Rules:
 
 - the umbrella defines the active product/system target;
-- one sub-spec is the current implementation focus;
+- one sub-spec is the current implementation or acceptance focus;
 - other sub-specs may remain active only while they define unresolved supporting or verification-pending constraints;
 - completing one sub-spec does not complete the umbrella;
 - do not create deeper trees without a concrete need.
 
-The current bounded product focus is `settlement-shortlist-workflow`. Desktop analysis, Desktop map, and user-preferences sub-specs remain active only because acceptance verification is incomplete.
+The current bounded acceptance focus is `settlement-shortlist-workflow`; its implementation is complete and its remaining work is verification evidence. Desktop analysis, Desktop map, and user-preferences sub-specs remain active only because acceptance verification is incomplete.
 
 ## When to create a sub-spec
 
@@ -168,7 +179,7 @@ Umbrella:
 
 - [`active/spec-initial-functional-product.md`](active/spec-initial-functional-product.md) — initial country-agnostic offline dataset builder + KMP Desktop/Android product umbrella.
 
-Current implementation focus:
+Current acceptance focus:
 
 - [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `ANALYSIS.EXPLANATION`, and `EXTERNAL.PROPERTY_SEARCH` workflow.
 
