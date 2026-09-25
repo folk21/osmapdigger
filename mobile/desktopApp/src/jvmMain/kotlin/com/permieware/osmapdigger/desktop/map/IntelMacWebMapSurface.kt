@@ -38,15 +38,10 @@ import javax.swing.JPanel
  * and local tile-serving concerns inside the Desktop host while reusing the same package style,
  * PMTiles artifact, result GeoJSON, and selected-settlement semantics as the native renderers.
  */
-class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeable {
+class IntelMacWebMapSurface private constructor(
+    private val cefRuntime: Result<CefRuntime>,
+) : PlatformMapSurface, Closeable {
     private val sessions = mutableSetOf<WebMapSession>()
-    private val cefRuntime: Result<CefRuntime> by lazy(LazyThreadSafetyMode.SYNCHRONIZED) {
-        runCatching {
-            DesktopDiagnostics.measure("jcef.init") { CefRuntime.create() }
-        }.onFailure { failure ->
-            DesktopDiagnostics.error("jcef.init", "JCEF initialization failed", failure)
-        }
-    }
 
     @Composable
     override fun Render(
@@ -68,7 +63,7 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
             return
         }
 
-        val runtimeResult = remember { cefRuntime }
+        val runtimeResult = cefRuntime
         val runtime = runtimeResult.getOrNull()
         if (runtime == null) {
             val failure = runtimeResult.exceptionOrNull()
@@ -141,12 +136,48 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
     }
 
     companion object {
-        /** Return the Intel-only renderer without changing behavior on other Desktop hosts. */
+        private const val DISABLE_ENV = "OSMAPDIGGER_DISABLE_INTEL_JCEF"
+
+        /**
+         * Prepare the Intel-only renderer before Compose/AWT application startup.
+         *
+         * JCEF performs macOS-specific native startup while loading `libjcef.dylib`. Keeping that
+         * bootstrap ahead of the Compose application event loop avoids dynamically installing the
+         * JCEF `NSApplication` hooks after AWT/AppKit dispatch has already started.
+         */
         fun createIfSupported(
             osName: String = System.getProperty("os.name"),
             osArch: String = System.getProperty("os.arch"),
-        ): IntelMacWebMapSurface? =
-            if (isSupportedHost(osName, osArch)) IntelMacWebMapSurface() else null
+            explicitlyDisabled: Boolean = isExplicitlyDisabled(),
+        ): IntelMacWebMapSurface? {
+            if (!shouldUseRenderer(osName, osArch, explicitlyDisabled)) {
+                if (isSupportedHost(osName, osArch) && explicitlyDisabled) {
+                    DesktopDiagnostics.warn(
+                        "jcef.bootstrap",
+                        "Intel macOS JCEF renderer disabled by $DISABLE_ENV",
+                    )
+                }
+                return null
+            }
+
+            DesktopDiagnostics.info(
+                "jcef.bootstrap",
+                "Pre-initializing Intel macOS JCEF before Compose/AWT application startup",
+            )
+            val runtimeResult =
+                runCatching {
+                    DesktopDiagnostics.measure("jcef.init") { CefRuntime.create() }
+                }.onFailure { failure ->
+                    DesktopDiagnostics.error("jcef.init", "JCEF initialization failed", failure)
+                }
+            return IntelMacWebMapSurface(runtimeResult)
+        }
+
+        internal fun shouldUseRenderer(
+            osName: String,
+            osArch: String,
+            explicitlyDisabled: Boolean,
+        ): Boolean = isSupportedHost(osName, osArch) && !explicitlyDisabled
 
         internal fun isSupportedHost(
             osName: String,
@@ -156,6 +187,12 @@ class IntelMacWebMapSurface private constructor() : PlatformMapSurface, Closeabl
             val arch = osArch.lowercase()
             return os == "mac os x" && (arch == "x86_64" || arch == "amd64")
         }
+
+        private fun isExplicitlyDisabled(): Boolean =
+            System.getenv(DISABLE_ENV)
+                ?.trim()
+                ?.lowercase()
+                .let { it == "1" || it == "true" || it == "yes" || it == "on" }
     }
 }
 

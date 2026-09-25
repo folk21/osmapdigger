@@ -9,6 +9,8 @@ All notable changes are documented here.
 
 ## Unreleased
 
+- Harden Intel macOS JCEF startup by preparing the native runtime before Compose/AWT application startup, add an explicit renderer-disable safe mode, and protect the startup-order contract after repeated native `libjcef.dylib` crashes.
+
 - Add strict full-package acceptance validation for current Andorra builds, requiring a non-empty metadata-declared PMTiles artifact and a portable archive that contains the same runtime map artifact before native Desktop/Android smoke.
 
 - Strengthen `make check-all` so the configured repository gate also assembles the real `androidApp`, preventing Android platform adapters from remaining uncompiled while shared Android-host tests are green.

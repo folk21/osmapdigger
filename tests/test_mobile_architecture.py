@@ -362,3 +362,18 @@ def test_gate5_entry_point_hotspots_stay_below_source_review_threshold() -> None
         if path.stat().st_size > 20 * 1024
     }
     assert oversized == {}, f"Gate 5 entry points exceeded the 20 KiB responsibility review threshold: {oversized}"
+
+
+def test_intel_mac_jcef_bootstraps_before_compose_application_startup() -> None:
+    main_source = (
+        REPO_ROOT
+        / "mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/Main.kt"
+    ).read_text(encoding="utf-8")
+
+    bootstrap = main_source.index("IntelMacWebMapSurface.createIfSupported()")
+    compose_application = main_source.index("\n    application {")
+
+    assert bootstrap < compose_application, (
+        "Intel macOS JCEF must initialize before Compose/AWT application startup; "
+        "late libjcef loading can race with the active AppKit event loop."
+    )

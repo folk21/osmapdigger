@@ -3,9 +3,16 @@ PATCH
 Added/modified files:
 - PATCH_FILES.txt
 - PATCH_NOTES.md
+- CHANGELOG.md
 - docs/ROADMAP.md
 - docs/TESTS.md
-- docs/specs/active/spec-initial-functional-product.md
+- docs/USAGE.md
+- docs/specs/active/subspecs/desktop-map.md
+- mobile/IMPLEMENTATION.md
+- mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/Main.kt
+- mobile/desktopApp/src/jvmMain/kotlin/com/permieware/osmapdigger/desktop/map/IntelMacWebMapSurface.kt
+- mobile/desktopApp/src/jvmTest/kotlin/com/permieware/osmapdigger/desktop/map/IntelMacWebMapSurfaceTest.kt
+- tests/test_mobile_architecture.py
 
 Deleted files:
 - none

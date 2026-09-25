@@ -172,6 +172,15 @@ The analysis sidebar is resizable on wide Desktop windows and defaults to roughl
 
 Native-supported Desktop hosts use MapLibre Compose; Intel macOS uses the local JCEF web renderer; other unsupported hosts keep the analytical fallback. Supported map renderers show a metric scale in the bottom-right corner. Ranked settlement markers show their settlement names when space/zoom permits, with the selected settlement label kept visually prominent. Clicking a ranked settlement marker selects the same result shown in the left list and opens its lower summary. **Pick center on map** is different: click anywhere on the map and OsmapDigger selects the geographically nearest settlement from the complete dataset as the search center. The chosen settlement name appears in Search area, and existing radius, persistence, and automatic recalculation semantics are reused.
 
+On Intel macOS, JCEF is initialized before Compose/AWT application startup. If native JCEF startup needs to be bypassed for diagnostics or to keep the analytical workflow available while investigating a platform crash, start Desktop with:
+
+```bash
+export OSMAPDIGGER_DISABLE_INTEL_JCEF=1
+make run-desktop
+```
+
+That switch disables only the Intel macOS JCEF renderer; dataset loading, filtering, ranking, Favorites, and other non-map workflows remain available through the normal analytical fallback.
+
 ## Review Preference calibration
 
 The checked-in `balanced-living` defaults are fixed product heuristics. Before changing their target, limit, or weight values, inspect a representative generated runtime database:

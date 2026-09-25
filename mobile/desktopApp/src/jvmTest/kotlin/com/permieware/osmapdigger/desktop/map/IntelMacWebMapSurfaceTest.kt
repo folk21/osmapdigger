@@ -13,4 +13,29 @@ class IntelMacWebMapSurfaceTest {
         assertFalse(IntelMacWebMapSurface.isSupportedHost("Linux", "x86_64"))
         assertFalse(IntelMacWebMapSurface.isSupportedHost("Windows 11", "amd64"))
     }
+
+    @Test
+    fun rendererCanBeExplicitlyDisabledOnIntelMac() {
+        assertFalse(
+            IntelMacWebMapSurface.shouldUseRenderer(
+                osName = "Mac OS X",
+                osArch = "x86_64",
+                explicitlyDisabled = true,
+            ),
+        )
+        assertTrue(
+            IntelMacWebMapSurface.shouldUseRenderer(
+                osName = "Mac OS X",
+                osArch = "x86_64",
+                explicitlyDisabled = false,
+            ),
+        )
+        assertFalse(
+            IntelMacWebMapSurface.shouldUseRenderer(
+                osName = "Linux",
+                osArch = "x86_64",
+                explicitlyDisabled = false,
+            ),
+        )
+    }
 }

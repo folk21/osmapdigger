@@ -1,13 +1,19 @@
 # PATCH
 
-Record successful representative Andorra full-package publication acceptance.
+Harden Intel macOS JCEF startup after repeated native `libjcef.dylib` crashes.
 
-The current Andorra data-only and strict full-package builder/publication evidence is now complete. The roadmap and active umbrella no longer treat PMTiles/package generation as pending. Native Desktop rendering and Android package import remain separate verification-pending acceptance layers. Acceptance-map wording was also reconciled with already recorded configured and calibration evidence.
+The fatal reports show the same SIGSEGV inside the JCEF `NSApplication(JCEFApplication)` AppKit hook while `libjcef.dylib` is loaded after the Compose/AWT event loop is already active. The Desktop host now prepares the Intel macOS JCEF runtime before entering Compose `application {}` instead of lazily loading it from the map Composable. An explicit `OSMAPDIGGER_DISABLE_INTEL_JCEF=1` safe-mode switch keeps the analytical fallback usable during platform diagnostics.
 
 Validation performed:
-- `python -m pytest -q tests/test_documentation_contracts.py` -> 6 passed;
-- `make check` -> 73 passed, 2 existing PyProj/NumPy warnings.
+- `make check` -> 74 passed, 2 existing PyProj/NumPy warnings;
+- network-free architecture coverage verifies JCEF bootstrap remains before Compose application startup;
+- Kotlin unit coverage was added for Intel-host renderer disable selection.
 
-Not re-run here:
-- `make check-all`, because this patch changes acceptance documentation only;
-- real full-package build, which was recorded from the developer workstation before this evidence patch.
+Attempted but not completed in this environment:
+- `./gradlew :desktopApp:jvmTest --tests "com.permieware.osmapdigger.desktop.map.IntelMacWebMapSurfaceTest"` -> Gradle wrapper could not resolve `services.gradle.org` because network/DNS is unavailable.
+
+Required configured/native follow-up:
+- run `make check-all` on the configured workstation;
+- run at least three fresh Intel macOS `make run-desktop` launches with JCEF enabled and verify no new fatal `hs_err_pid*.log` is created;
+- then run the normal offline map marker/selection/focus checks;
+- if a native crash still occurs, use `OSMAPDIGGER_DISABLE_INTEL_JCEF=1 make run-desktop` to keep the analytical workflow usable while the native integration remains verification-pending.

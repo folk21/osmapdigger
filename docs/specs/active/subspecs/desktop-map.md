@@ -212,9 +212,10 @@ Recorded and pending platform evidence belongs in [`../../../TESTS.md`](../../..
 
 ## Remaining acceptance
 
-1. Verify a full local package renders with external network access disabled.
-2. Verify result markers, selected-settlement highlighting/camera focus, and the data-only-package fallback.
-3. Confirm Intel macOS local rendering or the documented fail-closed analytical fallback.
-4. Record the accepted evidence in the owning test/implementation docs and archive this sub-spec.
+1. On the affected Intel macOS x86-64 host, confirm the pre-AWT JCEF bootstrap survives at least three fresh Desktop launches without a fatal JVM report.
+2. Verify a full local package renders with external network access disabled.
+3. Verify result markers, selected-settlement highlighting/camera focus, and the data-only-package fallback.
+4. Verify `OSMAPDIGGER_DISABLE_INTEL_JCEF=1` starts the analytical fallback without loading JCEF.
+5. Record the accepted evidence in the owning test/implementation docs and archive this sub-spec.
 
 Renderer implementation history is intentionally maintained in the current-state Desktop/mobile documentation, not in this verification-pending spec.

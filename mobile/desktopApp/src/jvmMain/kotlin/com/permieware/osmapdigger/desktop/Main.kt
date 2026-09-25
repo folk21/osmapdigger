@@ -99,6 +99,17 @@ private fun loadConfiguredDataset(): DesktopDatasetLoad {
 /** Desktop development/product host. */
 fun main() {
     DesktopDiagnostics.start()
+    val platformMapSurface =
+        IntelMacWebMapSurface.createIfSupported().also { surface ->
+            DesktopDiagnostics.info(
+                "map.renderer",
+                if (surface != null) {
+                    "Selected Intel macOS JCEF renderer"
+                } else {
+                    "No Desktop-host renderer override; shared Desktop map renderer/fallback owns rendering"
+                },
+            )
+        }
     val configured = loadConfiguredDataset()
 
     application {
@@ -120,20 +131,6 @@ fun main() {
             remember {
                 OperationalExternalSearchProviderRepository(SqliteExternalSearchProviderRepository.createDefault())
             }
-        val platformMapSurface =
-            remember {
-                IntelMacWebMapSurface.createIfSupported().also { surface ->
-                    DesktopDiagnostics.info(
-                        "map.renderer",
-                        if (surface != null) {
-                            "Selected Intel macOS JCEF renderer"
-                        } else {
-                            "No Desktop-host renderer override; shared Desktop map renderer/fallback owns rendering"
-                        },
-                    )
-                }
-            }
-
         DisposableEffect(Unit) {
             onDispose {
                 DesktopDiagnostics.info("shutdown", "Closing Desktop resources")

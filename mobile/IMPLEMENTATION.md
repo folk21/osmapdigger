@@ -259,7 +259,7 @@ Shows a Desktop save dialog for `osmapdigger-favorites.zip`, writes the shared e
 
 `shared/src/desktopMain/.../MapPanel.desktop.kt` is the default Desktop `actual` map surface. It renders the local package style, result/selection GeoJSON overlays, camera focus, attribution, a metric scale bar derived from the current Web Mercator camera, normal settlement-marker activation, and optional WGS84 map-location activation on MapLibre Compose native hosts, and otherwise provides the non-fatal fallback. Map focus uses an explicit monotonic request token in addition to selected settlement identity, so re-activating an already selected ranked/Favorite settlement re-centers the camera after manual panning; the Intel macOS JCEF renderer consumes the same renderer-neutral focus request. Shared UI can accept a small `PlatformMapSurface` override from the Desktop application host; the contract exposes only stable settlement IDs and `GeoPoint`, never MapLibre/JCEF types.
 
-`desktopApp/build.gradle.kts` owns the platform-native runtime selection for macOS Apple Silicon Metal, Linux x86-64 OpenGL, and Windows x86-64 OpenGL. Intel macOS receives no incompatible MapLibre JNI runtime; instead `desktopApp/.../map/IntelMacWebMapSurface.kt` owns the JCEF + MapLibre GL JS renderer. `LocalWebMapServer` binds to loopback only and now owns HTTP lifecycle/routing/response transport. `LocalPmtilesTileSource` owns validated random-access MVT reads, `LocalWebMapInteraction` owns the bounded same-origin stable-ID/WGS84 payload contract, and `LocalWebMapPage` owns PMTiles-style rewriting plus the packaged MapLibre GL JS page and metric scale control. `IntelMacWebMapSurface` marshals callbacks onto the Desktop AWT event queue before invoking shared UI callbacks, keeping browser/native lifecycle outside shared code.
+`desktopApp/build.gradle.kts` owns the platform-native runtime selection for macOS Apple Silicon Metal, Linux x86-64 OpenGL, and Windows x86-64 OpenGL. Intel macOS receives no incompatible MapLibre JNI runtime; instead `desktopApp/.../map/IntelMacWebMapSurface.kt` owns the JCEF + MapLibre GL JS renderer. `Main.kt` prepares that Intel renderer before entering Compose `application {}` so jcefmaven/JCEF loads its macOS native runtime before the Compose/AWT AppKit event loop is active; the renderer no longer lazily loads `libjcef.dylib` from a Composable. `OSMAPDIGGER_DISABLE_INTEL_JCEF=1` is an explicit diagnostic/safe-mode escape hatch that leaves the analytical fallback active without initializing JCEF. `LocalWebMapServer` binds to loopback only and owns HTTP lifecycle/routing/response transport. `LocalPmtilesTileSource` owns validated random-access MVT reads, `LocalWebMapInteraction` owns the bounded same-origin stable-ID/WGS84 payload contract, and `LocalWebMapPage` owns PMTiles-style rewriting plus the packaged MapLibre GL JS page and metric scale control. `IntelMacWebMapSurface` marshals callbacks onto the Desktop AWT event queue before invoking shared UI callbacks, keeping browser/native lifecycle outside shared code.
 
 ### Desktop diagnostics
 
@@ -270,9 +270,10 @@ unclean-shutdown marker under `~/.osmapdigger/runtime/`. The diagnostics API is 
 `shared`.
 
 Desktop diagnostics deliberately observe JCEF initialization from outside the native runtime and do not
-modify CEF cache/settings or attach browser handlers. This keeps diagnostics from changing JCEF startup
-behavior during native-crash investigation. `LocalWebMapServer` still logs lifecycle, PMTiles metadata,
-failures, and aggregate request counters rather than one line per successful tile.
+modify CEF cache/settings or attach browser handlers. Intel macOS diagnostics distinguish the pre-AWT
+`jcef.bootstrap` phase from `jcef.init`, making startup-order regressions visible without changing CEF
+settings. `LocalWebMapServer` still logs lifecycle, PMTiles metadata, failures, and aggregate request
+counters rather than one line per successful tile.
 
 ### `Main.kt`
 
