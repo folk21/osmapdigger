@@ -46,6 +46,19 @@ Keep capability identity, changing status, and normative evidence separate:
 
 When implementation is complete but evidence remains, change the sub-spec to `spec_status: verification-pending` and make it an acceptance focus rather than keeping it artificially `active`. A reviewed future slice may live under `docs/specs/planned/` with `spec_status: planned`; planned specs document intent but are not the current implementation contract and must not silently enlarge active acceptance. Do not create a new Feature ID merely to express roadmap state or an acceptance phase.
 
+## Staged specifications and MAIN_MODEL / WORKER_MODEL delegation
+
+For **new** implementation slices intentionally delegated across multiple sessions, `MAIN_MODEL` must write both:
+
+- a **normative** sub-spec, owning stable local requirement IDs, ordered `stage` IDs, affected modules, stage-specific allowed/protected path boundaries, failure/compatibility semantics and independent acceptance criteria;
+- a **same-directory advisory** `<subspec-stem>-implementation-plan.md`, with module and API context, candidate file-by-file edits, expected algorithms/signatures, test fixtures, positive/negative/boundary/regression scenarios, canonical/configured gates and unresolved decisions.
+
+`stage` is a durable machine identity for an implementation slice, not another Feature ID. The plan must not have `document_role: subspec`, its own `spec_status`, independent acceptance status, or authority to override the normative spec. Mark unknown paths and decisions clearly; a worker may not turn a candidate file or free-form task note into edit authorization. New staged plans follow their normative spec on active-to-archive **paired moves**. Legacy specs without staged delegation are not required to gain plans retroactively.
+
+The developer commits a reviewed spec/plan baseline on one feature branch before any source-bound worker run. Packet, provider, path, branch, risk and check authorization must be explicit. ChatGPT `GENSPEC` produces designs only; `DEFAULT` does not silently invoke a worker; `REVIEW` needs actual final diff and bound check/reviewer evidence. An agent's implementation, independent reviewer PASS, successful check or stage commit does not accept a spec. Developer acceptance, owning-doc updates and archival are separate decisions.
+
+The contributor-tooling design is [`active/subspecs/development-agent-pipeline.md`](active/subspecs/development-agent-pipeline.md), with [advisory implementation guidance](active/subspecs/development-agent-pipeline-implementation-plan.md). It is orthogonal to product P0 acceptance despite the mandatory current umbrella-parent navigation link. OsmapDigger has **no implemented stage controller**, reviewer adapter or `STATE.json` validator; do not claim that the SignalHarvester commands work here. A future `STATE.json`, if implemented with schema, semantic validation and tests, is only a developer-updated **between-run checkpoint**, not live runtime, a lock or an acceptance record.
+
 ## Active tree
 
 Keep the active tree shallow:
@@ -192,6 +205,16 @@ Writing rules:
 - do not restate accepted current-state detail when a current-state document already owns it;
 - keep feature IDs stable and requirement IDs local to the spec.
 
+## Evidence and delegated stage lifecycle
+
+1. Establish requirements and observable success/failure oracles independently of the worker; keep module ownership explicit and escalate changes to `geo-format`, platform/native boundaries and unapproved dependencies.
+2. Review the normative spec and companion plan; choose or create one `feature/*` branch and commit the accepted design on a clean, actual Git base.
+3. Only after the pipeline stages are implemented and accepted, developer-authorize **one** source-bound stage packet, isolated worker attempt, exact-byte focused and canonical checks, security policy gates and independent review.
+4. Failed/blocked/repaired attempts retain evidence; changed bytes require fresh checks/review. Promotion is a separate human-authorized guarded Git operation, not reviewer acceptance. Developer manually transitions to the next stage after verifying source identity and predecessor receipt.
+5. After all stages, perform whole-feature requirement coverage, configured/native gates as applicable, final MAIN_MODEL review, developer acceptance and manual PR/merge. Synchronize owning documentation and archive normative spec + companion together, never on a stage PASS alone.
+
+The actual verification command matrix is owned by [`../TESTS.md`](../TESTS.md). A workflow described here is not a claim of an installed executor or completed gate.
+
 ## Active specifications
 
 Umbrella:
@@ -206,6 +229,7 @@ Verification-pending supporting increments:
 
 - [`active/subspecs/desktop-analysis-workspace.md`](active/subspecs/desktop-analysis-workspace.md) — `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, and `PRESENTATION.ANALYSIS_WORKSPACE`; strict country-scale scoring and remaining configured acceptance checks are pending.
 - [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — `MAP.OFFLINE`, `MAP.RESULTS`, and Desktop renderer behavior; remaining acceptance verification pending.
+- [`active/subspecs/development-agent-pipeline.md`](active/subspecs/development-agent-pipeline.md) — independent contributor-tooling staged spec for future fail-closed Aider orchestration (A1 first); not a product P0 acceptance requirement. Its [companion plan](active/subspecs/development-agent-pipeline-implementation-plan.md) is advisory.
 - [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — `SETTINGS.PERSISTENCE` for dataset-scoped search context; remaining cross-platform verification pending.
 
 ## Planned specifications

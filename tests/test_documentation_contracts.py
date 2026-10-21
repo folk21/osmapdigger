@@ -35,11 +35,11 @@ def _frontmatter(path: Path) -> dict[str, str]:
 
 
 def _active_specs() -> list[Path]:
-    return sorted(ACTIVE.rglob("*.md"))
+    return sorted(path for path in ACTIVE.rglob("*.md") if not path.name.endswith("-implementation-plan.md"))
 
 
 def _planned_specs() -> list[Path]:
-    return sorted(PLANNED.rglob("*.md")) if PLANNED.exists() else []
+    return sorted(path for path in PLANNED.rglob("*.md") if not path.name.endswith("-implementation-plan.md")) if PLANNED.exists() else []
 
 
 def _current_specs() -> list[Path]:
@@ -138,3 +138,19 @@ def test_feature_oriented_acceptance_navigation_is_present() -> None:
 
     assert "## Acceptance map" in umbrella, "Umbrella spec lacks a feature-oriented acceptance map"
     assert "## Remaining acceptance" in umbrella, "Umbrella spec lacks closure-oriented remaining acceptance"
+
+
+def test_staged_contributor_spec_has_advisory_companion() -> None:
+    spec = ACTIVE / "subspecs/development-agent-pipeline.md"
+    plan = spec.with_name("development-agent-pipeline-implementation-plan.md")
+    assert spec.is_file() and plan.is_file()
+    spec_content = spec.read_text(encoding="utf-8")
+    plan_content = plan.read_text(encoding="utf-8")
+    assert "spec_status: active" in spec_content
+    assert "development-agent-pipeline-implementation-plan.md" in spec_content
+    assert "type: Implementation Guide" in plan_content
+    assert "document_role: subspec" not in plan_content
+    assert "spec_status:" not in plan_content
+    assert "development-agent-pipeline.md" in plan_content
+    for stage in ("A1", "A2", "A3", "A4", "A5"):
+        assert stage in spec_content and stage in plan_content
