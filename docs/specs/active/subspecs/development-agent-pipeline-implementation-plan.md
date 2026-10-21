@@ -9,19 +9,20 @@ This is advisory implementation guidance for the normative [development agent pi
 
 ## Source and ownership mapping
 
-Read in order: root `README.md`, root `AGENTS.md`, `docs/specs/README.md`, normative spec, this plan, then owning docs/contracts/tests. Follow nearest `AGENTS.md` for any touched `mobile/`, `geo-builder/` or `geo-format/` areas. OsmapDigger currently has **no** `tools/agent-pipeline/` controller, reviewed provider registry, Aider wrapper, run-evidence contract, spec-state validator or independent reviewer adapter. Candidate paths listed below do not exist yet unless verified against a newer checkout.
+Read in order: root `README.md`, root `AGENTS.md`, `docs/specs/README.md`, normative spec, this plan, then owning docs/contracts/tests. Follow nearest `AGENTS.md` for any touched `mobile/`, `geo-builder/` or `geo-format/` areas. OsmapDigger has a strict `docs/specs/STATE.json` processing checkpoint and read-only validator, but **no** `tools/agent-pipeline/` controller, reviewed provider registry, Aider wrapper, run-evidence contract or independent reviewer adapter. Candidate paths listed below do not exist yet unless verified against a newer checkout.
 
-| Concern | Design reference in SignalHarvester | OsmapDigger mapping / boundary |
-|---|---|---|
-| Product/module topology | Java/Gradle services | Kotlin `mobile/core`, `application`, `presentation`, `shared`, Desktop/Android hosts; Python `geo-builder`; persisted `geo-format` |
-| Existing specs | active staged spec + advisory plan | Product umbrella stays focused on shortlist acceptance; this contributor-tooling spec is orthogonal |
-| Local verification | `./run_checks.sh` | `make check` network-free, `make check-all` configured KMP/Android; additional checks from `docs/TESTS.md` |
-| Baseline | Git metadata + source-bound task | Snapshot may lack commit/status/manifest; check local real Git before launch. Never synthesize a SHA |
-| Worker | pinned Aider CLI | Candidate Aider-only adapter; not installed/approved by this document |
-| Reviewer | configured HTTPS structured reviewer | Separate allowlisted provider/model, approved egress/privacy, independent schema validation; none present yet |
-| Security | pinned Gitleaks and denylist | Approve scanner/version and scope during A3; scanner is not currently wired into `make check` |
-| Stored evidence | private run custody | Design local ignored or external private path, not `data/generated` or any cleanup target |
-| Git | isolated worktree + guarded CAS promotion | Existing `feature/*` workflow; developer owns branch/commits until guarded promotion is implemented and accepted |
+| Concern | Existing boundary / intended integration |
+|---|---|
+| Modules | Kotlin `mobile/core`, `application`, `presentation`, `shared`, platform hosts; Python `geo-builder`; persisted `geo-format` |
+| Active specs | Product umbrella remains focused on shortlist acceptance; contributor automation is separate |
+| Checkpoint | Strict `docs/specs/STATE.json`, schema, semantic validator and deterministic tests; no runtime authority |
+| Verification | `make check` network-free; `make check-all` configured KMP/Android; see `docs/TESTS.md` |
+| Source identity | Verify real local Git HEAD/status and spec/plan hashes before any later worker run |
+| Worker | Aider-only isolated adapter is planned, not installed or authorized by this document |
+| Reviewer | Separate approved provider/model, egress/privacy and structured result validation; not implemented |
+| Security | Approved scanner/version and scope will be required; no pipeline scanner exists yet |
+| Evidence | Future private custody path distinct from generated data or cleanup targets |
+| Git | Existing `feature/*` workflow; guarded CAS promotion only after implementation/approval |
 
 ## A1 — source-bound foundation (first implementation)
 
@@ -55,7 +56,7 @@ Gate: focused fake-backed tests and `make check`; independent code review of sou
 
 ## A2 — isolated Aider worker
 
-Normative IDs: `AP-R5`–`AP-R7`; depends on accepted A1. Candidate updates: `agent_pipeline.py`, new `run_aider_stage.sh` (only after reviewed CLI contract), `pipeline-policy.json`, `tests/test_agent_pipeline.py`, `tools/agent-pipeline/README.md`. The actual command syntax, pinned Aider version, compatible model provider, credential source and cost/time limits need approval and conformance tests. Do not paste SignalHarvester's endpoint configuration.
+Normative IDs: `AP-R5`–`AP-R7`; depends on accepted A1. Candidate updates: `agent_pipeline.py`, new `run_aider_stage.sh` (only after reviewed CLI contract), `pipeline-policy.json`, `tests/test_agent_pipeline.py`, `tools/agent-pipeline/README.md`. The actual command syntax, pinned Aider version, compatible model provider, credential source and cost/time limits need approval and conformance tests. Do not use unverified endpoint configuration.
 
 1. Check clean source, packet digest and explicit developer authorization; create a separate temporary Git worktree from immutable base.
 2. Invoke Aider as the only supported worker adapter with auto-commits disabled, no unapproved Git or provider options, approved files only and bounded resource/time budgets.
@@ -77,13 +78,13 @@ Scenarios: `AP-A3-P01` valid checks and independent structured review for same d
 
 ## A4 — evidence, guarded commit, next checkpoint
 
-Normative IDs: `AP-R12`–`AP-R15`; depends on accepted A3. Candidate files: evidence export/verify utilities and tests under `tools/agent-pipeline/`; an optional `docs/specs/STATE.json`, `docs/specs/state.schema.json`, `tools/specs/validate_state.py` and tests **only if the checkpoint proposal is separately approved and delivered with actual validation**. Do not introduce an unvalidated or inert STATE register as if it were operational.
+Normative IDs: `AP-R12`–`AP-R15`; depends on accepted A3. Candidate files: evidence export/verify utilities and tests under `tools/agent-pipeline/`. Existing `docs/specs/STATE.json`, `docs/specs/state.schema.json`, `tools/specs/validate_state.py` and their deterministic tests provide a structural processing checkpoint; A4 must integrate them without treating checkpoint contents as execution authorization or live evidence.
 
 - Preserve exact worker/check/review artifacts privately outside Gradle/pytest cleanup; a sanitized summary alone cannot attest a verified diff.
 - Developer explicitly authorizes guarded promotion. Re-verify worker digest, spec/plan/policy, required checks, reviewer identity and PASS, intended full parent, and that target `feature/*` ref is not checked out in any worktree.
 - Build commit from verified worker tree without touching developer worktree, write durable promotion intent, update exact expected ref with CAS, then write promotion receipt. On uncertainty stop for developer recovery; no speculative replay.
 - Developer checks out new HEAD, cleans up authorized worktrees, verifies predecessor receipt and then creates a new immutable packet for next stage. No automatic stage chaining.
-- A future Git-tracked STATE checkpoint may document selection and between-run phase; it is not runtime/process authority, a lock, approval, promotion or acceptance. `RUNNING`/`ACCEPTED` are inappropriate self-asserted checkpoint values.
+- Update the existing validated STATE checkpoint only through developer-controlled Git commits between source-bound runs. It is not runtime/process authority, a lock, approval, promotion or acceptance. `RUNNING`/`ACCEPTED` are invalid checkpoint values.
 
 Scenarios: `AP-A4-P01` exact source-bound guarded commit with approval; `AP-A4-N01` changed expected parent or checked-out branch; `AP-A4-N02` missing reviewer/scan/check evidence; `AP-A4-N03` changed run bytes after PASS; `AP-A4-N04` CAS failure/intention without receipt; `AP-A4-B01` missing predecessor on next stage; `AP-A4-R01` interrupted single-use `runId` cannot be replayed. All Git operations must be exercised in disposable repositories, not the developer checkout.
 
@@ -100,6 +101,6 @@ Pilot evidence must include an exact input fixture, approved packet digest, befo
 
 ## Developer handoff and future changes
 
-A standalone `DEFAULT` bug fix still uses a ChatGPT PATCH and developer-run `make check`. `GENSPEC` authors a normative staged spec plus same-directory advisory plan; it does **not** invoke Aider. `REVIEW` checks a real source-bound worker diff and verified evidence; findings-only returns no PATCH. Unknown or contradictory scope triggers `ESCALATE` and explicit replan between stages. Do not port SignalHarvester scripts/policy by filename alone or assume its Java/Gradle paths, model availability, Git SHA format or scanner installation apply here.
+A standalone `DEFAULT` bug fix still uses a ChatGPT PATCH and developer-run `make check`. `GENSPEC` authors a normative staged spec plus same-directory advisory plan; it does **not** invoke Aider. `REVIEW` checks a real source-bound worker diff and verified evidence; findings-only returns no PATCH. Unknown or contradictory scope triggers `ESCALATE` and explicit replan between stages. Do not treat third-party scripts, provider settings, model names or scanner installations as approved repository capabilities.
 
 Later automated batching, external notifications, cross-repository scheduling and unattended Git ref movement need a new explicit specification with locks, evidence/permission boundaries, cost enforcement and recovery oracles. They are not part of A1–A5.

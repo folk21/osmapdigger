@@ -13,7 +13,7 @@ Feature-level tests may reference stable capability IDs from [`FEATURES.md`](FEA
 
 ## Verification rules for AI-assisted stages (design; no runner installed)
 
-The active [development agent pipeline spec](specs/active/subspecs/development-agent-pipeline.md) defines future source-bound verification and independent review requirements. The current repository has **no** automatic Aider worker, reviewer, evidence collector or stage promotion tests. Do not claim pipeline security, independent review or deployment gates passed by running `make check` alone.
+The active [development agent pipeline spec](specs/active/subspecs/development-agent-pipeline.md) defines future source-bound verification and independent review requirements. The current repository validates `docs/specs/STATE.json` structurally and semantically via `python3 tools/specs/validate_state.py`, with deterministic negative tests in `tests/test_spec_state.py`. This is **not** an automatic Aider worker, reviewer, evidence collector or stage promotion gate. Do not claim pipeline security, independent review or deployment gates passed by running `make check` alone.
 
 For a ChatGPT-authored patch or future worker diff, define expected observable behavior and negative/regression conditions **before or independently of** the implementation. Run focused tests for touched owners, the canonical network-free `make check`, and `make check-all` on a configured machine when KMP/Android boundaries are touched. For real PBF, PMTiles, JCEF/native rendering, package import, mobile interaction and country-scale scored analysis, run the dedicated acceptance checks below and disclose unavailable evidence. A test assertion may be changed only to correct a demonstrably invalid expectation, never to force PASS.
 
@@ -25,7 +25,9 @@ Any future runner must bind required check results, scanner verdict and independ
 make check
 ```
 
-Currently this runs Python synthetic/unit tests under `geo-builder/tests/` plus repository-level deterministic checks under `tests/`. The repository checks include the logical package DAG across `mobile/core/commonMain` and `mobile/shared/commonMain` plus the physical Gradle module DAG, so an accidental upward/cyclic dependency fails without requiring Gradle or network access.
+This first runs the read-only specification checkpoint validator, then Python synthetic/unit tests under `geo-builder/tests/` plus repository-level deterministic checks under `tests/`. The repository checks include the logical package DAG across `mobile/core/commonMain` and `mobile/shared/commonMain` plus the physical Gradle module DAG, so an accidental upward/cyclic dependency fails without requiring Gradle or network access.
+
+The default suite also checks the strict v1 spec processing checkpoint, valid stage references, invalid/missing state, unsupported phases and unapproved concurrent workstreams.
 
 The tests cover configuration parsing, metric/preference profile validation, dynamic metric generation, synthetic settlement extraction, selector semantics, distance/count/coverage calculations, SQLite round trips including preference-default constraints, package validation, and a synthetic pipeline path.
 

@@ -154,3 +154,15 @@ def test_staged_contributor_spec_has_advisory_companion() -> None:
     assert "development-agent-pipeline.md" in plan_content
     for stage in ("A1", "A2", "A3", "A4", "A5"):
         assert stage in spec_content and stage in plan_content
+
+
+def test_spec_processing_checkpoint_is_documented_and_not_an_acceptance_receipt() -> None:
+    index = (ROOT / "docs/specs/README.md").read_text(encoding="utf-8")
+    contract = (ACTIVE / "subspecs/development-agent-pipeline.md").read_text(encoding="utf-8")
+    assert (ROOT / "docs/specs/STATE.json").is_file()
+    assert (ROOT / "docs/specs/state.schema.json").is_file()
+    assert (ROOT / "tools/specs/validate_state.py").is_file()
+    assert "python3 tools/specs/validate_state.py" in index
+    assert "RUNNING" in index and "ACCEPTED" in index
+    assert "**AP-R15:**" in contract and "existing `docs/specs/STATE.json`" in contract
+    assert "source-bound" in index and "developer" in index
