@@ -46,6 +46,20 @@ Keep capability identity, changing status, and normative evidence separate:
 
 When implementation is complete but evidence remains, change the sub-spec to `spec_status: verification-pending` and make it an acceptance focus rather than keeping it artificially `active`. A reviewed future slice may live under `docs/specs/planned/` with `spec_status: planned`; planned specs document intent but are not the current implementation contract and must not silently enlarge active acceptance. Do not create a new Feature ID merely to express roadmap state or an acceptance phase.
 
+## Processing-state contract
+
+[`STATE.json`](STATE.json) is the only Git-tracked **processing checkpoint** for a selected active sub-specification. Its strict [schema](state.schema.json) and read-only [validator](../../tools/specs/validate_state.py) define the supported shape and repository semantics:
+
+```bash
+python3 tools/specs/validate_state.py
+```
+
+`schemaVersion: 1` supports only `mode: SINGLE` with one selected workstream (`selectedWorkstreamId`) and a bounded `workstreams` list. Each record has a unique `id` and active `specPath`, an existing normative `stageId`, a checkpoint `phase`, optional `runId`, and `developerDecision`. Only the selected workstream may progress; other records must be `PAUSED` or `BLOCKED`. `selectedWorkstreamId` is a pointer, **not a lock**. Parallel stage writers and `MULTI` mode are not authorized.
+
+The allowed checkpoint phases are `DESIGN`, `READY_TO_DELEGATE`, `READY_FOR_REVIEW`, `BLOCKED`, `PAUSED`, and `AWAITING_DEVELOPER_DECISION`. Review/decision phases require a valid `runId`; `developerDecision` allows only `UNRECORDED` or `REJECTED`, with rejection requiring `BLOCKED` or `PAUSED`. **`RUNNING` and `ACCEPTED` are invalid**: live attempts belong to private source-bound run evidence, and spec acceptance requires a separate developer decision and lifecycle action. A recorded `runId` does not prove a run occurred. The validator checks structure and referenced active stages, not Git checkout cleanliness, authorization, runtime status, reviewer evidence or acceptance.
+
+Only the developer may change and commit the checkpoint at a **clean Git boundary between source-bound runs**, after verifying the actual HEAD, stage and associated evidence. Do not edit it during initialization, execution, review, or pending promotion of a bound run. When the source baseline is uncertain, or the checkpoint is missing, invalid or stale, stop and reconcile with actual Git/evidence; never infer permission or acceptance from the umbrella's `current_focus`, the roadmap, or this index. Keep product acceptance navigation separate from the selected contributor-tooling workstream. Updating `STATE.json` does not start Aider, update Git refs, authorize a worker, accept a stage, or archive a spec.
+
 ## Staged specifications and MAIN_MODEL / WORKER_MODEL delegation
 
 For **new** implementation slices intentionally delegated across multiple sessions, `MAIN_MODEL` must write both:
@@ -57,7 +71,7 @@ For **new** implementation slices intentionally delegated across multiple sessio
 
 The developer commits a reviewed spec/plan baseline on one feature branch before any source-bound worker run. Packet, provider, path, branch, risk and check authorization must be explicit. ChatGPT `GENSPEC` produces designs only; `DEFAULT` does not silently invoke a worker; `REVIEW` needs actual final diff and bound check/reviewer evidence. An agent's implementation, independent reviewer PASS, successful check or stage commit does not accept a spec. Developer acceptance, owning-doc updates and archival are separate decisions.
 
-The contributor-tooling design is [`active/subspecs/development-agent-pipeline.md`](active/subspecs/development-agent-pipeline.md), with [advisory implementation guidance](active/subspecs/development-agent-pipeline-implementation-plan.md). It is orthogonal to product P0 acceptance despite the mandatory current umbrella-parent navigation link. OsmapDigger has **no implemented stage controller**, reviewer adapter or `STATE.json` validator; do not claim that the SignalHarvester commands work here. A future `STATE.json`, if implemented with schema, semantic validation and tests, is only a developer-updated **between-run checkpoint**, not live runtime, a lock or an acceptance record.
+The contributor-tooling design is [`active/subspecs/development-agent-pipeline.md`](active/subspecs/development-agent-pipeline.md), with [advisory implementation guidance](active/subspecs/development-agent-pipeline-implementation-plan.md). It is orthogonal to product P0 acceptance despite the mandatory current umbrella-parent navigation link. The repository provides a validated `STATE.json` **checkpoint**, but it does **not** yet provide an Aider stage controller, independent reviewer adapter, worker execution, or guarded promotion.
 
 ## Active tree
 
@@ -72,6 +86,7 @@ active/
 
 Rules:
 
+- machine-readable processing checkpoint status belongs only to `STATE.json`, not this index;
 - the umbrella defines the active product/system target;
 - one sub-spec is the current implementation or acceptance focus;
 - other sub-specs may remain active only while they define unresolved supporting or verification-pending constraints;
@@ -122,8 +137,8 @@ Do not create a sub-spec for:
 1. Keep the umbrella under `docs/specs/active/spec-*.md`.
 2. A reviewed future slice may start under `docs/specs/planned/subspecs/` with `spec_status: planned`.
 3. When implementation becomes current, move that slice into `docs/specs/active/subspecs/`, set `spec_status: active`, and update umbrella `current_focus`.
-4. Record its parent and lifecycle state in frontmatter.
-5. Keep umbrella `current_focus`, human-readable status, roadmap, and `docs/specs/README.md` synchronized.
+4. Record its parent and document lifecycle state in frontmatter.
+5. Update/commit `STATE.json` only at a developer-controlled between-run Git checkpoint; validate it with `python3 tools/specs/validate_state.py`. The umbrella `current_focus`, roadmap, and this index are navigation and product-acceptance references, not processing state or authorization.
 6. Reference stable feature IDs from `docs/FEATURES.md` in a `Feature scope` section.
 7. Give important normative requirements stable local IDs when tests/reviews need them.
 8. Implement and validate the slice while preserving root/local `AGENTS.md` invariants.
@@ -165,7 +180,7 @@ Specifications may additionally use:
 - `document_role` — `umbrella` or `subspec`;
 - `spec_status` — `planned`, `active`, `verification-pending`, or `archived`;
 - `parent` — umbrella path for a sub-spec;
-- `current_focus` — only when an umbrella points to one active implementation sub-spec.
+- `current_focus` — informational umbrella pointer to the product implementation/acceptance focus, not stage processing state.
 
 Do not add metadata that only repeats the body or Git history. Extend the profile only when a field has a concrete navigation, validation, or maintenance use.
 
@@ -208,12 +223,12 @@ Writing rules:
 ## Evidence and delegated stage lifecycle
 
 1. Establish requirements and observable success/failure oracles independently of the worker; keep module ownership explicit and escalate changes to `geo-format`, platform/native boundaries and unapproved dependencies.
-2. Review the normative spec and companion plan; choose or create one `feature/*` branch and commit the accepted design on a clean, actual Git base.
+2. Review the normative spec and companion plan; choose or create one `feature/*` branch, commit the accepted design and validated `STATE.json` at a clean Git checkpoint (only between source-bound runs).
 3. Only after the pipeline stages are implemented and accepted, developer-authorize **one** source-bound stage packet, isolated worker attempt, exact-byte focused and canonical checks, security policy gates and independent review.
-4. Failed/blocked/repaired attempts retain evidence; changed bytes require fresh checks/review. Promotion is a separate human-authorized guarded Git operation, not reviewer acceptance. Developer manually transitions to the next stage after verifying source identity and predecessor receipt.
+4. Failed/blocked/repaired attempts retain evidence; changed bytes require fresh checks/review. Promotion is a separate human-authorized guarded Git operation, not reviewer acceptance. Developer manually transitions to the next stage after verifying source identity and predecessor receipt, then updates `STATE.json` only between runs.
 5. After all stages, perform whole-feature requirement coverage, configured/native gates as applicable, final MAIN_MODEL review, developer acceptance and manual PR/merge. Synchronize owning documentation and archive normative spec + companion together, never on a stage PASS alone.
 
-The actual verification command matrix is owned by [`../TESTS.md`](../TESTS.md). A workflow described here is not a claim of an installed executor or completed gate.
+The current processing checkpoint is [`STATE.json`](STATE.json); stage runner availability is defined separately by implemented tooling. The actual verification command matrix is owned by [`../TESTS.md`](../TESTS.md). A workflow described here is not a claim of an installed executor or completed gate.
 
 ## Active specifications
 
@@ -229,7 +244,7 @@ Verification-pending supporting increments:
 
 - [`active/subspecs/desktop-analysis-workspace.md`](active/subspecs/desktop-analysis-workspace.md) — `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, and `PRESENTATION.ANALYSIS_WORKSPACE`; strict country-scale scoring and remaining configured acceptance checks are pending.
 - [`active/subspecs/desktop-map.md`](active/subspecs/desktop-map.md) — `MAP.OFFLINE`, `MAP.RESULTS`, and Desktop renderer behavior; remaining acceptance verification pending.
-- [`active/subspecs/development-agent-pipeline.md`](active/subspecs/development-agent-pipeline.md) — independent contributor-tooling staged spec for future fail-closed Aider orchestration (A1 first); not a product P0 acceptance requirement. Its [companion plan](active/subspecs/development-agent-pipeline-implementation-plan.md) is advisory.
+- [`active/subspecs/development-agent-pipeline.md`](active/subspecs/development-agent-pipeline.md) — independent contributor-tooling spec; the selected checkpoint is tracked in [`STATE.json`](STATE.json) (A1 design; no runner), not in the product P0 acceptance map. Its [companion plan](active/subspecs/development-agent-pipeline-implementation-plan.md) is advisory.
 - [`active/subspecs/user-preferences.md`](active/subspecs/user-preferences.md) — `SETTINGS.PERSISTENCE` for dataset-scoped search context; remaining cross-platform verification pending.
 
 ## Planned specifications

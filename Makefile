@@ -1,4 +1,4 @@
-.PHONY: help check check-all test-python test-mobile test-desktop shortlist-acceptance desktop-headless-acceptance desktop-headless-analysis-acceptance headless-cli analysis-acceptance analysis-acceptance-strict preference-calibration andorra-calibration-acceptance andorra-full-package-acceptance build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
+.PHONY: help check check-all check-spec-state test-python test-mobile test-desktop shortlist-acceptance desktop-headless-acceptance desktop-headless-analysis-acceptance headless-cli analysis-acceptance analysis-acceptance-strict preference-calibration andorra-calibration-acceptance andorra-full-package-acceptance build-andorra-data build-andorra build-belarus-data build-belarus run-desktop build-android
 
 PYTHON ?= python
 GEO_BUILDER_PYTHONPATH = geo-builder/src
@@ -30,11 +30,14 @@ help:
 	@echo "  run-desktop          Run Desktop host"
 	@echo "  build-android        Build Android debug APK"
 
-check: test-python
+check: check-spec-state test-python
 	@echo "Lightweight checks passed."
 
 check-all: check test-desktop test-mobile build-android
 	@echo "All configured checks passed."
+
+check-spec-state:
+	$(PYTHON) tools/specs/validate_state.py
 
 test-python:
 	PYTHONPATH=$(GEO_BUILDER_PYTHONPATH) $(PYTHON) -m pytest geo-builder/tests tests

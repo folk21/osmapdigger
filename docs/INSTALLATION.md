@@ -129,7 +129,7 @@ A first Gradle build normally needs access to Gradle/plugin/dependency repositor
 
 ## Optional source snapshot helper
 
-`concat_osmapdigger.sh` expects an external `concat_files_to_txt.py` helper at `~/work/python/concat_files_to_txt.py` by default, mirroring the Sibyl workflow.
+`concat_osmapdigger.sh` expects an external `concat_files_to_txt.py` helper at `~/work/python/concat_files_to_txt.py` by default.
 
 Override it with:
 
@@ -142,4 +142,3 @@ export OSMAPDIGGER_CONCAT_TOOL=/path/to/concat_files_to_txt.py
 The Desktop application renders MapLibre natively on the host capabilities currently supported by OsmapDigger: macOS Apple Silicon (Metal), Linux x86-64 (OpenGL), and Windows x86-64 (OpenGL). The Gradle host selects exactly one matching native runtime.
 
 MapLibre Compose 0.13.x does not publish a `macos-amd64` JNI runtime. Intel macOS therefore uses the Desktop web renderer packaged with the application: JCEF renders MapLibre GL JS, while PMTiles stays local and is served through a loopback-only JVM adapter. The first Gradle build must resolve these packaged dependencies; normal map use does not require a remote tile service or CDN. If the renderer cannot initialize, search, filters, details, preferences, and external links remain available through the analytical fallback.
-

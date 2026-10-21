@@ -10,9 +10,9 @@ parent: ../spec-initial-functional-product.md
 
 ## Status
 
-Active **contributor-tooling design**. No OsmapDigger Aider executor, orchestration controller, independent reviewer adapter, stage-state validator, or Git promotion command is implemented by this documentation change. No stage is accepted. The first implementation focus is **A1**; A2–A5 are ordered future stages and require separate authorization. This cross-cutting tooling sub-spec is linked to the existing umbrella solely to preserve repository navigation; it is **not** part of the product P0 acceptance map and does not replace `current_focus`.
+Active **contributor-tooling design**. A Git-tracked processing checkpoint, strict schema and read-only semantic validator are available. No Aider executor, orchestration controller, independent reviewer adapter or Git promotion command is implemented. No stage is accepted. The first implementation focus is **A1**; A2–A5 are ordered future stages and require separate authorization. This cross-cutting tooling sub-spec is linked to the existing umbrella solely to preserve repository navigation; it is **not** part of the product P0 acceptance map and does not replace `current_focus`.
 
-Normative requirements live here. The paired [implementation plan](development-agent-pipeline-implementation-plan.md) is advisory and cannot authorize a run or expand editable paths. SignalHarvester is a design reference, **not** an executable or a source of OsmapDigger permissions.
+Normative requirements live here. The paired [implementation plan](development-agent-pipeline-implementation-plan.md) is advisory and cannot authorize a run or expand editable paths. Neither a normative design nor a checkpoint grants execution or Git permissions.
 
 ## Feature scope
 
@@ -68,7 +68,7 @@ Introduce a fail-closed, developer-controlled workflow in which ChatGPT acts as 
 - **AP-R12:** Preserve run-specific private evidence outside build cleanup, including per-attempt task, verified manifest/digests, complete check logs, reviewer replies and recovery intent; export only minimized sanitized summaries. Evidence MUST be bound to the exact source/version and MUST NOT silently disappear on failure.
 - **AP-R13:** Stage promotion MUST require an explicit developer approval and revalidation of exact source bytes, clean expected parent and review/check evidence. If automated Git promotion is implemented, it MUST create a commit from verified worker bytes and compare-and-swap only an expected, non-checked-out `feature/*` ref, with durable intent/receipt. Failed/uncertain CAS MUST escalate, not silently retry.
 - **AP-R14:** The next stage MUST start only after the developer checks out the promoted feature HEAD, validates its predecessor receipt and authorizes a new immutable packet. Stage order and source identity MUST be checked; an interrupted/single-use `runId` MUST NOT be replayed.
-- **AP-R15:** `docs/specs/STATE.json`, **if later implemented with a schema and validator**, MAY represent only a developer-maintained between-run checkpoint, never runtime state, a lock, worker permission, stage promotion, or spec acceptance. The current repository has no such state file or validator. Final spec acceptance, archive move, push, PR and merge always require independent developer decisions.
+- **AP-R15:** The existing `docs/specs/STATE.json`, `docs/specs/state.schema.json` and `tools/specs/validate_state.py` MUST remain a strictly validated, developer-maintained between-run checkpoint. It MUST NOT represent live runtime state, a lock, worker permission, stage promotion, or spec acceptance. Future controller integration MUST keep run evidence separate and fail closed on invalid/stale checkpoint identity. Final acceptance, archive move, push, PR and merge require independent developer decisions.
 
 **A5 — bounded rollout and acceptance**
 
@@ -83,7 +83,7 @@ Introduce a fail-closed, developer-controlled workflow in which ChatGPT acts as 
 | A1 — local foundation | Packet schema, Git/context/path preflight, fake-backed regression harness and policy mapping | Developer-led implementation; no real worker | Approval of normative contract and plan |
 | A2 — isolated executor | Aider adapter, model configuration, worktree edit inventory, task/deviation evidence | High until A1 is proven; opt-in only | A1 acceptance + provider/privacy approvals |
 | A3 — independent checks/review | Verified checks, scanner policy, structured reviewer, bounded repair | High until deterministic failure gates pass | A2 source-bound evidence and approved reviewers |
-| A4 — checkpoint/promotion | Private evidence, CAS promotion, next-stage verification, optional validated checkpoint projection | High; developer approval each promotion | A3 review/evidence conformance |
+| A4 — checkpoint/promotion | Private evidence, CAS promotion, next-stage verification and validated checkpoint integration | High; developer approval each promotion | A3 review/evidence conformance |
 | A5 — pilot/rollout | Single test-only live pilot, recovery matrix, full verification and manual handoff | LOW only per independently approved packet | A1–A4 acceptance, authorized toolchain and clean feature HEAD |
 
 The stage labels above are machine-stable within this spec, not proof of stage completion. Each stage requires its own approved task packet when the machinery exists. Autonomous batching/notifications are outside this spec.
@@ -98,13 +98,13 @@ The stage labels above are machine-stable within this spec, not proof of stage c
 
 ## Non-goals
 
-- Copying SignalHarvester controller files, provider policies, secrets or executable commands without portability analysis.
+- Reusing unverified controller scripts, provider policies, credentials or executable commands outside their validated repository contract.
 - Shipping an embedded LLM in Desktop/Android, cloud requirement for offline analysis, or changes to PBF/SQLite/PMTiles data contracts.
 - Automatic multi-stage scheduling, PR creation/merge, Git checkout/reset, bypassing developer approvals, or accepting a product specification from a model verdict.
 
 ## Validation
 
-A1 acceptance requires deterministic packet/path/dirty/stale/source-contract fixtures including negative cases, plus the canonical `make check` on the actual implementation baseline. A2–A4 each require focused test suites, independent adversarial oracles and source-bound full check/review evidence; use `make check-all` when Kotlin/native boundaries are impacted. A5 requires an authorized real test-only pilot, final full-feature review and configured gates. **This documentation-only PATCH supplies the requirements and plan, not implementation validation or an operational pipeline.**
+A1 acceptance requires deterministic packet/path/dirty/stale/source-contract fixtures including negative cases, plus the canonical `make check` on the actual implementation baseline. A2–A4 each require focused test suites, independent adversarial oracles and source-bound full check/review evidence; use `make check-all` when Kotlin/native boundaries are impacted. A5 requires an authorized real test-only pilot, final full-feature review and configured gates. **The checkpoint validator is implemented and covered by deterministic tests; A1 packet/preflight, Aider execution, review, evidence collection and Git promotion remain unimplemented and unverified.**
 
 ## Remaining work / acceptance
 

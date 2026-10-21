@@ -9,7 +9,7 @@ description: Operational commands and runtime workflows for building, validating
 
 Use `DEFAULT` for ordinary bounded ChatGPT changes, `GENSPEC` for a staged normative spec plus advisory companion, and `REVIEW` for an independently supplied source-bound diff/evidence assessment. Workflow selectors are interpreted from the **current request**, not from older chat text or source files. See [`specs/README.md`](specs/README.md).
 
-The [development agent pipeline](specs/active/subspecs/development-agent-pipeline.md) is an **active design**, not a command that can be run today. Until its stages are implemented and validated, the developer creates/reuses a feature branch, reviews/applies generated PATCHes, executes `make check` and relevant configured checks, inspects the diff, and manually commits, pushes and merges after review. Never run SignalHarvester's `run_aider_stage.sh`, `promote-stage` or provider settings as if they were OsmapDigger tools.
+The [development agent pipeline](specs/active/subspecs/development-agent-pipeline.md) is an **active design**, not a command that can be run today. The selected [processing checkpoint](specs/STATE.json) has an independent read-only validator (`python3 tools/specs/validate_state.py`) but no execution authority. Until its stages are implemented and validated, the developer creates/reuses a feature branch, reviews/applies generated PATCHes, executes `make check` and relevant configured checks, inspects the diff, and manually commits, pushes and merges after review. No Aider worker/promotion command is installed in OsmapDigger; configuration or checkpoint contents cannot authorize an execution.
 
 
 ## Command ownership

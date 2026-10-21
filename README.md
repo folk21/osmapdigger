@@ -74,7 +74,7 @@ Each code subproject has a local `README.md`, `AGENTS.md`, and `IMPLEMENTATION.m
 
 ## AI-assisted contributor workflow
 
-Repository and nearest local [`AGENTS.md`](AGENTS.md) files remain authoritative for ChatGPT and any later Aider worker. Read [`docs/specs/README.md`](docs/specs/README.md) for `DEFAULT`/`GENSPEC`/`REVIEW` guidance, staged normative specs and separate advisory implementation plans. The [development agent pipeline spec](docs/specs/active/subspecs/development-agent-pipeline.md) and its [plan](docs/specs/active/subspecs/development-agent-pipeline-implementation-plan.md) define **future** MAIN_MODEL / WORKER_MODEL safeguards, not an installed Aider controller. Current repository changes continue via developer-reviewed patches, `make check`, additional configured checks and manual Git integration.
+Repository and nearest local [`AGENTS.md`](AGENTS.md) files remain authoritative for ChatGPT and any later Aider worker. Read [`docs/specs/README.md`](docs/specs/README.md) for `DEFAULT`/`GENSPEC`/`REVIEW` guidance, staged normative specs and separate advisory implementation plans. The [development agent pipeline spec](docs/specs/active/subspecs/development-agent-pipeline.md) and its [plan](docs/specs/active/subspecs/development-agent-pipeline-implementation-plan.md) define **future** MAIN_MODEL / WORKER_MODEL execution safeguards, not an installed Aider controller. The selected Git processing checkpoint is [`docs/specs/STATE.json`](docs/specs/STATE.json), validated using `python3 tools/specs/validate_state.py`; it cannot start a worker or establish acceptance. Current repository changes continue via developer-reviewed patches, `make check`, additional configured checks and manual Git integration.
 
 ## Quick verification
 
@@ -174,7 +174,7 @@ Raw PBF files, generated SQLite databases, PMTiles archives, `.omd.zip` packages
 
 `archive.sh` creates a shareable repository ZIP while excluding local geographic data and build artifacts.
 
-`concat_osmapdigger.sh` creates a source/documentation snapshot for LLM review through the same external concatenation helper used by the Sibyl workflow. It includes active specs and excludes raw/generated GIS data plus archived specs.
+`concat_osmapdigger.sh` creates a source/documentation snapshot for LLM review through a configured external concatenation helper. It includes active specs and excludes raw/generated GIS data plus archived specs.
 
 ## Documentation model
 
