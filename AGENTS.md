@@ -151,6 +151,18 @@ Never disable or weaken a failing test merely to make the build green. Never cla
 
 When adding a new repository-wide verification step, wire it into the appropriate canonical workflow and update `docs/TESTS.md` when the command matrix changes.
 
+## MAIN_MODEL / WORKER_MODEL contribution workflow
+
+AI-assisted implementation is governed by the same source ownership, tests, and Git safety rules as human development. The staged design contract is [`docs/specs/active/subspecs/development-agent-pipeline.md`](docs/specs/active/subspecs/development-agent-pipeline.md); its `-implementation-plan.md` companion is advisory. **The Aider controller described there is not implemented in this repository yet.** Do not invoke SignalHarvester scripts as OsmapDigger commands.
+
+- A `MAIN_MODEL` (ChatGPT) may implement bounded ordinary changes directly, prepare a staged normative spec and companion plan, or independently review source-bound worker output. Model responses do not grant execution, Git or acceptance authority.
+- A `WORKER_MODEL` through Aider may edit only the paths in a validated, explicitly developer-approved stage packet **after** the required executor, policy, isolation, checks and reviewer components are implemented and verified. Worker-authored tests are not independent acceptance oracles.
+- The developer controls feature branches, baseline/spec approval, execution authorization, final review, acceptance, push and manual PR merge. No model PASS, check PASS, stage commit or Git ref update means spec acceptance.
+- A new staged spec must identify affected owners, requirements, ordered stage IDs, risks, allowed paths and acceptance evidence, plus a same-directory advisory `*-implementation-plan.md`. Existing verification-pending product specs are not retroactively converted to worker plans.
+- Verify exact source bytes after any worker repair or manual change. Fail closed on dirty/stale Git state, out-of-scope edits, missing checks, unavailable security/reviewer evidence, unknown risk or source drift; do not weaken valid tests or fabricate a successful gate.
+
+See [`docs/specs/README.md`](docs/specs/README.md) for specification lifecycle and [`docs/TESTS.md`](docs/TESTS.md) for actual canonical verification commands.
+
 ## Documentation ownership
 
 Each topic should have one authoritative owner:

@@ -72,6 +72,10 @@ Commands below run from the repository root unless noted otherwise.
 
 Each code subproject has a local `README.md`, `AGENTS.md`, and `IMPLEMENTATION.md` where useful. Root documentation owns cross-project behavior; local implementation documents map that behavior to concrete files and platform details.
 
+## AI-assisted contributor workflow
+
+Repository and nearest local [`AGENTS.md`](AGENTS.md) files remain authoritative for ChatGPT and any later Aider worker. Read [`docs/specs/README.md`](docs/specs/README.md) for `DEFAULT`/`GENSPEC`/`REVIEW` guidance, staged normative specs and separate advisory implementation plans. The [development agent pipeline spec](docs/specs/active/subspecs/development-agent-pipeline.md) and its [plan](docs/specs/active/subspecs/development-agent-pipeline-implementation-plan.md) define **future** MAIN_MODEL / WORKER_MODEL safeguards, not an installed Aider controller. Current repository changes continue via developer-reviewed patches, `make check`, additional configured checks and manual Git integration.
+
 ## Quick verification
 
 Python 3.11+:
