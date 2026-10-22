@@ -166,3 +166,14 @@ def test_spec_processing_checkpoint_is_documented_and_not_an_acceptance_receipt(
     assert "RUNNING" in index and "ACCEPTED" in index
     assert "**AP-R15:**" in contract and "existing `docs/specs/STATE.json`" in contract
     assert "source-bound" in index and "developer" in index
+
+
+
+def test_default_implementation_does_not_require_worker_or_checkpoint_mutation() -> None:
+    rules = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+    index = (SPECS / "README.md").read_text(encoding="utf-8")
+    assert "Ordinary tasks use direct development (`DEFAULT`)" in rules
+    assert "Do not run Aider, spawn WORKER_MODEL, change `STATE.json`" in rules
+    assert "DEFAULT is the normal implementation path" in index
+    assert "Ordinary DEFAULT work must not change the checkpoint" in index
+    assert "RUNNING" in index and "ACCEPTED" in index

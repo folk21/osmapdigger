@@ -11,13 +11,11 @@ Default checks must be deterministic and runnable without network access, Docker
 
 Feature-level tests may reference stable capability IDs from [`FEATURES.md`](FEATURES.md) when that improves traceability. Requirement IDs remain local to their specification; tests must not invent ad-hoc repository-wide feature codes.
 
-## Verification rules for AI-assisted stages (design; no runner installed)
+## Evidence for code changes
 
-The active [development agent pipeline spec](specs/active/subspecs/development-agent-pipeline.md) defines future source-bound verification and independent review requirements. The current repository validates `docs/specs/STATE.json` structurally and semantically via `python3 tools/specs/validate_state.py`, with deterministic negative tests in `tests/test_spec_state.py`. This is **not** an automatic Aider worker, reviewer, evidence collector or stage promotion gate. Do not claim pipeline security, independent review or deployment gates passed by running `make check` alone.
+Define observable positive, negative and regression expectations before or independently of implementation. Run focused checks for affected owners, `make check`, and relevant configured native/real-data acceptance. Report blocked or unavailable checks; never weaken valid assertions merely to obtain PASS.
 
-For a ChatGPT-authored patch or future worker diff, define expected observable behavior and negative/regression conditions **before or independently of** the implementation. Run focused tests for touched owners, the canonical network-free `make check`, and `make check-all` on a configured machine when KMP/Android boundaries are touched. For real PBF, PMTiles, JCEF/native rendering, package import, mobile interaction and country-scale scored analysis, run the dedicated acceptance checks below and disclose unavailable evidence. A test assertion may be changed only to correct a demonstrably invalid expectation, never to force PASS.
-
-Any future runner must bind required check results, scanner verdict and independent reviewer to the **same exact worker source digest** and rerun after repair. Missing logs, provider failure, security findings, stale Git base, review mismatch or unavailable configured checks remain failures or explicitly unverified gates, not acceptance. Deterministic fake-backed negative cases belong in its own future test suite and must be wired into `make check` before live delegation.
+The existing `STATE.json` validator runs during `make check` but validates only specification checkpoint structure and references. It does not launch a worker, verify reviewer/security evidence, or grant stage acceptance. Optional delegation requirements are defined by the active [pipeline spec](specs/active/subspecs/development-agent-pipeline.md), not by ordinary test execution.
 
 ## Default repository check
 
@@ -315,3 +313,4 @@ Shared tests verify that Russian is the default UI language, Russian and English
 `geo-builder/tests/test_config.py` verifies that the `core10` profile publishes `beach.distance_km` as an addable Required metric (`default_enabled = false`) and does not publish legacy `water.*` metrics. Rebuild the full local Belarus package with `make build-belarus` before validating the filter chooser against generated data.
 
 For Intel macOS Desktop acceptance, verify that the lower status/details pane remains fully visible while selecting and closing settlements; the JCEF map rectangle must remain fixed above that pane.
+

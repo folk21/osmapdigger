@@ -2,22 +2,14 @@ PATCH
 
 Added/modified files:
 - AGENTS.md
-- Makefile
 - PATCH_FILES.txt
 - PATCH_NOTES.md
 - README.md
-- docs/INSTALLATION.md
 - docs/ROADMAP.md
 - docs/TESTS.md
 - docs/USAGE.md
 - docs/specs/README.md
-- docs/specs/STATE.json
-- docs/specs/active/subspecs/development-agent-pipeline-implementation-plan.md
-- docs/specs/active/subspecs/development-agent-pipeline.md
-- docs/specs/state.schema.json
 - tests/test_documentation_contracts.py
-- tests/test_spec_state.py
-- tools/specs/validate_state.py
 
 Deleted files:
 - none

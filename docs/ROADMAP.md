@@ -24,11 +24,9 @@ Status vocabulary used below:
 - **planned** — a likely next capability direction without an active implementation commitment;
 - **deferred** — intentionally outside the current roadmap horizon.
 
-## Contributor tooling — staged Aider adoption (separate from product P0)
+## Deferred contributor automation
 
-The [active design contract](specs/active/subspecs/development-agent-pipeline.md) and [advisory implementation plan](specs/active/subspecs/development-agent-pipeline-implementation-plan.md) describe a proposed staged MAIN_MODEL / Aider WORKER_MODEL workflow. **The processing checkpoint, strict schema and validator are present; no worker controller, reviewer, source-bound execution verification or guarded promotion is implemented.** This does not change the initial product umbrella `current_focus` or close any product acceptance gap.
-
-Ordered developer-controlled stages: **A1** deterministic preflight/source-bound task and policy foundation; **A2** isolated Aider execution; **A3** exact-byte checks, independent review and bounded repair; **A4** private evidence, human-approved guarded promotion and next-stage checkpoint; **A5** test-only live pilot and acceptance validation. Each requires separate implementation, tests, approval and review. Unattended batch execution, notifications and automatic merge are not part of the approved design.
+The [development-agent-pipeline spec](specs/active/subspecs/development-agent-pipeline.md) defines optional, not-yet-implemented A1–A5 tooling. The `STATE.json` checkpoint and validator are available, but no authorized Aider executor, reviewer or guarded promotion is installed. **Ordinary code changes continue directly with DEFAULT**; this tooling does not alter P0 acceptance or product `current_focus`.
 
 ## P0 — initial functional product acceptance
 
@@ -147,3 +145,4 @@ Deferred until a concrete product requirement justifies a bounded spec:
 - LLM-driven query parsing;
 - embedded listing aggregation/scraping;
 - Android-side Pyrosm/tilemaker processing.
+
