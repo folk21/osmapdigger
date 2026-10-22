@@ -11,6 +11,7 @@ local.properties
 **/.pytest_cache/
 **/.ruff_cache/
 *.pyc
+.apatch/
 
 # Raw and generated geographic data are local-only.
 data/source/osm/
