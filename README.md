@@ -72,17 +72,17 @@ Commands below run from the repository root unless noted otherwise.
 
 Each code subproject has a local `README.md`, `AGENTS.md`, and `IMPLEMENTATION.md` where useful. Root documentation owns cross-project behavior; local implementation documents map that behavior to concrete files and platform details.
 
-## AI-assisted contributor workflow
+## Development workflow
 
-Repository and nearest local [`AGENTS.md`](AGENTS.md) files remain authoritative for ChatGPT and any later Aider worker. Read [`docs/specs/README.md`](docs/specs/README.md) for `DEFAULT`/`GENSPEC`/`REVIEW` guidance, staged normative specs and separate advisory implementation plans. The [development agent pipeline spec](docs/specs/active/subspecs/development-agent-pipeline.md) and its [plan](docs/specs/active/subspecs/development-agent-pipeline-implementation-plan.md) define **future** MAIN_MODEL / WORKER_MODEL execution safeguards, not an installed Aider controller. The selected Git processing checkpoint is [`docs/specs/STATE.json`](docs/specs/STATE.json), validated using `python3 tools/specs/validate_state.py`; it cannot start a worker or establish acceptance. Current repository changes continue via developer-reviewed patches, `make check`, additional configured checks and manual Git integration.
+For ordinary changes, follow root/local [`AGENTS.md`](AGENTS.md), the owning contracts and tests. Implement directly, run `make check` and applicable platform/real-data acceptance, and let the developer review the result. No worker or orchestrator is required. Specification lifecycle and the optional contributor-tooling design are documented in [`docs/specs/README.md`](docs/specs/README.md).
 
 ## Quick verification
 
 Python 3.11+:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
+python3 -m venv .venv
+. .venv/bin/activate
 python -m pip install -e './geo-builder[dev]'
 make check
 ```
@@ -188,3 +188,4 @@ This distinction is important for both human and LLM contributors: active specs 
 ## License
 
 No final project license has been selected yet. See [`LICENSE.md`](LICENSE.md).
+

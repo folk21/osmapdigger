@@ -1,313 +1,75 @@
 ---
 type: Development Guide
 title: OsmapDigger repository development rules
-description: Repository-wide rules for architecture, implementation, documentation, testing, and artifact hygiene.
+description: Repository-wide implementation rules and verification boundaries.
 ---
-# OsmapDigger repository development rules
+# OsmapDigger development rules
 
-This file defines repository-wide development rules for coding agents working on OsmapDigger.
-
-Follow it strictly. Read the nearest local `AGENTS.md` before changing `mobile/`, `geo-builder/`, or `geo-format/`. Local instructions may add stricter rules for their scope, but must not weaken repository-wide invariants.
-
-Prefer the smallest correct change that satisfies the task.
-
-## Project intent
-
-OsmapDigger is an offline-first Kotlin Multiplatform application plus a Python geospatial build pipeline for local settlement and geographic analysis.
-
-The stable architectural rule is:
-
-> Heavy OSM/GIS preparation happens at build time; Desktop and Android consume explicit generated contracts and perform deterministic local analysis without requiring a backend.
-
-The runtime is country-agnostic. Dataset configuration may describe Belarus, Andorra, a region, or another supported extract, but country-specific behavior must not leak into generic runtime control flow.
+Read this file and the nearest local `AGENTS.md` before editing. Read the owning code, tests, contracts, and relevant active specification. **Ordinary tasks use direct development (`DEFAULT`)**: implement a bounded change, run checks, and hand the result to the developer. An existing agent-pipeline specification or `STATE.json` entry never activates a worker.
 
 ## Source of truth
 
-Use this ownership order when sources disagree:
+- Code and persisted schemas define **implemented** behavior; tests demonstrate only behavior actually verified.
+- Active specs define **intended** changes and pending acceptance. Planned specs are not authorization; archived specs are historical.
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) owns stable boundaries; [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) and local `IMPLEMENTATION.md` files own current wiring.
+- [`docs/specs/README.md`](docs/specs/README.md) owns spec lifecycle, [`docs/FEATURES.md`](docs/FEATURES.md) stable capability IDs, and [`docs/TESTS.md`](docs/TESTS.md) validation commands.
+- When docs disagree with actual code/contracts, verify and correct the owning document; do not create duplicate authorities or invent source state.
 
-1. production code, machine-readable persisted contracts, and schema/migration definitions define implemented behavior;
-2. tests define behavior that has been verified;
-3. active specifications define intended changes that are still in progress or awaiting acceptance;
-4. [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) defines stable system boundaries and dependency direction;
-5. [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) and subproject `IMPLEMENTATION.md` files explain current wiring, adapters, and implementation details;
-6. other owning documents define configuration, installation, usage, testing, roadmap, and feature vocabulary;
-7. archived specifications are historical context only.
+## Architecture
 
-For spec-driven work, read [`docs/specs/README.md`](docs/specs/README.md), the relevant active specification, owning current-state documentation, tests, and implementation before editing.
+Build-time Python (`geo-builder/`) transforms local PBF and configuration into validated, versioned SQLite/metadata/PMTiles packages. Desktop/Android consume those packages offline. Normal runtime MUST NOT parse PBF, perform heavy GIS builds, or require a backend. Dataset logic is country-agnostic.
 
-An active spec owns the intended delta, not already accepted current-state behavior. When documentation conflicts with implemented behavior, verify the behavior, fix the owning document, and avoid duplicating the same rule in multiple places.
+- `geo-format/` owns SQLite/metadata compatibility between Python writers and Kotlin readers.
+- `mobile/core` owns immutable domain models and pure geographic calculations.
+- `mobile/application` owns headless search, ranking, workspace, settings, Favorites, and integration contracts.
+- `mobile/presentation` owns deterministic localization, formatting and explanations.
+- `mobile/shared` owns Compose UI and renderer-neutral map integration.
+- `mobile/desktopApp` / `mobile/androidApp` own platform files, SQLite adapters, package installation, native rendering, browser actions and lifecycle.
 
-## Architecture boundaries
+Dependencies go downward (`core` → `application` → `presentation` → `shared`, with platform hosts above them); never introduce a cycle or reach into a higher layer. UI MUST NOT own SQL, PBF/category selectors, metrics algorithms, scoring formulas or persisted-format parsing. Map renderer details MUST NOT determine analytical search results. Consult [`mobile/AGENTS.md`](mobile/AGENTS.md), [`geo-builder/AGENTS.md`](geo-builder/AGENTS.md) and [`geo-format/AGENTS.md`](geo-format/AGENTS.md) for owner-specific invariants.
 
-- `geo-builder/` owns OSM parsing, configured feature extraction, metric calculation, map generation, package validation, and package publication.
-- `geo-format/` owns persisted SQLite/metadata semantics and compatibility versioning.
-- `mobile/core` owns immutable country-agnostic domain models and pure geographic calculations.
-- `mobile/application` owns headless dataset/search/analysis/preferences/workspace/settings/notebook/external contracts and logic.
-- `mobile/presentation` owns platform-independent localization, formatting, summaries, and score explanations.
-- `mobile/shared` owns shared Compose UI plus renderer-neutral map/runtime composition contracts.
-- `mobile/desktopApp` and `mobile/androidApp` own platform filesystem/database APIs, package installation, browser integration, native renderers, and lifecycle.
+## Code changes
 
-Dependency direction must remain acyclic. Lower modules must not reach upward for convenience.
+- Change the **smallest coherent owner scope**. Preserve unrelated behavior; no opportunistic refactors, speculative frameworks or ceremonial layers.
+- Add an abstraction or public interface only for a concrete caller, boundary, lifecycle or tested variation. Keep public APIs narrow; prefer composition, explicit ownership and immutable boundary values.
+- Do not introduce or change module dependencies, public cross-module contracts or ownership without a requirement and corresponding owning-contract update.
+- Configuration, not hardcoded country, dataset, provider or machine-specific branches, controls variability. Do not embed secrets, private paths, remote endpoints or generated asset locations in code.
+- Make state, threading/cancellation, resource cleanup and failure semantics explicit. Kotlin coroutine cancellation MUST propagate. Separate programmer invariants (`require`/`check`) from typed expected operational failures; do not expose raw platform exceptions as user-facing contracts.
+- For Python, keep imports side-effect-free (no PBF reads, network, tilemaker/Docker or output writes), make stages independently testable and publish artifacts only after staged validation.
+- For KMP, keep Android/JVM-only APIs in platform hosts; do not duplicate common SQL or settings migrations across adapters.
+- Document non-obvious public API invariants and important lifecycle/security decisions with concise English KDoc/docstrings. Do not add comments that restate code, and keep existing comments correct.
 
-UI must not own SQL, persisted-row parsing, metadata JSON parsing, OSM selector semantics, geospatial algorithms, or scoring formulas.
+## Data and compatibility
 
-Python configuration must not leak directly into runtime code. Generated `metric_definition` rows are the runtime metric/filter contract; additive `metric_preference_default` rows are the separate dataset scoring-default contract.
+`geo-format/VERSION`, `geo-format/schema.sql` and `geo-format/metadata.schema.json` are compatibility-sensitive. Before changing them, inspect writer, validator and **both** platform readers. Add writer/reader regression coverage and update the owning contract. Incompatible persisted semantics require versioning/migration; never silently reuse stable metric, settlement or feature IDs.
 
-MapLibre-specific concerns must not leak into domain/search logic.
+- Missing `settlement_metric` values are unknown, **not numeric zero**.
+- Generated `metric_definition` provides runtime filter semantics; `metric_preference_default` independently provides scoring defaults. Runtime must not read Python TOML or infer metric behavior from ID strings.
+- Generated dataset SQLite stays read-only. Mutable user settings/Favorites are application-owned, dataset-scoped, versioned and migration-safe.
+- Package import/publishing must validate paths, reject traversal, manage resources explicitly and preserve existing valid output on failure.
 
-## Code structure and design
+## Tests and evidence
 
-- Keep architecture flexible but simple. Do not add abstractions, layers, interfaces, or indirection without a concrete boundary or variation.
-- Apply DRY thoughtfully. Remove stable duplication that creates maintenance risk, but prefer limited duplication over premature generalization.
-- Prefer composition over inheritance.
-- Keep public APIs small and explicit.
-- Keep mutable state and resource ownership obvious.
-- Prefer immutable models at domain and cross-layer boundaries.
-- Keep classes/functions reasonably sized and cohesive; do not split code mechanically to satisfy arbitrary size rules.
-- Preserve unrelated behavior and avoid drive-by refactors.
-- Do not introduce hidden conventions that cannot be discovered from the repository.
-- Configuration is preferred over hardcoded environment-, provider-, country-, or dataset-specific behavior.
+- For behavior changes, write or update observable positive, negative, boundary and regression cases derived from the requirement or reproduced defect **independently of implementation**. Prefer owner-level unit/synthetic tests and temporary data; add integration/platform checks for affected boundaries.
+- Default tests MUST NOT need public network, production credentials, large PBF datasets, tilemaker/Docker, external services or nondeterministic sleeps. Use controllable clocks/fakes where practical.
+- Diagnose test failures as product defects, invalid expectations or environment errors. Do not skip, weaken, mock away or rewrite a valid assertion to obtain PASS; preserve original regression coverage when correcting an invalid test.
+- Run focused checks, then canonical `make check`; run applicable `make check-all`, real PBF/package, native Desktop/Android or PMTiles gates according to [`docs/TESTS.md`](docs/TESTS.md). Report exact results and unavailable gates, never invent PASS.
+- Install a project-local `.venv` before Python checks when needed (`python3 -m venv .venv`; `. .venv/bin/activate`; `python -m pip install -e './geo-builder[dev]'` for a new environment or missing test dependencies). Do not alter global Python settings.
 
-## Persisted contracts and user-owned state
+## Documentation and specification lifecycle
 
-`geo-format/VERSION`, `geo-format/schema.sql`, and `geo-format/metadata.schema.json` are compatibility-sensitive contracts between independent Python writers and Kotlin readers.
+Only update the **owning** document when behavior, architecture, contracts, configuration, commands or acceptance evidence change. Do not add a changelog entry or broad documentation rewrite for a trivial local fix. English is required for repository documentation, code/test comments and configuration comments.
 
-When changing persisted dataset semantics:
+Use existing Feature IDs from [`docs/FEATURES.md`](docs/FEATURES.md) where they improve traceability; do not invent IDs per patch or refactor. An active spec records an intended delta and required evidence, not a second implementation history. Move accepted knowledge into current-state docs and archive a completed spec **by move**, not copy. `verification-pending` remains active until its acceptance evidence is complete.
 
-- inspect Python writers and validators;
-- inspect Android and Desktop readers;
-- update `geo-format/IMPLEMENTATION.md` and root `docs/IMPLEMENTATION.md` when current behavior changes materially;
-- increment `geo-format/VERSION` for incompatible changes;
-- add or update writer/reader tests.
+## Optional delegated execution
 
-Mutable application settings and Favorites belong to application-owned storage, not generated datasets. Keep historical migration semantics stable and use explicit forward migrations for later schema changes.
+The design in [`docs/specs/active/subspecs/development-agent-pipeline.md`](docs/specs/active/subspecs/development-agent-pipeline.md) is **not an installed executor**. `docs/specs/STATE.json`, its schema and validator are a read-only-validated, developer-maintained **between-run checkpoint**, not a lock, approval, worker command, runtime status or acceptance record. **Do not run Aider, spawn WORKER_MODEL, change `STATE.json` or apply stage/promotion rules during ordinary DEFAULT work.** Explicit developer authorization plus an implemented and independently verified executor are required for any future delegation. Worker test/reviewer PASS does not confer developer acceptance. Keep this experimental tooling separate from product acceptance and ordinary code changes.
 
-Stable metric IDs, settlement IDs, and published feature IDs are compatibility/navigation contracts. Do not reuse an existing ID for materially different semantics.
+## Approval and handoff
 
-## Python rules
+**Always:** inspect affected owners/contracts/tests; make the narrowest correct change; preserve compatibility and user data; run real checks; disclose missing evidence, changed/deleted files and remaining risks.
 
-- Importing builder modules must not read PBF data, access the public network, invoke tilemaker/Docker, or write generated artifacts.
-- Keep PBF access, metric calculation, persistence, map generation, package validation, and orchestration separable.
-- Use explicit pipeline stages and deterministic processing.
-- Public functions/classes should have type hints and useful docstrings when their contract is not obvious.
-- Use synthetic GeoDataFrames and temporary directories in default tests; real PBF/tool integration is explicit.
-- Build into staging, validate, then publish atomically.
+**Ask before:** dependency/plugin upgrades, new modules or cross-module ownership, incompatible persisted-format changes, new storage/backend/network requirements, stable-ID semantic changes or broad refactors not expressly requested.
 
-## Kotlin rules
-
-- Use idiomatic Kotlin and explicit nullability/state contracts.
-- Keep platform APIs behind small interfaces or adapters.
-- Keep core/application logic free of Android/JVM UI/filesystem/database APIs.
-- Keep SQL out of shared UI and high-level search orchestration.
-- Always propagate coroutine cancellation; do not accidentally translate cancellation into an ordinary operational failure.
-- Use `require`/`check` for programmer/domain invariants and typed operational failures for expected runtime/storage/package failures crossing user-facing boundaries.
-- KDoc important public contracts and platform adapters, especially where lifecycle, read-only behavior, URI rewriting, compatibility, or security assumptions matter.
-- Do not expose raw `Throwable.message` as a stable user-facing contract.
-
-## Configuration and external I/O
-
-Do not hardcode secrets, developer-machine paths, external URLs, provider choices, country-specific rules, or behavior that belongs in configuration.
-
-External web searches are explicit user actions only. Core filtering/ranking must remain local and deterministic.
-
-Dataset/package operations must preserve path-traversal protection, explicit resource ownership, validation-before-publication, and failure-safe replacement semantics.
-
-## Dependencies
-
-Keep the dependency surface small.
-
-Before adding a library, check whether Kotlin/JDK/Python standard facilities or an existing dependency already solve the problem clearly.
-
-Do not add or upgrade dependencies/plugins, introduce a new persistence technology, or add a framework-wide abstraction for one local problem unless the task explicitly requires it or the user approves it.
-
-## Testing rules
-
-Every behavioral or contract change requires appropriate tests.
-
-Use the smallest useful layer first:
-
-- Python unit/synthetic GIS tests for builder logic;
-- `core/commonTest` for domain invariants and pure calculations;
-- `application/commonTest` for headless search/analysis/workspace/settings/notebook behavior;
-- `presentation/commonTest` for deterministic formatting/localization/explanation;
-- `shared/commonTest` for shared UI/map/runtime integration contracts;
-- Desktop/Android platform tests for platform adapters and persistence;
-- focused headless/acceptance tests for cross-feature workflows;
-- configured/manual acceptance only where real PBF, MapLibre/native UI, browser, or platform dialogs are essential.
-
-Default tests must not depend on:
-
-- public network access;
-- live external websites/APIs;
-- production credentials;
-- large downloaded datasets;
-- nondeterministic timing when a controllable source can be used.
-
-Feature-level tests may reference stable IDs from [`docs/FEATURES.md`](docs/FEATURES.md) when that improves traceability. Do not invent ad-hoc feature codes in tests.
-
-Never disable or weaken a failing test merely to make the build green. Never claim a build/test passed unless it was actually run successfully.
-
-`make check` is the canonical network-free repository gate. `make check-all` is the broader configured KMP/Android gate. Focused commands and the current validation matrix belong in [`docs/TESTS.md`](docs/TESTS.md).
-
-When adding a new repository-wide verification step, wire it into the appropriate canonical workflow and update `docs/TESTS.md` when the command matrix changes.
-
-## MAIN_MODEL / WORKER_MODEL contribution workflow
-
-AI-assisted implementation is governed by the same source ownership, tests, and Git safety rules as human development. The staged design contract is [`docs/specs/active/subspecs/development-agent-pipeline.md`](docs/specs/active/subspecs/development-agent-pipeline.md); its `-implementation-plan.md` companion is advisory. **The Aider controller described there is not implemented yet.** Do not invoke uninstalled worker/controller commands.
-
-- A `MAIN_MODEL` (ChatGPT) may implement bounded ordinary changes directly, prepare a staged normative spec and companion plan, or independently review source-bound worker output. Model responses do not grant execution, Git or acceptance authority.
-- A `WORKER_MODEL` through Aider may edit only the paths in a validated, explicitly developer-approved stage packet **after** the required executor, policy, isolation, checks and reviewer components are implemented and verified. Worker-authored tests are not independent acceptance oracles.
-- The validated `docs/specs/STATE.json` is a developer-maintained between-run checkpoint only; use `python3 tools/specs/validate_state.py`. It must not be updated during a source-bound run or treated as approval, a runtime lock or acceptance.
-- The developer controls feature branches, baseline/spec approval, execution authorization, final review, acceptance, push and manual PR merge. No model PASS, check PASS, stage commit or Git ref update means spec acceptance.
-- A new staged spec must identify affected owners, requirements, ordered stage IDs, risks, allowed paths and acceptance evidence, plus a same-directory advisory `*-implementation-plan.md`. Existing verification-pending product specs are not retroactively converted to worker plans.
-- Verify exact source bytes after any worker repair or manual change. Fail closed on dirty/stale Git state, out-of-scope edits, missing checks, unavailable security/reviewer evidence, unknown risk or source drift; do not weaken valid tests or fabricate a successful gate.
-
-See [`docs/specs/README.md`](docs/specs/README.md) for specification lifecycle and [`docs/TESTS.md`](docs/TESTS.md) for actual canonical verification commands.
-
-## Documentation ownership
-
-Each topic should have one authoritative owner:
-
-| Topic | Owner |
-|---|---|
-| Repository overview and quick start | `README.md` |
-| Agent development rules | `AGENTS.md` + nearest local `AGENTS.md` |
-| Stable architecture and dependency direction | `docs/ARCHITECTURE.md` |
-| Current cross-project implementation/wiring | `docs/IMPLEMENTATION.md` |
-| Dataset/build/runtime configuration | `docs/CONFIGURATION.md` |
-| Installation/toolchain setup | `docs/INSTALLATION.md` |
-| User/operator workflows and commands | `docs/USAGE.md` |
-| Test strategy and validation commands | `docs/TESTS.md` |
-| Future work | `docs/ROADMAP.md` |
-| Stable capability vocabulary | `docs/FEATURES.md` |
-| Completed notable changes | `CHANGELOG.md` |
-| Specification workflow/navigation | `docs/specs/README.md` |
-| Git-tracked specification processing checkpoint | `docs/specs/STATE.json` (schema and `tools/specs/validate_state.py`) |
-| Intended significant changes | active specifications |
-| Persisted SQLite/metadata contract | `geo-format/` |
-| Subproject implementation details | owning subproject `IMPLEMENTATION.md` |
-
-Do not create a second document that restates an existing owner's content. Link to the owning document instead.
-
-Specifications describe intended changes, not permanent current-state architecture. After acceptance, move stable knowledge into the owning documentation and archive the completed specification.
-
-Keep specification lifecycle state unambiguous:
-
-- a spec exists in exactly one lifecycle location (`active/` or `archive/`), never both;
-- archival is a move, not a duplicated copy;
-- umbrella `current_focus`, `docs/specs/README.md`, and the active tree must agree;
-- an implemented-but-unverified slice may remain active with `verification-pending`;
-- accepted behavior belongs in current-state documentation rather than being maintained twice in an active spec.
-
-Keep specs synchronized with [`docs/FEATURES.md`](docs/FEATURES.md):
-
-- identify existing feature IDs in each active spec's `Feature scope`;
-- add a genuinely new durable capability to the catalog before using its ID elsewhere;
-- do not create a feature ID merely because a new spec, patch, refactor, or implementation stage exists;
-- never rename/remove a published feature ID in one document only.
-
-Do not update broad documentation or CHANGELOG for trivial local fixes that do not change behavior, contracts, architecture, validation workflow, or contributor-facing knowledge.
-
-### Documentation writing style
-
-Repository documentation is working context for both developers and coding agents. Optimize it for precise interpretation and efficient retrieval.
-
-- Use clear, direct, modern English.
-- Preserve technical precision; simplify language, not contracts or invariants.
-- Use stable terminology for the same concept across code, docs, specs, and tests.
-- Prefer short paragraphs with one primary assertion.
-- State ownership, dependency direction, ordering, failure semantics, compatibility, and extension points explicitly when they affect implementation.
-- Use normative words consistently in specifications: `must`, `must not`, `should`, and `may`.
-- Separate processing sequences from logical rules and failure semantics.
-- Clearly distinguish implemented behavior from planned work, technical debt, and future extensions.
-- Prefer concrete references to modules, schemas, configuration keys, and persistence owners over abstract descriptions.
-- Use Mermaid for architectural/process/sequence diagrams; avoid ASCII-art flow diagrams.
-- All code, comments, KDoc/docstrings, tests, configuration comments, `AGENTS` files, README files, and project documentation are in English.
-
-### Document metadata
-
-Managed Markdown uses a minimal OKF-compatible YAML frontmatter profile:
-
-- `type`;
-- `title`;
-- `description`.
-
-Specification relationship/lifecycle metadata is owned by [`docs/specs/README.md`](docs/specs/README.md). Do not add timestamps, tags, provenance, dependency lists, or other metadata without a concrete current use.
-
-## Data and artifact hygiene
-
-Raw/generated geographic data and local runtime artifacts are local-only. Do not commit or include in shareable source archives:
-
-- `data/source/osm/`;
-- `data/generated/`;
-- `.osm.pbf`;
-- `.pmtiles`;
-- generated `.sqlite` databases;
-- `.omd.zip` dataset packages;
-- caches, virtual environments, build outputs, secrets, local `.env` values, IDE metadata, or temporary files.
-
-FULL archives preserve a clean `osmapdigger/` repository root. PATCH archives contain only added/modified files and explicitly list deleted paths.
-
-## Always / Ask first / Never
-
-### Always
-
-- Read this file and the nearest applicable local `AGENTS.md`.
-- Inspect existing implementation, contracts, tests, and active specification before introducing a new pattern.
-- Identify the owning layer/module/document before editing.
-- Stay inside the requested scope unless the task requires a coherent cross-boundary change.
-- Preserve public contracts and data ownership.
-- Make the smallest coherent change.
-- Update tests for behavioral/contract changes.
-- Run and report relevant validation.
-- Report changed files, deleted files, and anything not verified.
-
-### Ask first, unless the task explicitly authorizes it
-
-- Add or upgrade dependencies/plugins.
-- Introduce a new Gradle module or change module dependency direction/ownership.
-- Make an incompatible `geo-format` or dataset-package contract change.
-- Change stable metric IDs, feature IDs, or externally meaningful persisted semantics.
-- Introduce a backend/network requirement for core runtime behavior.
-- Introduce a new persistence technology or cross-cutting infrastructure.
-- Perform a broad refactor affecting unrelated areas.
-
-### Never
-
-- Create circular module dependencies.
-- Put SQL, PBF parsing, or domain algorithms into UI code.
-- Parse OSM PBF in normal Desktop/Android runtime behavior.
-- Treat missing metric data as numeric zero unless an explicit contract says so.
-- Reach around an owning module's public contract for convenience.
-- Hardcode developer-machine paths, secrets, country/provider behavior, or generated dataset locations.
-- Commit generated geographic data or build/cache artifacts.
-- Disable tests to hide regressions.
-- Invent requirements, APIs, migrations, benchmark numbers, dataset evidence, or test results.
-- Perform unrelated cleanup while completing a focused task.
-
-## Working style
-
-1. Identify the owning module/document and applicable local instructions.
-2. Inspect implementation, persisted contracts, tests, active spec, and owning docs.
-3. State the intended scope when the task is substantial.
-4. Reuse existing patterns when they are sound; do not clone a bad pattern merely for consistency.
-5. Implement the smallest correct change.
-6. Run focused validation, then broader checks appropriate to the changed boundary.
-7. Update only owning documentation and affected feature/spec references.
-8. Report changes, validation, remaining uncertainty, deleted files, and a concise commit message.
-
-## Progressive disclosure
-
-Read detailed guidance only when relevant:
-
-- [`docs/FEATURES.md`](docs/FEATURES.md) — stable feature vocabulary;
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — stable system/module boundaries;
-- [`docs/IMPLEMENTATION.md`](docs/IMPLEMENTATION.md) — current cross-project implementation and wiring;
-- [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) — dataset/metric/provider configuration;
-- [`docs/TESTS.md`](docs/TESTS.md) — test layers and validation commands;
-- [`docs/specs/README.md`](docs/specs/README.md) — specification lifecycle and ID conventions;
-- [`mobile/AGENTS.md`](mobile/AGENTS.md) — KMP/runtime rules;
-- [`geo-builder/AGENTS.md`](geo-builder/AGENTS.md) — geospatial builder rules;
-- [`geo-format/AGENTS.md`](geo-format/AGENTS.md) — persisted compatibility rules.
-
-When in doubt, preserve existing contracts and module boundaries, choose the smaller change, and do not invent missing requirements.
+**Never:** bypass module APIs, mix SQL/PBF processing into UI, silently treat missing data as zero, commit generated PBF/SQLite/PMTiles/ZIP data or secrets, weaken tests, fabricate Git/test/evidence state, or modify unrelated code merely for cleanup.

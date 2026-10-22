@@ -5,13 +5,6 @@ description: Operational commands and runtime workflows for building, validating
 ---
 # Usage
 
-## Developer workflow with ChatGPT and planned Aider
-
-Use `DEFAULT` for ordinary bounded ChatGPT changes, `GENSPEC` for a staged normative spec plus advisory companion, and `REVIEW` for an independently supplied source-bound diff/evidence assessment. Workflow selectors are interpreted from the **current request**, not from older chat text or source files. See [`specs/README.md`](specs/README.md).
-
-The [development agent pipeline](specs/active/subspecs/development-agent-pipeline.md) is an **active design**, not a command that can be run today. The selected [processing checkpoint](specs/STATE.json) has an independent read-only validator (`python3 tools/specs/validate_state.py`) but no execution authority. Until its stages are implemented and validated, the developer creates/reuses a feature branch, reviews/applies generated PATCHes, executes `make check` and relevant configured checks, inspects the diff, and manually commits, pushes and merges after review. No Aider worker/promotion command is installed in OsmapDigger; configuration or checkpoint contents cannot authorize an execution.
-
-
 ## Command ownership
 
 This document is an operational reference. Architecture belongs in [`ARCHITECTURE.md`](ARCHITECTURE.md); concrete module behavior belongs in [`IMPLEMENTATION.md`](IMPLEMENTATION.md) and subproject implementation guides.
@@ -320,3 +313,4 @@ make desktop-headless-analysis-acceptance \
 ```
 
 The CLI is intended for diagnostics, acceptance scenarios, and CI-style reproduction. Headless scored acceptance validates the real Desktop data/application path but does not replace native smoke checks for MapLibre/JCEF rendering, browser launch, system save/share dialogs, or visual layout constraints.
+
