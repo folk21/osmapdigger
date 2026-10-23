@@ -60,13 +60,18 @@ The allowed checkpoint phases are `DESIGN`, `READY_TO_DELEGATE`, `READY_FOR_REVI
 
 Only the developer may change and commit the checkpoint at a **clean Git boundary between source-bound runs**, after verifying the actual HEAD, stage and associated evidence. Do not edit it during initialization, execution, review, or pending promotion of a bound run. When the source baseline is uncertain, or the checkpoint is missing, invalid or stale, stop and reconcile with actual Git/evidence; never infer permission or acceptance from the umbrella's `current_focus`, the roadmap, or this index. Keep product acceptance navigation separate from the selected contributor-tooling workstream. Updating `STATE.json` does not start Aider, update Git refs, authorize a worker, accept a stage, or archive a spec.
 
-## Ordinary development and optional delegation
+## Staged specifications and MAIN_MODEL / WORKER_MODEL delegation
 
-**DEFAULT is the normal implementation path.** Read the active requirement or reproduced defect, edit the owning code directly, add regression tests, run `make check` and applicable native/integration checks, and obtain developer review. No stage packet, Aider, `STATE.json` change or orchestrator is required. A `verification-pending` spec records outstanding acceptance evidence, not an instruction to restart its implementation.
+For **new** implementation slices intentionally delegated across multiple sessions, `MAIN_MODEL` must write both:
 
-Only when the developer **explicitly selects delegated staged work**, a new stage-oriented sub-spec needs a normative change contract with stable local requirement/stage IDs, scope, protected paths, compatibility, failure semantics and independently observable acceptance cases, plus a same-directory advisory `<subspec-stem>-implementation-plan.md` with file-level guidance and test scenarios. The plan is not a separate spec, worker permission or acceptance record; move it with its spec on archival. Do not retrofit legacy specs with plans.
+- a **normative** sub-spec, owning stable local requirement IDs, ordered `stage` IDs, affected modules, stage-specific allowed/protected path boundaries, failure/compatibility semantics and independent acceptance criteria;
+- a **same-directory advisory** `<subspec-stem>-implementation-plan.md`, with module and API context, candidate file-by-file edits, expected algorithms/signatures, test fixtures, positive/negative/boundary/regression scenarios, canonical/configured gates and unresolved decisions.
 
-A validated packet, approved source base and working isolated executor would be prerequisites to actual delegation. **None is currently installed**: the [pipeline specification](active/subspecs/development-agent-pipeline.md) and its [advisory plan](active/subspecs/development-agent-pipeline-implementation-plan.md) remain an independent tooling design, not product P0 work. Never infer permission to execute Aider from this document or `STATE.json`.
+`stage` is a durable machine identity for an implementation slice, not another Feature ID. The plan must not have `document_role: subspec`, its own `spec_status`, independent acceptance status, or authority to override the normative spec. Mark unknown paths and decisions clearly; a worker may not turn a candidate file or free-form task note into edit authorization. New staged plans follow their normative spec on active-to-archive **paired moves**. Legacy specs without staged delegation are not required to gain plans retroactively.
+
+The developer commits a reviewed spec/plan baseline on one feature branch before any source-bound worker run. Packet, provider, path, branch, risk and check authorization must be explicit. ChatGPT `GENSPEC` produces designs only; `DEFAULT` does not silently invoke a worker; `REVIEW` needs actual final diff and bound check/reviewer evidence. An agent's implementation, independent reviewer PASS, successful check or stage commit does not accept a spec. Developer acceptance, owning-doc updates and archival are separate decisions.
+
+The contributor-tooling design is [`active/subspecs/development-agent-pipeline.md`](active/subspecs/development-agent-pipeline.md), with [advisory implementation guidance](active/subspecs/development-agent-pipeline-implementation-plan.md). It is orthogonal to product P0 acceptance despite the mandatory current umbrella-parent navigation link. The repository provides a validated `STATE.json` **checkpoint**, but it does **not** yet provide an Aider stage controller, independent reviewer adapter, worker execution, or guarded promotion.
 
 ## Active tree
 
@@ -81,7 +86,7 @@ active/
 
 Rules:
 
-- processing checkpoint fields belong to `STATE.json`, never to this index;
+- machine-readable processing checkpoint status belongs only to `STATE.json`, not this index;
 - the umbrella defines the active product/system target;
 - one sub-spec is the current implementation or acceptance focus;
 - other sub-specs may remain active only while they define unresolved supporting or verification-pending constraints;
@@ -133,7 +138,7 @@ Do not create a sub-spec for:
 2. A reviewed future slice may start under `docs/specs/planned/subspecs/` with `spec_status: planned`.
 3. When implementation becomes current, move that slice into `docs/specs/active/subspecs/`, set `spec_status: active`, and update umbrella `current_focus`.
 4. Record its parent and document lifecycle state in frontmatter.
-5. For explicitly authorized staged delegation only, update/commit `STATE.json` at a developer-controlled between-run checkpoint and validate with `python3 tools/specs/validate_state.py`. Ordinary DEFAULT work must not change the checkpoint.
+5. Update/commit `STATE.json` only at a developer-controlled between-run Git checkpoint; validate it with `python3 tools/specs/validate_state.py`. The umbrella `current_focus`, roadmap, and this index are navigation and product-acceptance references, not processing state or authorization.
 6. Reference stable feature IDs from `docs/FEATURES.md` in a `Feature scope` section.
 7. Give important normative requirements stable local IDs when tests/reviews need them.
 8. Implement and validate the slice while preserving root/local `AGENTS.md` invariants.
@@ -215,11 +220,15 @@ Writing rules:
 - do not restate accepted current-state detail when a current-state document already owns it;
 - keep feature IDs stable and requirement IDs local to the spec.
 
-## Acceptance and optional stage checkpoints
+## Evidence and delegated stage lifecycle
 
-Ordinary implementation: verify affected requirements with independent test expectations and real checks, record unavailable evidence, obtain developer acceptance, update owning documentation and archive the completed spec (and any companion) together. No delegation-specific checkpoint is involved.
+1. Establish requirements and observable success/failure oracles independently of the worker; keep module ownership explicit and escalate changes to `geo-format`, platform/native boundaries and unapproved dependencies.
+2. Review the normative spec and companion plan; choose or create one `feature/*` branch, commit the accepted design and validated `STATE.json` at a clean Git checkpoint (only between source-bound runs).
+3. Only after the pipeline stages are implemented and accepted, developer-authorize **one** source-bound stage packet, isolated worker attempt, exact-byte focused and canonical checks, security policy gates and independent review.
+4. Failed/blocked/repaired attempts retain evidence; changed bytes require fresh checks/review. Promotion is a separate human-authorized guarded Git operation, not reviewer acceptance. Developer manually transitions to the next stage after verifying source identity and predecessor receipt, then updates `STATE.json` only between runs.
+5. After all stages, perform whole-feature requirement coverage, configured/native gates as applicable, final MAIN_MODEL review, developer acceptance and manual PR/merge. Synchronize owning documentation and archive normative spec + companion together, never on a stage PASS alone.
 
-For separately authorized staged delegation, the developer first commits the reviewed normative spec/plan and validates the source-bound packet. Each approved worker attempt would require isolated edits, exact-byte tests/security checks, independent review and a developer decision before any guarded promotion or next stage. `STATE.json` may change **only between runs**. The pipeline and promotion operations remain unimplemented; their normative details belong in the [pipeline specification](active/subspecs/development-agent-pipeline.md). Source-bound reviewer PASS, checks and checkpoint state do not establish product acceptance.
+The current processing checkpoint is [`STATE.json`](STATE.json); stage runner availability is defined separately by implemented tooling. The actual verification command matrix is owned by [`../TESTS.md`](../TESTS.md). A workflow described here is not a claim of an installed executor or completed gate.
 
 ## Active specifications
 
@@ -227,7 +236,11 @@ Umbrella:
 
 - [`active/spec-initial-functional-product.md`](active/spec-initial-functional-product.md) — initial country-agnostic offline dataset builder + KMP Desktop/Android product umbrella.
 
-Current acceptance focus:
+Current product development focus:
+
+- [`active/subspecs/settlement-interpretation-and-goal-profiles.md`](active/subspecs/settlement-interpretation-and-goal-profiles.md) — P1 `ANALYSIS.INTERPRETATION` staged normative contract and [advisory implementation plan](active/subspecs/settlement-interpretation-and-goal-profiles-implementation-plan.md); P0 verification remains open.
+
+P0 verification-pending acceptance focus:
 
 - [`active/subspecs/settlement-shortlist-workflow.md`](active/subspecs/settlement-shortlist-workflow.md) — `CANDIDATES.IMPORT`, `FAVORITES.NOTEBOOK`, `FAVORITES.SNAPSHOTS`, `FAVORITES.EXPORT`, `ANALYSIS.EXPLANATION`, and `EXTERNAL.PROPERTY_SEARCH` workflow.
 
@@ -240,7 +253,7 @@ Verification-pending supporting increments:
 
 ## Planned specifications
 
-- [`planned/subspecs/settlement-interpretation-and-goal-profiles.md`](planned/subspecs/settlement-interpretation-and-goal-profiles.md) — planned `ANALYSIS.INTERPRETATION` layer for goal-oriented dimensions, traceable practical insights, and compact visual summaries over the existing transparent Preference/ranking engine. This is P1 and does not block current P0 acceptance.
+No separate planned normative sub-spec is currently selected. The interpretation sub-spec has moved to `active/subspecs/`; no duplicate planned copy should remain.
 
 ## Recently completed sub-specifications
 

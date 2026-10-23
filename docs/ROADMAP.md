@@ -13,7 +13,9 @@ Do not add acceptance state to `FEATURES.md`. Feature IDs remain stable while ro
 
 The initial functional product is implementation-heavy and acceptance-oriented rather than greenfield. The KMP architecture-hardening track is accepted and archived: `PLATFORM.MODULAR_KMP` now enforces the `:core` → `:application` → `:presentation` → `:shared` direction with platform hosts above shared contracts.
 
-The current acceptance focus is [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md). Its implementation, automated shared/headless acceptance, and representative Belarus/Andorra calibration evidence are complete; native/manual Desktop/Android evidence remains before archival.
+The current **P0 acceptance** focus remains [`specs/active/subspecs/settlement-shortlist-workflow.md`](specs/active/subspecs/settlement-shortlist-workflow.md). Its implementation, automated shared/headless acceptance, and representative Belarus/Andorra calibration evidence are complete; native/manual Desktop/Android evidence remains before archival.
+
+The new **P1 development focus** is the staged [`ANALYSIS.INTERPRETATION` sub-spec](specs/active/subspecs/settlement-interpretation-and-goal-profiles.md) and its [advisory plan](specs/active/subspecs/settlement-interpretation-and-goal-profiles-implementation-plan.md). This explicit shift does not accept, cancel, or enlarge any P0 verification obligation.
 
 `desktop-analysis-workspace`, `desktop-map`, and `user-preferences` are also verification-pending. They remain separate because changing the current focus does not implicitly accept their configured/manual evidence. The representative Andorra data-only and strict full-package build/publication evidence is now complete; native Desktop/Android consumption remains tracked by the platform rows below.
 
@@ -24,9 +26,9 @@ Status vocabulary used below:
 - **planned** — a likely next capability direction without an active implementation commitment;
 - **deferred** — intentionally outside the current roadmap horizon.
 
-## Deferred contributor automation
+## Contributor tooling — parked, outside the current product plan
 
-The [development-agent-pipeline spec](specs/active/subspecs/development-agent-pipeline.md) defines optional, not-yet-implemented A1–A5 tooling. The `STATE.json` checkpoint and validator are available, but no authorized Aider executor, reviewer or guarded promotion is installed. **Ordinary code changes continue directly with DEFAULT**; this tooling does not alter P0 acceptance or product `current_focus`.
+The existing [development-agent-pipeline design](specs/active/subspecs/development-agent-pipeline.md) and the independent contributor-tooling `STATE.json` checkpoint are historical/planning context only for the present product work. **No Aider implementation, execution, or staged contributor automation is part of this P1 plan.** This parked workstream does not affect P0 acceptance or the newly selected P1 product `current_focus`.
 
 ## P0 — initial functional product acceptance
 
@@ -59,9 +61,9 @@ Do not start another broad architecture track while these acceptance gaps are op
 
 Capability anchors: `ANALYSIS.INTERPRETATION`, `ANALYSIS.PREFERENCES`, `ANALYSIS.RANKING`, `ANALYSIS.EXPLANATION`, `PRESENTATION.ANALYSIS_WORKSPACE`.
 
-Planned sub-spec: [`specs/planned/subspecs/settlement-interpretation-and-goal-profiles.md`](specs/planned/subspecs/settlement-interpretation-and-goal-profiles.md).
+Active staged sub-spec: [`specs/active/subspecs/settlement-interpretation-and-goal-profiles.md`](specs/active/subspecs/settlement-interpretation-and-goal-profiles.md) with [advisory implementation plan](specs/active/subspecs/settlement-interpretation-and-goal-profiles-implementation-plan.md).
 
-The next product-level analysis improvement should make existing metrics easier to understand rather than primarily adding more raw metrics. Planned directions:
+The selected P1 improvement makes existing metrics easier to understand rather than primarily adding more raw metrics. Its ordered implementation stages are `SI-S01` through `SI-S14`; no stage is yet accepted. Intended outcomes:
 
 - aggregate effective metric qualities into a small set of human-readable dimensions such as nature, everyday services, transport accessibility, seclusion, and environmental comfort;
 - provide explicit goal profiles such as balanced living, nature and quiet, family convenience, and remote retreat;
