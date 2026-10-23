@@ -4,7 +4,7 @@ title: OsmapDigger initial functional product specification
 description: Active umbrella specification for the initial country-agnostic offline product and dataset pipeline.
 document_role: umbrella
 spec_status: active
-current_focus: subspecs/settlement-shortlist-workflow.md
+current_focus: subspecs/settlement-interpretation-and-goal-profiles.md
 ---
 # OsmapDigger initial functional product specification
 
@@ -32,9 +32,11 @@ This umbrella owns the initial offline product target across these stable capabi
 
 Current and verification-pending sub-specs refine additional analysis, Favorites, settings, and presentation features under this umbrella. Feature identifiers are defined in [`../../FEATURES.md`](../../FEATURES.md).
 
-## Current acceptance focus
+## Current development focus and remaining P0 acceptance
 
-Current acceptance sub-spec:
+The developer has selected active P1 interpretation design/implementation as the new `current_focus`: [`subspecs/settlement-interpretation-and-goal-profiles.md`](subspecs/settlement-interpretation-and-goal-profiles.md). The existing P0 verification-pending acceptance obligations remain open and independent; no acceptance is implied by this navigation change.
+
+Remaining P0 acceptance sub-spec:
 
 - [`subspecs/settlement-shortlist-workflow.md`](subspecs/settlement-shortlist-workflow.md) — persistent Favorites/notebook, imported candidate lists, frozen analysis snapshots, export/share, and batch external searches.
 
@@ -51,11 +53,9 @@ remaining acceptance checks are recorded.
 This document remains the active umbrella specification. The linked current-focus sub-spec refines one
 bounded implementation increment and does not replace or supersede the umbrella requirements.
 
-## Planned post-P0 analysis interpretation
+## Active P1 interpretation extension
 
-A non-blocking follow-up sub-spec is maintained at [`../planned/subspecs/settlement-interpretation-and-goal-profiles.md`](../planned/subspecs/settlement-interpretation-and-goal-profiles.md). It introduces the planned `ANALYSIS.INTERPRETATION` capability: goal-oriented dimensions, explicit goal profiles, traceable strengths/trade-offs, and compact visual semantics over the existing transparent Preference/ranking engine.
-
-This planned work does **not** enlarge the P0 acceptance map above and must not delay archival of the initial functional product once the current acceptance gaps are closed. Promote the planned sub-spec to the active implementation focus only through an explicit roadmap/spec lifecycle change.
+The active [`subspecs/settlement-interpretation-and-goal-profiles.md`](subspecs/settlement-interpretation-and-goal-profiles.md) specifies a separately accepted P1 analysis capability with goal profiles, dimensions, evidence and deterministic insights. It does **not** enlarge or complete the P0 acceptance map, which remains governed by its existing verification-pending owners. Both tracks must retain separate evidence and acceptance decisions.
 
 ## Goal
 
@@ -74,7 +74,7 @@ The first production-oriented package is expected to cover Belarus. The reposito
 
 Most of the initial vertical slice is implemented. Stable architecture, package/build behavior, runtime wiring, configuration, and test commands are documented in the owning current-state documents rather than duplicated here.
 
-This umbrella remains active because acceptance still requires the remaining native/manual Desktop and Android end-to-end checks plus strict representative country-scale analysis evidence. Representative Andorra data-only and strict full-package build/publication evidence is complete. The current bounded acceptance focus is the linked settlement-shortlist sub-spec.
+This umbrella remains active because acceptance still requires the remaining native/manual Desktop and Android end-to-end checks plus strict representative country-scale analysis evidence. Representative Andorra data-only and strict full-package build/publication evidence is complete. The open P0 shortlist acceptance belongs to its existing sub-spec, independently of the new P1 implementation focus.
 
 ## Acceptance map
 
@@ -358,3 +358,4 @@ Close the initial functional product in this order:
 5. Confirm package-import safety and repository artifact hygiene, move any newly discovered stable behavior into owning docs, and archive this umbrella only when every blocking acceptance-map row is accepted.
 
 Exact commands and the current validation matrix belong in [`../../TESTS.md`](../../TESTS.md); the changing cross-feature closure order belongs in [`../../ROADMAP.md`](../../ROADMAP.md).
+
