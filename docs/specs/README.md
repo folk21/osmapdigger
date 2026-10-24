@@ -62,7 +62,7 @@ Only the developer may change and commit the checkpoint at a **clean Git boundar
 
 ## Staged specifications and MAIN_MODEL / WORKER_MODEL delegation
 
-DEFAULT is the normal implementation path for product changes. `GENSPEC` prepares a normative specification and a separate advisory implementation plan without changing application code; `REVIEW` examines an actual diff and available verification evidence. Ordinary `DEFAULT` product work does not require Aider, `WORKER_MODEL`, or changes to `STATE.json`. Product-stage progress is tracked by the owning specification and verified source/test evidence, independently of the contributor-pipeline checkpoint.
+DEFAULT is the normal implementation path for product changes. `GENSPEC` prepares a normative specification and a separate advisory implementation plan without changing application code; `REVIEW` examines an actual diff and available verification evidence. Ordinary DEFAULT work must not change the checkpoint; its state belongs exclusively to an explicitly authorized contributor-pipeline workflow. Ordinary `DEFAULT` product work does not require Aider, `WORKER_MODEL`, or changes to `STATE.json`. Product-stage progress is tracked by the owning specification and verified source/test evidence, independently of the contributor-pipeline checkpoint.
 
 For **new** implementation slices intentionally delegated across multiple sessions, `MAIN_MODEL` must write both:
 
