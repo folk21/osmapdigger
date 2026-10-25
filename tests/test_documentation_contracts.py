@@ -169,11 +169,34 @@ def test_spec_processing_checkpoint_is_documented_and_not_an_acceptance_receipt(
 
 
 
-def test_default_implementation_does_not_require_worker_or_checkpoint_mutation() -> None:
+def test_product_work_does_not_depend_on_optional_tooling_or_checkpoint_mutation() -> None:
     rules = (ROOT / "AGENTS.md").read_text(encoding="utf-8")
     index = (SPECS / "README.md").read_text(encoding="utf-8")
-    assert "Ordinary tasks use direct development (`DEFAULT`)" in rules
-    assert "Do not run Aider, spawn WORKER_MODEL, change `STATE.json`" in rules
-    assert "DEFAULT is the normal implementation path" in index
-    assert "Ordinary DEFAULT work must not change the checkpoint" in index
+    assert "Ordinary product work must not launch the optional stage runner" in rules
+    assert "mutate `STATE.json`" in rules
+    assert "This repository does not prescribe how or with which tools contributors author changes." in rules
+    assert "Ordinary product work must not change the checkpoint" in index
+    assert "Repository rules do not select an authoring tool" in index
     assert "RUNNING" in index and "ACCEPTED" in index
+
+
+def test_contributor_docs_do_not_prescribe_named_authoring_tools() -> None:
+    docs = [ROOT / "AGENTS.md", ROOT / "README.md", ROOT / "PATCH_NOTES.md"]
+    docs.extend(path for path in (ROOT / "docs").rglob("*.md"))
+    forbidden_names = ("Chat" + "GPT", "Ai" + "der", "Open" + "AI")
+    for path in docs:
+        content = path.read_text(encoding="utf-8").casefold()
+        for name in forbidden_names:
+            assert name.casefold() not in content, f"{path} prescribes or mentions a named authoring tool"
+
+
+def test_optional_pipeline_has_detailed_provider_neutral_stage_guidance() -> None:
+    spec = (ACTIVE / "subspecs/development-agent-pipeline.md").read_text(encoding="utf-8")
+    plan = (ACTIVE / "subspecs/development-agent-pipeline-implementation-plan.md").read_text(encoding="utf-8")
+    for stage in ("A1", "A2", "A3", "A4", "A5"):
+        assert f"## {stage} —" in plan
+    for requirement in range(1, 19):
+        assert f"AP-R{requirement}" in spec
+    for section in ("## Data contracts and state ownership", "## Validation matrix and repeatable handoff", "## Decisions requiring explicit approval before implementation"):
+        assert section in plan
+    assert "not yet implemented" in plan or "not implemented" in plan

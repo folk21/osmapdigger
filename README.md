@@ -174,7 +174,7 @@ Raw PBF files, generated SQLite databases, PMTiles archives, `.omd.zip` packages
 
 `archive.sh` creates a shareable repository ZIP while excluding local geographic data and build artifacts.
 
-`concat_osmapdigger.sh` creates a source/documentation snapshot for LLM review through a configured external concatenation helper. It includes active specs and excludes raw/generated GIS data plus archived specs.
+`concat_osmapdigger.sh` creates a source/documentation snapshot for offline inspection through a configured external concatenation helper. It includes active specs and excludes raw/generated GIS data plus archived specs.
 
 ## Documentation model
 
@@ -183,7 +183,7 @@ Raw PBF files, generated SQLite databases, PMTiles archives, `.omd.zip` packages
 - Local `IMPLEMENTATION.md` files own subproject internals; current implementation details are not split into a parallel `docs/implementation/` topic layer.
 - [`docs/specs/`](docs/specs/) contains intended deltas for significant work. The active initial product spec remains there until the current vertical slice is accepted.
 
-This distinction is important for both human and LLM contributors: active specs say what a change must become; implementation docs say what the repository currently does.
+This distinction is important for all contributors: active specs say what a change must become; implementation docs say what the repository currently does.
 
 ## License
 
