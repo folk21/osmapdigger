@@ -5,7 +5,7 @@ description: Repository-wide implementation rules and verification boundaries.
 ---
 # OsmapDigger development rules
 
-Read this file and the nearest local `AGENTS.md` before editing. Read the owning code, tests, contracts, and relevant active specification. **Ordinary tasks use direct development (`DEFAULT`)**: implement a bounded change, run checks, and hand the result to the developer. An existing agent-pipeline specification or `STATE.json` entry never activates a worker.
+Read this file and the nearest local `AGENTS.md` before editing. Read the owning code, tests, contracts, and relevant active specification. Ordinary implementation is a direct, developer-controlled workflow: make a bounded change, run checks, and provide reviewable source changes. The existence of an optional contributor-tooling specification or `STATE.json` checkpoint never activates execution.
 
 ## Source of truth
 
@@ -62,9 +62,9 @@ Only update the **owning** document when behavior, architecture, contracts, conf
 
 Use existing Feature IDs from [`docs/FEATURES.md`](docs/FEATURES.md) where they improve traceability; do not invent IDs per patch or refactor. An active spec records an intended delta and required evidence, not a second implementation history. Move accepted knowledge into current-state docs and archive a completed spec **by move**, not copy. `verification-pending` remains active until its acceptance evidence is complete.
 
-## Optional delegated execution
+## Optional contributor tooling
 
-The design in [`docs/specs/active/subspecs/development-agent-pipeline.md`](docs/specs/active/subspecs/development-agent-pipeline.md) is **not an installed executor**. `docs/specs/STATE.json`, its schema and validator are a read-only-validated, developer-maintained **between-run checkpoint**, not a lock, approval, worker command, runtime status or acceptance record. **Do not run Aider, spawn WORKER_MODEL, change `STATE.json` or apply stage/promotion rules during ordinary DEFAULT work.** Explicit developer authorization plus an implemented and independently verified executor are required for any future delegation. Worker test/reviewer PASS does not confer developer acceptance. Keep this experimental tooling separate from product acceptance and ordinary code changes.
+The [contributor-stage tooling design](docs/specs/active/subspecs/development-agent-pipeline.md) is **not an installed executor**. `docs/specs/STATE.json`, its schema and validator form a read-only-validated, developer-maintained **between-run checkpoint**; they are not locks, permissions, runtime status or acceptance records. **Ordinary product work must not launch the optional stage runner, mutate `STATE.json`, or invoke promotion rules.** Any future automated execution requires separately approved tooling, source identity, risk policy, checks and developer authorization. No automated check or review grants developer acceptance. This repository does not prescribe how or with which tools contributors author changes.
 
 ## Approval and handoff
 

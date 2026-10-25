@@ -9,7 +9,7 @@ description: Advisory stage-by-stage implementation guidance and independent ver
 
 This is an **advisory** plan for the normative [settlement interpretation specification](settlement-interpretation-and-goal-profiles.md). The spec's `SI-R1`–`SI-R16` requirements and `SI-S01`–`SI-S14` stages control intended behavior and acceptance. This plan provides anticipated files, boundaries, algorithm sketches and independently defined fixtures. It is not an approval to change protected contracts, an automated-run packet or a substitute for source inspection.
 
-Read `README.md`, `AGENTS.md`, `docs/specs/README.md`, the normative spec, `docs/ARCHITECTURE.md`, `docs/IMPLEMENTATION.md`, `docs/CONFIGURATION.md`, `docs/TESTS.md`, nearest applicable `AGENTS.md`, and the current source/tests before each stage. The supplied evidence is a **text snapshot**, not a Git checkout. Confirm actual file paths and clean source identity against a current complete repository before preparing a new overlay. All work uses developer-controlled ChatGPT `DEFAULT` scoped PATCHes after this `GENSPEC` design; **no Aider, worker orchestrator, hidden reviewer, or automated Git promotion is used**.
+Read `README.md`, `AGENTS.md`, `docs/specs/README.md`, the normative spec, `docs/ARCHITECTURE.md`, `docs/IMPLEMENTATION.md`, `docs/CONFIGURATION.md`, `docs/TESTS.md`, nearest applicable `AGENTS.md`, and the current source/tests before each stage. The supplied evidence is a **text snapshot**, not a Git checkout. Confirm actual file paths and clean source identity against a current complete repository before preparing a new overlay. The developer controls each implementation stage and its verification. No specific authoring tool, transfer format, external executor, reviewer service or Git automation is required by this product plan.
 
 ### Architectural owners
 
@@ -216,8 +216,8 @@ Each stage's candidate paths are limited to its actual owner and affected focuse
 
 ## Handoff and next iteration discipline
 
-- The **next two stages** after this `GENSPEC` deliverable are `SI-S01` and `SI-S02`. Treat each as a separate requested `DEFAULT` change with focused coverage and `apatch` ZIP+JSON handoff. Do not run implementation automatically from this document.
+- The **next two implementation stages** are `SI-S01` and `SI-S02`. Complete each as a separately reviewed scoped change with focused verification. This document does not authorize execution.
 - At each stage, inspect current files/tests, produce independent expected results before coding, perform scoped changes, run real focused checks and clearly report unrun configured/native gates.
 - Update the companion plan only for grounded discoveries; update the normative spec when an actual requirement, ordering, schema or acceptance rule changes. Do not silently weaken test or acceptance requirements to fit implementation.
 - `docs/specs/STATE.json` is a separate contributor-tooling checkpoint (currently A1 / DESIGN in the supplied snapshot). It is **not** the source of truth for this product-spec stage, and must not be repurposed without a separately approved change.
-- The developer owns baseline approval, Git and acceptance. A repository-changing `GENSPEC` and any subsequent implementation use the same two-artifact `apatch` handoff; a findings-only `REVIEW` yields no source PATCH. The branch is one `feature/*` for this spec, not one branch per stage, unless the developer explicitly chooses otherwise.
+- The developer owns baseline approval, Git operations, review and acceptance. The repository does not prescribe a patch-delivery utility or the number of feature branches; every change must be based on verified current source and the selected branch policy.

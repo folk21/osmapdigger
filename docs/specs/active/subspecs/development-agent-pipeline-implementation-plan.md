@@ -1,106 +1,233 @@
 ---
 type: Implementation Guide
-title: Development agent pipeline implementation plan
-description: Advisory file-by-file and test-oriented implementation guidance for OsmapDigger staged Aider development.
+title: Optional contributor-stage pipeline implementation plan
+description: Advisory design, interfaces, file-level slices, threat scenarios, and test oracles for a tool-independent optional contributor pipeline.
 ---
-# Development agent pipeline — implementation plan
+# Optional contributor-stage pipeline — implementation plan
 
-This is advisory implementation guidance for the normative [development agent pipeline](development-agent-pipeline.md). The plan is neither an executable task packet nor permission to run Aider, configure external models or change a Git ref. `MAIN_MODEL` owns specification/review; a later `WORKER_MODEL` implements only developer-authorized paths and records deviations.
+## Purpose and authority
 
-## Source and ownership mapping
+This document is **advisory**, paired with the normative [contributor-stage pipeline specification](development-agent-pipeline.md). It is intentionally independent of authoring tools, model families, vendors, chat products, patch transports, and review services. Neither document selects how OsmapDigger is developed. The optional pipeline is **parked** and must not be implemented, activated, or invoked during ordinary product work without a separate developer decision.
 
-Read in order: root `README.md`, root `AGENTS.md`, `docs/specs/README.md`, normative spec, this plan, then owning docs/contracts/tests. Follow nearest `AGENTS.md` for any touched `mobile/`, `geo-builder/` or `geo-format/` areas. OsmapDigger has a strict `docs/specs/STATE.json` processing checkpoint and read-only validator, but **no** `tools/agent-pipeline/` controller, reviewed provider registry, Aider wrapper, run-evidence contract or independent reviewer adapter. Candidate paths listed below do not exist yet unless verified against a newer checkout.
+Normative `AP-R1`–`AP-R18` and stages `A1`–`A5` belong to the specification. The file layout, type names, command surfaces, payload sketches and numeric limits below are **candidate designs**, not implemented public APIs, accepted schemas, installed commands, approved dependencies, or permission to edit or access a repository. Do not turn illustrative examples into runtime behavior without a reviewed contract. `docs/specs/STATE.json` and its read-only validator exist; the controller, isolated executor, reviewer integration, evidence custody and promotion do **not**.
 
-| Concern | Existing boundary / intended integration |
-|---|---|
-| Modules | Kotlin `mobile/core`, `application`, `presentation`, `shared`, platform hosts; Python `geo-builder`; persisted `geo-format` |
-| Active specs | Product umbrella remains focused on shortlist acceptance; contributor automation is separate |
-| Checkpoint | Strict `docs/specs/STATE.json`, schema, semantic validator and deterministic tests; no runtime authority |
-| Verification | `make check` network-free; `make check-all` configured KMP/Android; see `docs/TESTS.md` |
-| Source identity | Verify real local Git HEAD/status and spec/plan hashes before any later worker run |
-| Worker | Aider-only isolated adapter is planned, not installed or authorized by this document |
-| Reviewer | Separate approved provider/model, egress/privacy and structured result validation; not implemented |
-| Security | Approved scanner/version and scope will be required; no pipeline scanner exists yet |
-| Evidence | Future private custody path distinct from generated data or cleanup targets |
-| Git | Existing `feature/*` workflow; guarded CAS promotion only after implementation/approval |
+Read first: `README.md`, root `AGENTS.md`, `docs/specs/README.md`, the paired normative spec, `docs/ARCHITECTURE.md`, `docs/TESTS.md`, and owning code/tests. Read the nearest module `AGENTS.md` if a future authorized stage touches `mobile/`, `geo-builder/` or `geo-format/`. The project remains offline-first; optional contributor tooling must never become a runtime dependency of Desktop/Android or the dataset builder.
 
-## A1 — source-bound foundation (first implementation)
+## Ownership, scope, and invariants
 
-Normative IDs: `AP-R1`–`AP-R4`. **Developer-led**, no Aider calls and no network in the test harness. Expected owner: new `tools/agent-pipeline/`, with tests in `tools/agent-pipeline/tests/`, and focused canonical integration in `Makefile` and `docs/TESTS.md` when implementation is ready. Use Python stdlib where feasible; new dependencies require approval.
-
-Candidate files (**not yet implemented**):
-
-- `tools/agent-pipeline/README.md` — actual command/contract owner after implementation, distinguishing available commands from roadmap.
-- `tools/agent-pipeline/agent_pipeline.py` — CLI/service for `preflight`/packet validation and source identity; must be safe in read-only mode.
-- `tools/agent-pipeline/stage-task.schema.json` — typed immutable packet contract. Avoid executable strings supplied by the model.
-- `tools/agent-pipeline/pipeline-policy.json` — reviewed allowed-path/risk/check inventory, not a provider secret store.
-- `tools/agent-pipeline/tests/test_agent_pipeline.py` — fake Git roots, hostile path/symlink variants, schema/security tests.
-- `tests/test_agent_pipeline_integration.py` (optional) — network-free check wiring and policy/document consistency.
-
-Reference packet fields (illustrative, **not** an accepted schema): `schemaVersion`, `specPath`, `specSha256`, `planSha256`, `stageId`, `requirementIds`, `orderedStageIds`, `baseCommit`, `featureBranch`, `readablePaths`, `editablePaths`, `riskClass`, `requiredChecks`, `workerModelRef`, `reviewerModelRef`, `approvalRef`. Validate actual branch/HEAD and normalized paths in the controller, not by reading a model-provided claim. A human approval reference cannot prove approval on its own.
-
-Suggested path policy: default deny; explicitly permit scoped source/test/doc paths for the stage, read only authoritative instructions and contracts. For `geo-format/VERSION`, `geo-format/schema.sql`, `geo-format/metadata.schema.json`, mobile platform adapters, native map/rendering, security/storage changes, dependency/configuration updates or generated data, escalate risk and require manual design/approval; never infer LOW risk from file suffix alone.
-
-Independent acceptance scenarios:
-
-| ID | Setup / action | Expected result |
+| Existing owner | Concrete role | Boundary |
 |---|---|---|
-| `AP-A1-P01` | Clean temporary Git repo at the exact packet base, valid active spec and bounded test file | Read-only preflight succeeds without modifying checkout or contacting provider |
-| `AP-A1-N01` | Dirty/untracked file, stale `HEAD` or wrong feature branch | Preflight rejects; no worker/evidence mutation |
-| `AP-A1-N02` | Wrong spec or plan digest, unknown stage, duplicate/invalid JSON fields | Rejection with explicit cause, no implicit permission |
-| `AP-A1-N03` | `../` escape, absolute path, symlink alias to protected data, mode/symlink changes | Rejection before any file access outside approved root |
-| `AP-A1-B01` | Empty edited scope, missing canonical check, unknown risk, protected format contract | Fail closed or escalate; no LOW-risk authorization |
-| `AP-A1-R01` | A1 test suite re-run with no Aider/provider/network installed | Deterministic PASS on valid fixtures only |
+| `docs/specs/STATE.json` | Current selected-stage checkpoint | Developer-maintained; not a lock, run record, permission or acceptance |
+| `docs/specs/state.schema.json` | Checkpoint shape | Do not widen phases/decisions to encode execution status |
+| `tools/specs/validate_state.py` | Read-only semantic checkpoint validation | Must not execute, mutate Git, inspect secrets or contact services |
+| `tests/test_spec_state.py` | Deterministic checkpoint regressions | Retain the negative cases when adding optional tooling |
+| `AGENTS.md` and nearest local guides | Source ownership/security/testing invariants | Not a set of runnable stage packets |
+| `docs/TESTS.md` and `Makefile` | Canonical verification commands | `make check` remains deterministic and network-free |
+| `tools/agent-pipeline/` | **Candidate new** tooling owner, absent in supplied FULL | Never call an unimplemented tool |
+| `tools/agent-pipeline/tests/` | **Candidate new** fake-backed test owner | No real external credentials, services or user data |
 
-Gate: focused fake-backed tests and `make check`; independent code review of source identity, scope and default-deny invariants. No live provider execution at A1.
+The developer authorizes each stage and final acceptance. A validated packet does not grant its own authorization. A passing test, review or signed summary does not alter Git refs. Any unexpected path, dirty worktree, stale source identity, unapproved configuration, missing mandatory check, or ambiguous state must fail closed **before** external execution. Source/cross-layer contracts and valid tests always outrank a generated suggestion.
 
-## A2 — isolated Aider worker
+The parked optional tooling is not part of `ANALYSIS.INTERPRETATION` or product P0/P1 acceptance. Its own implementation does not change `geo-format`, user settings, GIS packages or Android/Desktop runtime behavior. Any later authorized source changes remain subject to the owning module policies, including high-risk escalation, and ordinary development must not require network access.
 
-Normative IDs: `AP-R5`–`AP-R7`; depends on accepted A1. Candidate updates: `agent_pipeline.py`, new `run_aider_stage.sh` (only after reviewed CLI contract), `pipeline-policy.json`, `tests/test_agent_pipeline.py`, `tools/agent-pipeline/README.md`. The actual command syntax, pinned Aider version, compatible model provider, credential source and cost/time limits need approval and conformance tests. Do not use unverified endpoint configuration.
+## Proposed component boundaries (not yet implemented)
 
-1. Check clean source, packet digest and explicit developer authorization; create a separate temporary Git worktree from immutable base.
-2. Invoke Aider as the only supported worker adapter with auto-commits disabled, no unapproved Git or provider options, approved files only and bounded resource/time budgets.
-3. Record exact attempted task bytes, stdout/stderr with redaction, exit status, changed paths including untracked files, file modes and symlinks, source digest and declared worker deviations.
-4. Validate every changed path against approved scope; fail on no meaningful diff, unsupported tool, mutated inputs, unexpected file or missing evidence.
-5. Keep developer checkout and refs unchanged; do not stage/commit/promote from worker execution.
+Use the smallest set of Python standard-library modules that enforces the security boundaries. The names below are candidates, not a requirement to create every file at once.
 
-Scenario matrix: `AP-A2-P01` fake worker produces bounded test-only diff and stable digest; `AP-A2-N01` outside-path edit; `AP-A2-N02` no-diff; `AP-A2-N03` Aider auto-commit attempt; `AP-A2-N04` credential/unsupported model; `AP-A2-B01` symlink, binary and file-mode changes; `AP-A2-R01` interruption retains attempt evidence without unauthorized ref movement. Use fake subprocesses for deterministic tests; a real Aider smoke requires separate opt-in approval.
+| Candidate file | Responsibility | Stage first needed |
+|---|---|---|
+| `tools/agent-pipeline/README.md` | Actual supported commands and threat/permission contract **only after implementation** | A1 |
+| `tools/agent-pipeline/agent_pipeline.py` | Thin orchestration entry point; never mixes command parsing, shell execution and authorization | A1 |
+| `tools/agent-pipeline/stage-task.schema.json` | Closed typed packet fields and versioned semantics | A1 |
+| `tools/agent-pipeline/pipeline-policy.json` | Reviewable path classes, required check IDs, risk escalation, resource limits | A1 |
+| `tools/agent-pipeline/packet.py` | Strict parsing, duplicate-field rejection, canonical digest and immutable DTOs | A1 |
+| `tools/agent-pipeline/git_snapshot.py` | `HEAD`, branch, tree/status/ref identity via checked subprocess argv | A1 |
+| `tools/agent-pipeline/path_policy.py` | Root-relative normalization, symlink safety, changed-path inventory | A1 |
+| `tools/agent-pipeline/execution.py` | Isolated worktree lifecycle, externally supplied adapter interface, budgets | A2 |
+| `tools/agent-pipeline/evidence.py` | Append-only attempt/manifest records and source-bound digests | A2/A4 |
+| `tools/agent-pipeline/verification.py` | Approved check IDs to fixed commands and exact-byte attestations | A3 |
+| `tools/agent-pipeline/review.py` | Independent typed review result parser and evidence binding | A3 |
+| `tools/agent-pipeline/promotion.py` | Developer-authorized compare-and-swap Git promotion only | A4 |
+| `tools/agent-pipeline/tests/test_*.py` | Temporary Git fixtures, fake adapters and adversarial oracles | A1–A5 |
+| `tests/test_agent_pipeline_integration.py` | Canonical-check wiring and repository contract tests if needed | A1/A3 |
 
-## A3 — deterministic verification, independent review, bounded repair
+No package layout or new dependency is mandatory until source review confirms the current repository baseline and an approved implementation slice. In particular, do not add a shell wrapper, external provider SDK, reviewer service, credential manager or scanner by assumption.
 
-Normative IDs: `AP-R8`–`AP-R11`; depends on accepted A2. Candidate updates: `agent_pipeline.py`, `pipeline-policy.json`, a reviewed reviewer endpoint registry/schema under `tools/agent-pipeline/`, verification tests/oracles, `docs/TESTS.md`. A new pinned secret scanner (for example Gitleaks) is a proposed dependency and must be explicitly approved; until configured, no automated security PASS can be asserted.
+## Data contracts and state ownership
 
-- For Python builder changes, run focused tests plus `make check` and appropriate synthetic/package acceptance. For KMP module changes, require focused Gradle tests and `make check-all` on configured hosts. For geospatial/native workflows, declare real PBF/PMTiles and device checks explicitly; absent data means **not verified**.
-- A separate reviewer must receive sanitized, source-bound diff/spec/plan/task/check evidence, never uncontrolled raw secrets/provider logs. Validate reviewer response schema and source digest. Reviewer model is distinct from coding model in policy.
-- Repair only a classified, approved low-risk implementation defect; use one initial attempt and no more than three **policy-approved** repairs as a candidate maximum, not a promise to retry. Every attempt has a new task digest, fresh checks and fresh review.
+### Candidate immutable task packet (A1)
 
-Scenarios: `AP-A3-P01` valid checks and independent structured review for same diff; `AP-A3-N01` correct regression test fails; `AP-A3-N02` stale or mismatched review digest; `AP-A3-N03` malformed schema, missing logs or security finding; `AP-A3-N04` reviewer timeout/network/429; `AP-A3-B01` exhausted repair budget; `AP-A3-R01` post-repair bytes force complete revalidation; `AP-A3-A01` worker weakens a valid assertion (must block). Separate product defects from invalid test and infrastructure failures.
+The proposed fields form a **design checklist**, not an accepted JSON Schema:
 
-## A4 — evidence, guarded commit, next checkpoint
+| Field | Candidate type / invariant |
+|---|---|
+| `schemaVersion` | Fixed supported positive integer; reject unknown versions |
+| `repoId` | Exact expected repository identifier; reject unknown roots |
+| `specPath`, `planPath` | Existing bounded repository-relative files; must belong to the same staged feature |
+| `specSha256`, `planSha256` | 64 lowercase hex characters, compared with current **file bytes** |
+| `stageId`, `requirementIds` | Referenced normative stage and requirements; nonempty and deduplicated |
+| `orderedStageIds` | Exact ordered roster from normative spec; reject skipped/reordered stages |
+| `baseCommit`, `featureBranch` | Verified `HEAD`/branch identity; branch must match an approved `feature/*` ref |
+| `readablePaths`, `editablePaths` | Explicit root-relative allowlists; no glob expansion without reviewed semantics |
+| `riskClass` | `LOW`, `HIGH`, or `UNKNOWN`; unknown and protected changes escalate |
+| `requiredChecks` | Ordered identifiers from an independently approved fixed check registry |
+| `executorRef`, `reviewerRef` | Optional non-secret identifiers for separately configured adapters, never credentials |
+| `approvalRef` | Non-secret developer-side pointer; **not** proof of authorization by itself |
 
-Normative IDs: `AP-R12`–`AP-R15`; depends on accepted A3. Candidate files: evidence export/verify utilities and tests under `tools/agent-pipeline/`. Existing `docs/specs/STATE.json`, `docs/specs/state.schema.json`, `tools/specs/validate_state.py` and their deterministic tests provide a structural processing checkpoint; A4 must integrate them without treating checkpoint contents as execution authorization or live evidence.
+Parser obligations: strict UTF-8, bounded file size and field lengths, reject duplicate JSON keys, unknown required/privileged fields, unexpected numeric/coercion types, `NaN`/infinities, absolute paths, `..`, empty path components, ambiguous Unicode separators and string-encoded executable commands. Canonical packet serialization and SHA-256 are needed only for immutable identity; do not hash a display-only reformat and call it the original task. Approval is verified outside self-asserted packet fields.
 
-- Preserve exact worker/check/review artifacts privately outside Gradle/pytest cleanup; a sanitized summary alone cannot attest a verified diff.
-- Developer explicitly authorizes guarded promotion. Re-verify worker digest, spec/plan/policy, required checks, reviewer identity and PASS, intended full parent, and that target `feature/*` ref is not checked out in any worktree.
-- Build commit from verified worker tree without touching developer worktree, write durable promotion intent, update exact expected ref with CAS, then write promotion receipt. On uncertainty stop for developer recovery; no speculative replay.
-- Developer checks out new HEAD, cleans up authorized worktrees, verifies predecessor receipt and then creates a new immutable packet for next stage. No automatic stage chaining.
-- Update the existing validated STATE checkpoint only through developer-controlled Git commits between source-bound runs. It is not runtime/process authority, a lock, approval, promotion or acceptance. `RUNNING`/`ACCEPTED` are invalid checkpoint values.
+### Candidate result records (A2–A4)
 
-Scenarios: `AP-A4-P01` exact source-bound guarded commit with approval; `AP-A4-N01` changed expected parent or checked-out branch; `AP-A4-N02` missing reviewer/scan/check evidence; `AP-A4-N03` changed run bytes after PASS; `AP-A4-N04` CAS failure/intention without receipt; `AP-A4-B01` missing predecessor on next stage; `AP-A4-R01` interrupted single-use `runId` cannot be replayed. All Git operations must be exercised in disposable repositories, not the developer checkout.
+Separate the following records; never mix them into `STATE.json`:
 
-## A5 — first bounded pilot and rollout
+- `preflight`: packet/policy/spec/plan digests, real Git identity, path/risk/check decisions and failure code; no external call when invalid.
+- `attempt`: fresh single-use run identifier, exact task digest, bounded adapter status, elapsed-resource outcome, source tree and changed-path manifest. Never store credentials.
+- `verification`: exact source-manifest digest, check IDs, command/environment identity, individual PASS/FAIL/BLOCKED, full private log locations and timestamps.
+- `review`: independently parsed severity findings, `PASS` / `CHANGES_REQUIRED` / `ESCALATE`, reviewer configuration identity and **identical** source digest.
+- `promotion-intent` / `promotion-receipt`: developer approval binding, expected ref/base, validated source manifest, new commit identity and CAS outcome.
 
-Normative IDs: `AP-R16`–`AP-R18`; depends on accepted A1–A4. Use a dedicated test-only fixture in `tools/agent-pipeline/tests/` as a candidate edit target and never choose a `geo-format` schema, native map renderer, platform persistence or user-data migration for first live execution.
+Use append-only per-attempt custody outside cleanable build directories; export minimized redacted summaries only. A log path or digest stored inside an editable stage packet must not be trusted as authority. Store rejection evidence even if no source change occurred. Retain raw source/log artifacts privately according to an explicit approved retention policy; **no retention period has yet been approved**.
 
-1. Developer records approved provider privacy/security, model and separate reviewer choices, limits, exact stage packet and clean `feature/*` HEAD.
-2. Run one low-risk source-bound Aider test-only stage, inspect every recorded attempt and reject any unapproved changes.
-3. Execute required checks on exact bytes, independent reviewer, MAIN_MODEL handoff and human decision. Promote only with explicit authorization and preserved receipt; do not merge automatically.
-4. Validate negative fault-injection and recovery matrix before considering wider scopes. Inspect final feature diff, rerun global checks, review all requirements and manually handle PR/CI/merge.
+### Proposed typed API seams (illustrative)
 
-Pilot evidence must include an exact input fixture, approved packet digest, before/after Git identity, worker diff digest, deterministic checks, independent review, private custody receipt, security verdict (only if configured), and developer acceptance decision. A worker PASS or a successful Git promotion alone is insufficient.
+```python
+@dataclass(frozen=True)
+class SourceIdentity:
+    repository: str
+    branch: str
+    commit: str
+    status_paths: tuple[str, ...]
 
-## Developer handoff and future changes
+@dataclass(frozen=True)
+class PreflightDecision:
+    allowed: bool
+    failure_code: str | None
+    packet_sha256: str
+    source: SourceIdentity
 
-A standalone `DEFAULT` bug fix still uses a ChatGPT PATCH and developer-run `make check`. `GENSPEC` authors a normative staged spec plus same-directory advisory plan; it does **not** invoke Aider. `REVIEW` checks a real source-bound worker diff and verified evidence; findings-only returns no PATCH. Unknown or contradictory scope triggers `ESCALATE` and explicit replan between stages. Do not treat third-party scripts, provider settings, model names or scanner installations as approved repository capabilities.
+def preflight(packet_bytes: bytes, *, repository_root: Path, policy_bytes: bytes) -> PreflightDecision: ...
 
-Later automated batching, external notifications, cross-repository scheduling and unattended Git ref movement need a new explicit specification with locks, evidence/permission boundaries, cost enforcement and recovery oracles. They are not part of A1–A5.
+def inventory_changes(worktree: Path, base_commit: str) -> tuple[ChangedPath, ...]: ...
+
+def verify_exact_source(check_ids: tuple[str, ...], source_digest: str) -> VerificationRecord: ...
+```
+
+These signatures omit important injected dependencies (Git runner, clock, checksum writer, policy parser, adapters). When implementing, inject them explicitly so authorization tests can run without any external system. Do **not** import host filesystem/network functionality at module import time. Define typed operational failures rather than return ambiguously successful `None` values.
+
+## A1 — source-bound foundation (`AP-R1`–`AP-R4`)
+
+**Deliverable:** a read-only, network-free preflight usable against disposable Git repositories, strict packet/policy validators, and negative tests. No external executor at A1.
+
+**Suggested implementation order:**
+
+1. Inspect existing `tools/specs/validate_state.py`, `docs/specs/state.schema.json`, `tests/test_spec_state.py` and root `AGENTS.md`. Record checkpoint semantics without changing them.
+2. Define independent valid/invalid packet fixtures (unknown version/key, duplicate key, stale SHA, invalid stage/requirement, mismatched branch/base, missing checks). Include positive minimal packets with an actual temporary active spec and its companion plan.
+3. Implement strict packet decoding and schema checks in `packet.py`/`stage-task.schema.json`; no string field may be evaluated, interpolated into a shell command, or treated as a credential source.
+4. Build Git identity in `git_snapshot.py` with argument-vector subprocess calls, explicit cwd, bounded output and exit checks. Verify the actual checkout and protected ref state; never trust packet values as Git facts.
+5. Validate allowlists and changed-path inventory in `path_policy.py`: canonical repository-relative paths, physical symlink containment, file modes, untracked/renamed/deleted paths, case collisions and path aliases. Reject unknown ownership and special files.
+6. Add `pipeline-policy.json` with a default-deny classification. `geo-format` contracts, installation/storage/security/platform adapters, dependency/plugin changes, network access and broad refactors require escalation, irrespective of filename extensions.
+7. Keep CLI read-only: a proposed `preflight` operation may print a typed decision but must not create worktrees, call external tools, write checkpoint state or touch refs.
+8. Wire a focused deterministic A1 test target into the documented canonical gate **only once the new tests exist**. Keep existing `make check` independent of external services.
+
+**Independent oracles:**
+
+| Scenario | Fixture/action | Required observation |
+|---|---|---|
+| `AP-A1-P01` | Clean temporary feature branch, correct packet/digests and bounded test path | Explicit allow; no file/ref/network side effect |
+| `AP-A1-N01` | Dirty tracked/untracked path, stale `HEAD`, wrong branch | Reject before execution, preserve tree and refs |
+| `AP-A1-N02` | Wrong spec/plan digest, unknown stage, duplicate JSON fields, unsupported schema version | Reject with typed reason, no implicit permission |
+| `AP-A1-N03` | Absolute/parent path, symlink escape, case alias, nested worktree, special file | Reject before unsafe path access |
+| `AP-A1-B01` | Empty edit allowlist, missing mandatory check, UNKNOWN risk, protected `geo-format` contract | Escalate or reject, never LOW authorization |
+| `AP-A1-R01` | Re-run without network, adapters, secrets or PBF data | Same decision/digest; no mutations |
+
+**Completion evidence:** tests covering every oracle, `python3 tools/specs/validate_state.py`, focused test command, network-free `make check`, independent path/security review. Explicitly list blocked gates. Do not claim A1 accepted merely because its tests pass.
+
+## A2 — isolated execution (`AP-R5`–`AP-R7`)
+
+**Prerequisite:** A1 developer acceptance and separately approved tool/credential/privacy policy. There is no default executor and no fallback that silently runs a local shell or remote service.
+
+**Suggested implementation order:**
+
+1. Define an `ExecutionAdapter` seam with bounded input bytes, approved readable/editable paths, cancellation, exit status and per-attempt output capture. Fake adapter first; external implementations are separate, opt-in extensions.
+2. Verify fresh A1 preflight, developer approval and packet digest before creating an isolated disposable worktree rooted at the exact immutable base. Preserve developer checkout and refs.
+3. Deny committing, checkout/ref updates, branch changes and unapproved spawning in the executor **independently** of tool options. If the sandbox cannot enforce this, fail closed; do not claim it is isolated.
+4. Enforce approved time/process/output budgets and cancellation semantics. A timeout or interruption is a terminal recorded attempt; never replay its run ID.
+5. Inventory changed/added/deleted/renamed files, symlink targets and modes from Git and filesystem; compare with the exact editable allowlist. Reject no-diff or out-of-scope changes.
+6. Compute stable source and task digests over final bytes, not over summaries. Preserve immutable attempt evidence privately, redacting display output without destroying necessary private diagnostics.
+7. Do not stage, commit, push, update checkpoint state or promote a ref at this stage. Distinguish expected tool failure, unsafe output and infrastructure failure.
+
+**Independent oracles:** `AP-A2-P01` approved fake edit has a stable source manifest; `AP-A2-N01` outside-path edit fails; `AP-A2-N02` no meaningful diff fails; `AP-A2-N03` attempted commit/ref change fails; `AP-A2-N04` unapproved adapter/credential source fails; `AP-A2-B01` symlink/mode/binary/untracked variation fails closed; `AP-A2-R01` interrupt/timeout preserves evidence and original refs.
+
+**Completion evidence:** fake-backed subprocess/worktree tests, unchanged developer checkout, no unapproved ref movement, positive and adversarial manifests, independent security review. A real external-tool smoke is separately authorized and not an A2 default test.
+
+## A3 — verification, independent review and bounded repair (`AP-R8`–`AP-R11`)
+
+**Prerequisite:** A2 independently accepted. This stage cannot infer reviewer approval from execution success.
+
+**Suggested implementation order:**
+
+1. Introduce a fixed, versioned check registry mapping approved check IDs to argument-vector commands; do not accept arbitrary packet-provided command strings. Use the existing `Makefile` and `docs/TESTS.md` command matrix as owner truth.
+2. Bind check execution to the exact resulting source manifest and approved environment. Capture exit code, truncated-display/full-private logs, prerequisite failures, resource budget and a new source digest after checks; fail on changed bytes during checks.
+3. Require focused tests plus `make check`; for changed Kotlin contracts require configured Gradle/Desktop/Android gates. For package/PMTiles/native behavior require explicitly marked real-data/manual evidence; absence means BLOCKED/NOT_VERIFIED, never PASS.
+4. Define a closed typed review result containing source digest, evaluated requirements, severity-ranked findings and verdict. Independently configured reviewer input must be minimized, redacted and authorized; malformed, stale or incomplete output is not approval.
+5. Use a separate risk/security decision: unsafe permissions, secret exposure, unapproved external egress or unknown scanner status stop before review/promotion. Adding a scanner or remote endpoint requires its own explicit approval and regression suite.
+6. Permit bounded repair only for a diagnosed, approved LOW-risk implementation fault. Every repair creates a new immutable attempt with new bytes/digest; repeat all required checks and review. Never change valid assertions to obtain PASS.
+7. Stop without automatic retry for policy violations, missing checks, security findings, reviewer drift, infrastructure outage, protected scope or exhausted budget.
+
+**Independent oracles:** `AP-A3-P01` matching source/check/review digests permit consideration; `AP-A3-N01` failing valid regression blocks; `AP-A3-N02` stale review digest blocks; `AP-A3-N03` malformed review/missing log/security finding blocks; `AP-A3-N04` reviewer timeout/network outage is not PASS; `AP-A3-B01` repair budget exhaustion blocks; `AP-A3-R01` any post-review edit invalidates evidence; `AP-A3-A01` assertion weakening is detected and rejected.
+
+**Completion evidence:** reproducible per-check records, review schema/parser tests, source-digest replay tests, privacy/secret-handling checks and a documented matrix of requirements versus executable and non-executable acceptance gates.
+
+## A4 — custody, guarded promotion and checkpoint separation (`AP-R12`–`AP-R15`)
+
+**Prerequisite:** A3 developer acceptance. Do not equate repository checkpoint validation with authorization.
+
+**Suggested implementation order:**
+
+1. Specify private evidence directory ownership and atomic, bounded, append-only writes outside routine build/cache cleanup. Validate manifest bytes and digests when loading; protect secrets and log permissions.
+2. Record a developer approval bound to the exact task, policy, source manifest, check list, reviewer identity and expected base/ref. Do not trust a self-authored `approvalRef` in a packet.
+3. Prepare promotion intent *before* any ref operation, with durable expected-ref and source identity. Re-read current Git ref and verify evidence on the exact bytes immediately before action.
+4. If separately authorized to automate promotion, construct one commit from already-verified bytes and compare-and-swap only a non-checked-out `feature/*` ref. Never reset, checkout, force-push, rebase, merge or mutate `main` as a recovery shortcut.
+5. Write the promotion receipt durably. Unknown/ref-changed/CAS-failed outcome must become an explicit blocked state and be reconciled by the developer without retrying a consumed identifier.
+6. Keep `docs/specs/STATE.json` updates manual and **between** independent runs. Validate it with the existing read-only validator; do not extend schema to represent RUNNING, acceptance or a lock.
+7. Next stage packet must bind the developer-confirmed promoted HEAD and predecessor receipt; mismatches stop without execution.
+
+**Independent oracles:** `AP-A4-P01` consistent approved commit and compare-and-swap succeeds in a throwaway repo; `AP-A4-N01` changed ref fails without override; `AP-A4-N02` stale/missing approval or review evidence fails; `AP-A4-N03` modified log/manifest fails hash validation; `AP-A4-B01` interrupted promotion retains durable intent; `AP-A4-R01` consumed run ID cannot be replayed; `AP-A4-A01` checkout/HEAD/main remain unchanged on every rejection.
+
+**Completion evidence:** adversarial Git fixture suite, custody/permission checks, interruption recovery evidence and a clearly documented manual reconciliation flow. No Git acceptance claim follows automatically from a successful CAS.
+
+## A5 — authorized pilot and rollout decision (`AP-R16`–`AP-R18`)
+
+**Prerequisite:** accepted A1–A4 behavior, verified clean feature baseline, approved adapter/privacy/security configuration and individual authorization. No unattended multi-stage execution.
+
+1. Choose one low-risk, test-only stage with an independent observable acceptance oracle and explicit non-goals. Bind stage/spec/plan/policy digests, exact source identity and allowable files.
+2. Dry-run with a fake adapter and rejected-case suite. Require no file/ref/network effects on preflight denial.
+3. Run one explicitly authorized external-tool attempt only if required toolchain/permissions exist; otherwise record BLOCKED and do not fabricate pilot evidence.
+4. Collect exact input/output identity, source diff, tests, review, secret/security verdict (when configured), custody receipt and human decision. Re-run or re-review when any bytes change.
+5. Exercise adversarial recovery matrix: stale base, wrong stage, path/symlink escape, mode change, missing review/check, timeout, interruption, changed ref, tampered evidence, changed source after PASS, duplicate run ID.
+6. Independently review all `AP-R1`–`AP-R18` evidence and remaining non-executable acceptance gates. The developer alone decides whether the optional workflow is ready for broader work.
+7. On acceptance, move durable operational facts into owning documentation and archive normative spec plus companion together; do not auto-archive or claim product P0/P1 acceptance.
+
+**Independent oracles:** `AP-A5-P01` one fully approved test-only pilot retains complete evidence; `AP-A5-N01` every injected failure blocks promotion and preserves evidence; `AP-A5-N02` missing native/configured gate stays NOT_VERIFIED; `AP-A5-R01` changed bytes after PASS force rechecks and fresh review; `AP-A5-A01` no unattended queue, PR merge or cross-repository action occurs.
+
+## Validation matrix and repeatable handoff
+
+| Stage | Must run on a complete repository once implemented | Must explicitly report as unavailable if missing |
+|---|---|---|
+| A1 | Packet/path/Git fake-backed tests, checkpoint validator, `make check` | Git fixture prerequisites, Python environment |
+| A2 | Isolated fake-adapter/worktree tests + A1 regressions + `make check` | Approved real executor and sandbox policy |
+| A3 | Fixed check-registry tests, independent review parsing/digest oracles, `make check`, relevant `make check-all` | Host SDK, reviewer/scanner configuration, real datasets |
+| A4 | Evidence/recovery/CAS adversarial Git tests, validator, `make check` | Explicit promotion authorization; checked-out-ref constraints |
+| A5 | Complete fault-injection matrix, authorized one-stage pilot, source-bound review, configured checks | Network/privacy approval, native platform manual checks |
+
+At each implementation-stage handoff record: normative stage ID and AP requirement IDs; expected observable behavior; exact edited/removed paths; validation commands actually executed and results; blocked/missing evidence; new source digest; next two ordered stages; unresolved risk and decisions. The current `STATE.json` checkpoint is **not** an acceptance record and must remain untouched during ordinary app work. A manual edit to source after review invalidates prior checks and review.
+
+## Decisions requiring explicit approval before implementation
+
+- Whether this parked optional pipeline should be implemented at all; which task types, if any, warrant automation.
+- Which executor/sandbox technology can *enforce* no-commit, no-network/egress and allowed-path restrictions, independent of self-reported flags.
+- Whether third-party review/security services are used, and their privacy, credential, retention, service access and cost rules.
+- Exact packet/schema and policy versioning, resource budgets, private evidence custody/retention, and the approval proof format.
+- Whether guarded Git promotion is desired instead of a purely manual developer-owned commit workflow.
+
+Until these decisions and the stage-specific acceptance evidence exist, keep the design inactive; ordinary OsmapDigger development does not depend on or invoke it.

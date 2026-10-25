@@ -28,7 +28,7 @@ Status vocabulary used below:
 
 ## Contributor tooling — parked, outside the current product plan
 
-The existing [development-agent-pipeline design](specs/active/subspecs/development-agent-pipeline.md) and the independent contributor-tooling `STATE.json` checkpoint are historical/planning context only for the present product work. **No Aider implementation, execution, or staged contributor automation is part of this P1 plan.** This parked workstream does not affect P0 acceptance or the newly selected P1 product `current_focus`.
+The existing [development-agent-pipeline design](specs/active/subspecs/development-agent-pipeline.md) and the independent contributor-tooling `STATE.json` checkpoint are historical/planning context only for the present product work. **No optional contributor-tooling implementation or staged automation is part of this P1 plan.** This parked workstream does not affect P0 acceptance or the newly selected P1 product `current_focus`.
 
 ## P0 — initial functional product acceptance
 
@@ -144,7 +144,7 @@ Classical interpretable models should be preferred before custom neural networks
 Deferred until a concrete product requirement justifies a bounded spec:
 
 - cloud account/sync;
-- LLM-driven query parsing;
+- Natural-language query parsing;
 - embedded listing aggregation/scraping;
 - Android-side Pyrosm/tilemaker processing.
 

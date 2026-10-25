@@ -15,7 +15,7 @@ Feature-level tests may reference stable capability IDs from [`FEATURES.md`](FEA
 
 Define observable positive, negative and regression expectations before or independently of implementation. Run focused checks for affected owners, `make check`, and relevant configured native/real-data acceptance. Report blocked or unavailable checks; never weaken valid assertions merely to obtain PASS.
 
-The existing `STATE.json` validator runs during `make check` but validates only specification checkpoint structure and references. It does not launch a worker, verify reviewer/security evidence, or grant stage acceptance. Optional delegation requirements are defined by the active [pipeline spec](specs/active/subspecs/development-agent-pipeline.md), not by ordinary test execution.
+The existing `STATE.json` validator runs during `make check` but validates only specification checkpoint structure and references. It does not launch an executor, verify independent review or security evidence, or grant stage acceptance. Optional delegation requirements are defined by the active [pipeline spec](specs/active/subspecs/development-agent-pipeline.md), not by ordinary test execution.
 
 ## Default repository check
 

@@ -14,7 +14,7 @@ Active P1 **design and implementation focus**, with no implementation stage acce
 
 Parent specification: [`../spec-initial-functional-product.md`](../spec-initial-functional-product.md).
 
-This is the normative contract. The [advisory implementation plan](settlement-interpretation-and-goal-profiles-implementation-plan.md) contains module/file guidance and independently derived test scenarios. One bounded stage is implemented and verified at a time by the developer-controlled ChatGPT PATCH workflow; no Aider or other automated worker is part of this change.
+This is the normative contract. The [advisory implementation plan](settlement-interpretation-and-goal-profiles-implementation-plan.md) contains module/file guidance and independently derived test scenarios. One bounded stage is implemented and verified at a time under developer control. This product specification neither prescribes an authoring tool nor requires optional contributor-stage automation.
 
 The stage sequence is a proposed implementation decomposition, not source code or acceptance evidence. Developer review and approval of the format and persistence decisions are required before stages crossing those boundaries.
 
