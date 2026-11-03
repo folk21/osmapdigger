@@ -98,6 +98,8 @@ class DatasetDefinition:
     metric_profile: str
     preference_profiles_file: Path | None
     preference_profile: str | None
+    interpretation_profiles_file: Path | None
+    interpretation_profile: str | None
     property_search_site: str | None
     property_search_terms: str
     settlement_name_tags: tuple[str, ...]
@@ -130,3 +132,4 @@ class SettlementRecord:
     latitude: float
     longitude: float
     names: tuple[SettlementNameRecord, ...] = ()
+

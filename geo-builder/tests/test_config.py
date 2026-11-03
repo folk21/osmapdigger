@@ -22,6 +22,8 @@ def test_dataset_config_resolves_andorra():
     assert dataset.metric_profiles_file.name == "metric-profiles.toml"
     assert dataset.preference_profile == "balanced-living"
     assert dataset.preference_profiles_file.name == "preference-profiles.toml"
+    assert dataset.interpretation_profile == "full"
+    assert dataset.interpretation_profiles_file.name == "interpretation-profiles.toml"
     assert dataset.settlement_name_tags == ("name", "name:en", "official_name", "alt_name")
     assert dataset.settlement_deduplication_tolerance_m == 0.0
     assert dataset.settlement_name_deduplication_distance_m == 0.0
@@ -44,6 +46,7 @@ def test_belarus_uses_core10_metric_profile():
     selected = select_categories(categories, category_ids, dataset.metric_profile)
 
     assert dataset.metric_profile == "core10"
+    assert dataset.interpretation_profile == "core10"
     assert dataset.settlement_deduplication_tolerance_m == 250.0
     assert dataset.settlement_name_deduplication_distance_m == 1000.0
     assert "name:be" in dataset.settlement_name_tags
@@ -241,3 +244,4 @@ preferences = [
 
     assert definition.default_enabled is False
     assert defaults[0].default_enabled is True
+

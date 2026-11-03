@@ -43,7 +43,7 @@ The package can be built without PMTiles using `--skip-map`, which keeps analyti
 
 See [`IMPLEMENTATION.md`](IMPLEMENTATION.md) for contracts/call paths and [`../docs/CONFIGURATION.md`](../docs/CONFIGURATION.md) for TOML semantics.
 
-Dataset entries select a named profile from `config/metric-profiles.toml`; profiles bound which metric categories are physically processed without changing UI `default_filter` semantics. Optional `config/preference-profiles.toml` profiles independently define generic persisted ranking defaults for generated metric IDs.
+Dataset entries select a named profile from `config/metric-profiles.toml`; profiles bound which metric categories are physically processed without changing UI `default_filter` semantics. Optional `config/preference-profiles.toml` profiles independently define generic persisted ranking defaults for generated metric IDs. `config/interpretation-profiles.toml` selects and validates dimension/goal/rule catalogs before PBF processing; metadata publication is planned for SI-S03.
 
 ## Setup
 
@@ -105,3 +105,4 @@ Default tests use synthetic geospatial data and temporary files; they must not p
 ## Map profile
 
 Map generation uses the checked-in `tilemaker/config.json` and `tilemaker/process.lua` files. The Python adapter always passes them explicitly, so native tilemaker does not depend on a `config.json` in the shell working directory.
+
