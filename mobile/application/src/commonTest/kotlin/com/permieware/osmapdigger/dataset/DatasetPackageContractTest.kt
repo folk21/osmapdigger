@@ -30,6 +30,34 @@ class DatasetPackageContractTest {
     }
 
     @Test
+    fun optionalInterpretationCatalogDoesNotChangeLegacyPackageMetadata() {
+        val legacyPayload =
+            """
+            {
+              "datasetId": "synthetic",
+              "displayName": "Synthetic",
+              "center": {"latitude": 42.0, "longitude": 25.0, "zoom": 5.0},
+              "artifacts": {"database": "georisk.sqlite", "map": null}
+            }
+            """.trimIndent()
+        val extendedPayload =
+            """
+            {
+              "datasetId": "synthetic",
+              "displayName": "Synthetic",
+              "center": {"latitude": 42.0, "longitude": 25.0, "zoom": 5.0},
+              "artifacts": {"database": "georisk.sqlite", "map": null},
+              "interpretation": {"version": 1, "dimensions": [], "goalProfiles": [], "insightRules": []}
+            }
+            """.trimIndent()
+
+        assertEquals(
+            DatasetPackageMetadataParser.decode(legacyPayload),
+            DatasetPackageMetadataParser.decode(extendedPayload),
+        )
+    }
+
+    @Test
     fun malformedMetadataIsTypedAsDatasetFailure() {
         val failure =
             assertFailsWith<OperationalFailureException> {
@@ -39,3 +67,4 @@ class DatasetPackageContractTest {
         assertEquals(OperationalFailureKind.DATASET_INVALID, failure.failure.kind)
     }
 }
+
