@@ -20,6 +20,7 @@ from .config import (
     select_categories,
 )
 from .database import DatasetDatabaseWriter, validate_database
+from .interpretation_config import load_interpretation_catalog
 from .geometry import buffer_wgs84, estimate_metric_crs, load_boundary
 from .map_builder import build_pmtiles, write_style_template
 from .metric_catalog import build_metric_definitions
@@ -61,9 +62,6 @@ def build_dataset(
         flush=True,
     )
 
-    if not dataset.source_pbf.exists():
-        raise FileNotFoundError(f"OSM PBF not found: {dataset.source_pbf}")
-
     format_version = int(dataset.format_version_file.read_text(encoding="utf-8").strip())
     metric_definitions = build_metric_definitions(categories)
     preference_defaults = load_preference_profile(
@@ -76,6 +74,21 @@ def build_dataset(
         f"{len(preference_defaults)} defaults selected",
         flush=True,
     )
+
+    interpretation_catalog = load_interpretation_catalog(
+        dataset.interpretation_profiles_file,
+        dataset.interpretation_profile,
+        metric_definitions,
+        preference_defaults,
+    )
+    print(
+        f"Interpretation profile {dataset.interpretation_profile or 'none'}: "
+        f"{len(interpretation_catalog['dimensions']) if interpretation_catalog else 0} "
+        "dimensions resolved (publication deferred to SI-S03)",
+        flush=True,
+    )
+    if not dataset.source_pbf.exists():
+        raise FileNotFoundError(f"OSM PBF not found: {dataset.source_pbf}")
 
     scope_geometry = load_boundary(dataset.boundary_geojson) if dataset.boundary_geojson else None
     metric_crs = None
@@ -212,3 +225,4 @@ def build_dataset(
     create_package_zip(final_dir, dataset.id)
     print(f"Published dataset: {final_dir}", flush=True)
     return final_dir
+

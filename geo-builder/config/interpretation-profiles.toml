@@ -1,0 +1,132 @@
+version = 1
+
+# Dataset-selected interpretation catalogs reference only generated stable metric IDs.
+# Goal overrides inherit every explicit value from the dataset preference defaults.
+# The resolver emits complete goal presets; it never silently drops missing metrics.
+
+[profiles.full]
+dimension_ids = ["nature", "services", "transport", "seclusion", "environment", "water-proximity"]
+goal_ids = ["balanced-living", "nature-quiet", "family-convenience", "remote-retreat"]
+rule_ids = ["nature-strength", "services-tradeoff", "nature-services-contrast"]
+
+[profiles.core10]
+dimension_ids = ["nature", "services", "transport", "seclusion", "environment"]
+goal_ids = ["balanced-living", "nature-quiet", "family-convenience", "remote-retreat"]
+rule_ids = ["nature-strength", "services-tradeoff", "nature-services-contrast"]
+
+[dimensions.nature]
+id = "nature"
+labels = { en = "Nature-related access", ru = "Доступность природных объектов" }
+sortOrder = 10
+metricIds = ["forest.distance_km", "beach.distance_km"]
+minimumCoverage = 45
+minimumKnownMetrics = 1
+
+[dimensions.services]
+id = "services"
+labels = { en = "Everyday services", ru = "Повседневные услуги" }
+sortOrder = 20
+metricIds = ["school.distance_km", "medical.distance_km", "supermarket.distance_km"]
+minimumCoverage = 60
+minimumKnownMetrics = 1
+
+[dimensions.transport]
+id = "transport"
+labels = { en = "Mapped transport access", ru = "Доступность транспорта на карте" }
+sortOrder = 30
+metricIds = ["bus_stop.distance_km", "railway_station.distance_km"]
+minimumCoverage = 60
+minimumKnownMetrics = 1
+
+[dimensions.seclusion]
+id = "seclusion"
+labels = { en = "Major-road proximity", ru = "Близость крупных дорог" }
+sortOrder = 40
+metricIds = ["major_road.distance_km"]
+minimumCoverage = 100
+minimumKnownMetrics = 1
+
+[dimensions.environment]
+id = "environment"
+labels = { en = "Distance from mapped impacts", ru = "Удалённость от нанесённых на карту объектов воздействия" }
+sortOrder = 50
+metricIds = ["industrial.distance_km", "landfill.distance_km"]
+minimumCoverage = 80
+minimumKnownMetrics = 2
+
+[dimensions.water-proximity]
+id = "water-proximity"
+labels = { en = "Mapped water proximity", ru = "Близость водных объектов на карте" }
+sortOrder = 60
+metricIds = ["beach.distance_km", "river_stream.distance_km"]
+minimumCoverage = 60
+minimumKnownMetrics = 1
+
+[goals.balanced-living]
+id = "balanced-living"
+labels = { en = "Balanced living", ru = "Сбалансированная жизнь" }
+sortOrder = 10
+
+[goals.nature-quiet]
+id = "nature-quiet"
+labels = { en = "Nature and distance from impacts", ru = "Природа и удалённость от объектов воздействия" }
+sortOrder = 20
+overrides = [
+    { metricId = "forest.distance_km", weight = 10 },
+    { metricId = "beach.distance_km", weight = 6 },
+    { metricId = "industrial.distance_km", weight = 9 },
+    { metricId = "major_road.distance_km", enabled = true, direction = "higher", target = 10.0, limit = 1.0, weight = 8 },
+]
+
+[goals.family-convenience]
+id = "family-convenience"
+labels = { en = "Access to everyday services", ru = "Доступность повседневных услуг" }
+sortOrder = 30
+overrides = [
+    { metricId = "beach.distance_km", enabled = false },
+    { metricId = "school.distance_km", enabled = true, weight = 9 },
+    { metricId = "medical.distance_km", weight = 9 },
+    { metricId = "supermarket.distance_km", weight = 8 },
+    { metricId = "bus_stop.distance_km", weight = 7 },
+]
+
+[goals.remote-retreat]
+id = "remote-retreat"
+labels = { en = "Remote retreat", ru = "Уединённое место" }
+sortOrder = 40
+overrides = [
+    { metricId = "forest.distance_km", weight = 10 },
+    { metricId = "bus_stop.distance_km", enabled = false },
+    { metricId = "railway_station.distance_km", enabled = false },
+    { metricId = "major_road.distance_km", enabled = true, direction = "higher", target = 10.0, limit = 1.0, weight = 9 },
+    { metricId = "medical.distance_km", enabled = false },
+    { metricId = "supermarket.distance_km", enabled = false },
+]
+
+[rules.nature-strength]
+id = "nature-strength"
+type = "dimension-strength"
+dimensionIds = ["nature"]
+templateKey = "interpretation.nature.strength"
+minimumCoverage = 65
+minimumKnownMetrics = 1
+minimumScore = 75
+
+[rules.services-tradeoff]
+id = "services-tradeoff"
+type = "dimension-tradeoff"
+dimensionIds = ["services"]
+templateKey = "interpretation.services.tradeoff"
+minimumCoverage = 80
+minimumKnownMetrics = 2
+maximumScore = 35
+
+[rules.nature-services-contrast]
+id = "nature-services-contrast"
+type = "dimension-contrast"
+dimensionIds = ["nature", "services"]
+templateKey = "interpretation.nature-services.contrast"
+minimumCoverage = 80
+minimumKnownMetrics = 2
+minimumScore = 75
+maximumScore = 40

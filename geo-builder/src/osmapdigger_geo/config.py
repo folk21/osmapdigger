@@ -64,6 +64,16 @@ def load_dataset_definition(config_path: Path, dataset_id: str) -> DatasetDefini
         preference_profile=(
             str(raw["preference_profile"]) if raw.get("preference_profile") is not None else None
         ),
+        interpretation_profiles_file=(
+            _resolve(base, builder["interpretation_profiles"])
+            if builder.get("interpretation_profiles")
+            else None
+        ),
+        interpretation_profile=(
+            str(raw["interpretation_profile"])
+            if raw.get("interpretation_profile") is not None
+            else None
+        ),
         property_search_site=raw.get("property_search_site"),
         property_search_terms=raw.get("property_search_terms", "property"),
         settlement_name_tags=tuple(
@@ -305,3 +315,4 @@ def load_preference_profile(
         )
 
     return result
+

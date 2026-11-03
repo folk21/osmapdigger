@@ -37,6 +37,8 @@ This document describes the current Python implementation under `geo-builder/`. 
 
 `metric-profiles.toml` defines named build profiles over stable category IDs. `DatasetDefinition.metric_profile` selects one profile per dataset. The pipeline validates and applies the profile before broad Pyrosm filters or metric definitions are built, so excluded categories do not consume country-scale PBF read or spatial-calculation work. `full` selects the complete catalog; Belarus currently uses the bounded `core10` profile while Andorra retains `full` for broad integration coverage.
 
+`interpretation-profiles.toml` adds a separately selected, bounded v1 interpretation catalog. `load_interpretation_catalog()` resolves named dimensions, goal overrides, and typed insight rules using the selected generated metric definitions and exact resolved preference defaults. The default `balanced-living` goal remains equal to those defaults, and all goal presets expand to complete ordered preference lists. Unknown cross-references, malformed bilingual labels, unsupported operations, duplicate entries, invalid direction/threshold pairs, and infeasible evidence minima fail before any PBF reader starts. Both `full` (Andorra) and `core10` (Belarus) explicitly declare their available dimensions; the resolver never omits ungenerated metrics. SI-S02 validates the configuration only: publishing the optional `metadata.json.interpretation` field belongs to SI-S03.
+
 `preference-profiles.toml` is a separate product-default layer. `DatasetDefinition.preference_profile` selects one optional profile whose stable metric IDs are resolved against the already selected/generated metric catalog. `load_preference_profile()` validates duplicates, missing generated metrics, explicit direction for neutral metrics, finite target/limit values, direction-specific ordering, weight range, and enabled booleans. The resolved immutable `MetricPreferenceDefault` records are persisted; runtime Kotlin never reads builder TOML directly.
 
 ## PBF reader
@@ -190,3 +192,4 @@ final canonical settlement graph. `--settlement-diagnostics-limit N` bounds deta
 (default 20). The final audit reports duplicate-looking canonical pairs, their merged raw-member
 provenance, normalized aliases, distance, and whether their raw members were directly compared
 or had a merge reason. Diagnostics do not change generated data or merge policy.
+
